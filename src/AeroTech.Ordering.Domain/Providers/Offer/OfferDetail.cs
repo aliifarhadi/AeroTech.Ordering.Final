@@ -1,6 +1,6 @@
 using AeroTech.Messages.AirPrice.Enums;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.Offers
+namespace AeroTech.Ordering.Domain.Providers.Offer
 {
     public sealed record OfferDetail(
         string OfferId,

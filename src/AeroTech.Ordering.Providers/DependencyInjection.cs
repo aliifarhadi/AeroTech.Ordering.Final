@@ -1,4 +1,4 @@
-using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
+using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
 using AeroTech.Ordering.Domain.Providers.Pricing;
 using AeroTech.Ordering.Providers.FlightFlow.Services;

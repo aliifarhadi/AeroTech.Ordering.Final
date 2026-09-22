@@ -1,6 +1,5 @@
-using AeroTech.Ordering.Domain.OrderAggregate.Offers;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
+namespace AeroTech.Ordering.Domain.Providers.Offer
 {
     public interface IOfferProvider
     {

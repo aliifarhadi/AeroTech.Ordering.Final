@@ -2,8 +2,7 @@ using AeroTech.Ordering.Domain._Shared.Resources;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
-using AeroTech.Ordering.Domain.OrderAggregate.Offers;
+using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Providers.Offer.Wire;
 
 namespace AeroTech.Ordering.Providers.Offer.Services

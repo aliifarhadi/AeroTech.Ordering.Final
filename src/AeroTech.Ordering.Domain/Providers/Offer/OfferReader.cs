@@ -1,6 +1,6 @@
 using AeroTech.Ordering.Domain._Shared.Resources;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.Offers
+namespace AeroTech.Ordering.Domain.Providers.Offer
 {
     public sealed class OfferReader
     {

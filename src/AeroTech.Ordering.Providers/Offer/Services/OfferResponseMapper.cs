@@ -1,4 +1,4 @@
-using AeroTech.Ordering.Domain.OrderAggregate.Offers;
+using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Messages.AirPrice.Enums;
 
 namespace AeroTech.Ordering.Providers.Offer.Services

@@ -1,9 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace AeroTech.Messages.Ordering.Enums
 {
     public enum OrderRemarkStatus
     {
-        Active = 1,
-        Superseded = 2,
-        Deleted = 3
+        [Display(Name = "Active")] Active = 1,
+
+        [Display(Name = "Superseded")] Superseded = 2,
+
+        [Display(Name = "Deleted")] Deleted = 3
     }
 }

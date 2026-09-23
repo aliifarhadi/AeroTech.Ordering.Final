@@ -13,6 +13,7 @@ namespace AeroTech.Ordering.ReferenceData.Api
         private readonly AirlineSyncer _airlineSyncer;
         private readonly CitySyncer _citySyncer;
         private readonly AirportSyncer _airportSyncer;
+        private readonly CountrySyncer _countrySyncer;
         private readonly CustomerSyncer _customerSyncer;
         private readonly OperatorSettingsSyncer _operatorSettingsSyncer;
         private readonly AirlineOfficeSyncer _airlineOfficeSyncer;
@@ -24,6 +25,7 @@ namespace AeroTech.Ordering.ReferenceData.Api
             AirlineSyncer airlineSyncer,
             CitySyncer citySyncer,
             AirportSyncer airportSyncer,
+            CountrySyncer countrySyncer,
             CustomerSyncer customerSyncer,
             OperatorSettingsSyncer operatorSettingsSyncer,
             AirlineOfficeSyncer airlineOfficeSyncer,
@@ -34,6 +36,7 @@ namespace AeroTech.Ordering.ReferenceData.Api
             _airlineSyncer = airlineSyncer;
             _citySyncer = citySyncer;
             _airportSyncer = airportSyncer;
+            _countrySyncer = countrySyncer;
             _customerSyncer = customerSyncer;
             _operatorSettingsSyncer = operatorSettingsSyncer;
             _airlineOfficeSyncer = airlineOfficeSyncer;
@@ -66,6 +69,13 @@ namespace AeroTech.Ordering.ReferenceData.Api
         public async Task<IActionResult> SyncAirports(CancellationToken cancellationToken)
         {
             await _airportSyncer.SyncAsync(cancellationToken);
+            return Ok();
+        }
+
+        [HttpPost("Countries")]
+        public async Task<IActionResult> SyncCountries(CancellationToken cancellationToken)
+        {
+            await _countrySyncer.SyncAsync(cancellationToken);
             return Ok();
         }
 

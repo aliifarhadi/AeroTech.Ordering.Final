@@ -1,40 +1,37 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace AeroTech.Messages.Ordering.Enums
-{ 
-    public enum OrderPricingLineCategory 
+{
+    public enum OrderPricingLineCategory
     {
-        [Display(Name = "FARE")]
+        [Display(Name = "Fare")]
         Fare = 1,
 
-        [Display(Name = "TAX")]
+        [Display(Name = "Tax")]
         Tax = 2,
 
-        [Display(Name = "FEE")]
+        [Display(Name = "Fee")]
         Fee = 3,
 
-        [Display(Name = "PENALTY")]
+        [Display(Name = "Penalty")]
         Penalty = 4,
 
-        [Display(Name = "DISCOUNT")]
-        Discount = 5,      
-      
-        [Display(Name = "CHARGE")]
+        [Display(Name = "Discount")]
+        Discount = 5,
+
+        [Display(Name = "Charge")]
         Charge = 6,
 
-        [Display(Name = "CARRIER IMPOSED SURCHARGE")]
+        [Display(Name = "Carrier Imposed Surcharge")]
         CarrierImposedSurcharge = 7,
 
-        [Display(Name = "ANCILLARY")]
-        Ancillary= 8,
+        [Display(Name = "Ancillary")]
+        Ancillary = 8,
 
-        [Display(Name = "COMMISSION")]
+        [Display(Name = "Commission")]
         Commission = 9,
 
-        [Display(Name = "ROUNDING")]
-        Rounding= 100,
-
-
-
+        [Display(Name = "Rounding")]
+        Rounding = 100
     }
 }

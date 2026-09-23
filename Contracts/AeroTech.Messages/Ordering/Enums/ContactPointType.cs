@@ -1,11 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace AeroTech.Messages.Ordering.Enums
 {
     public enum ContactPointType
     {
-        Email = 1,
-        Phone = 2,
-        Sms = 3,
-        WhatsApp = 4,
-        Telegram = 5
+        [Display(Name = "Email")] Email = 1,
+
+        [Display(Name = "Phone")] Phone = 2,
+
+        [Display(Name = "SMS")] Sms = 3,
+
+        [Display(Name = "WhatsApp")] WhatsApp = 4,
+
+        [Display(Name = "Telegram")] Telegram = 5
     }
 }

@@ -1,24 +1,22 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace AeroTech.Messages.Ordering.Enums
 {
     public enum RefundabilityRule
     {
-
-        [Display(Description = "FULL IF UNUSED")]
+        [Display(Name = "Full If All Unused", Description = "FULL IF UNUSED")]
         FullIfAllUnused = 1,
 
-        [Display(Description = "PRORATE")]
-        ProRata  = 2,
+        [Display(Name = "Pro Rata", Description = "PRORATE")]
+        ProRata = 2,
 
-        [Display(Description = "NON REFUNDABLE")]
+        [Display(Name = "Non-Refundable", Description = "NON REFUNDABLE")]
         NonRefundable = 3,
 
-        [Display(Description = "REFUNDABLE")]
+        [Display(Name = "Refundable", Description = "REFUNDABLE")]
         Refundable = 4,
- 
 
-        [Display(Description = "CONDITIONAL")]
-        Conditional = 5,
+        [Display(Name = "Conditional", Description = "CONDITIONAL")]
+        Conditional = 5
     }
 }

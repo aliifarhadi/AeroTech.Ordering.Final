@@ -1,7 +1,9 @@
 using AeroTech.Framework.Core.Domain.Repository;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Framework.Infrastructure.HealthChecks;
+using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
 using AeroTech.Ordering.Persistence.Inbox;
+using AeroTech.Ordering.Persistence.OrderAggregate;
 using AeroTech.Ordering.Persistence.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +22,7 @@ namespace AeroTech.Ordering.Persistence
                 connectionString,
                 sql => sql.MigrationsHistoryTable(OrderingDbContext.MigrationsHistoryTable, OrderingDbContext.MigrationsHistorySchema)));
             services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<OrderingDbContext>());
+            services.AddScoped<IOrderRepository, OrderRepository>();
             services.Configure<IntegrationEventOptions>(configuration.GetSection("IntegrationEvents"));
             services.AddScoped<IOutboxWriter, OutboxWriter>();
             services.AddScoped<IInboxStore, InboxStore>();

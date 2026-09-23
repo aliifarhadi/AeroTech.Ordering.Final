@@ -52,6 +52,8 @@ namespace AeroTech.Ordering.Providers.Offer.Wire
 
     public sealed class OfferFlight
     {
+        public int Sequence { get; set; }
+
         public long FlightId { get; set; }
 
         public int FlightVersion { get; set; }

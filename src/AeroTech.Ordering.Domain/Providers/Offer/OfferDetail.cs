@@ -9,9 +9,8 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
         IReadOnlyList<OfferTraveller> Travellers,
         IReadOnlyList<OfferBound> Bounds,
         IReadOnlyList<OfferFareComponent> FareComponents,
-        IReadOnlyList<OfferPriceLine> PriceLines,
+        IReadOnlyList<OfferTicket> Tickets,
         IReadOnlyList<OfferPriceLine> OrderCharges,
-        IReadOnlyList<OfferCharge> Charges,
         IReadOnlyList<OfferRate> Rates);
 
     public sealed record OfferTraveller(string TravellerRef, int TravellerIndex, string PassengerTypeCode);
@@ -24,9 +23,10 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
         IReadOnlyList<OfferFlight> Flights);
 
     public sealed record OfferFlight(
+        int Sequence,
         long FlightId,
         int FlightVersion,
-        string Number,
+        string? FlightNumber,
         long OriginAirportId,
         long? OriginAirportTerminalId,
         long DestinationAirportId,
@@ -37,15 +37,12 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
         DateTimeOffset ArrivalDateTime,
         int Duration,
         long? AircraftId,
-        long? CabinClassId,
-        long? RbdId,
-        string? BookingClass,
         long FlightCapacityId,
         IReadOnlyList<OfferFlightLeg> Legs);
 
     public sealed record OfferFlightLeg(
-        long LegId,
         int Sequence,
+        long LegId,
         long OriginAirportId,
         long? OriginAirportTerminalId,
         long DestinationAirportId,
@@ -59,44 +56,49 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
         StopType StopType,
         bool PassengersCanBoardOrLeave);
 
-
-
     public sealed record OfferFareComponent(
         long AirFareId,
         string BoundId,
         string? BookingClass,
         string? FareBasis,
         string? FareFamily,
+        string? FareType);
+
+    public sealed record OfferTicket(
+        string TravellerRef,
+        int TravellerIndex,
+        IReadOnlyList<OfferCoupon> Coupons);
+
+    public sealed record OfferCoupon(
+        string BoundId,
+        long FlightId,
         bool IsRefundable,
         bool IsChangeable,
         bool IsUpgradable,
-        int BaggagePieces,
-        decimal BaggageWeight,
-        string? BaggageUnit,
-        int CabinBaggagePieces,
-        decimal CabinBaggageWeight,
-        string? CabinBaggageUnit);
+        OfferBaggage? CheckedBaggage,
+        OfferBaggage? CabinBaggage,
+        IReadOnlyList<OfferPriceLine> PriceLines);
+
+    public sealed record OfferBaggage(int Pieces, decimal Weight, string Unit);
 
     public sealed record OfferPriceLine(
-        string TravellerRef,
-        bool IsBase,
-        long? AirFareId,
-        string? AirChargeId,
+        OfferPriceCategory Category,
+        string? Name,
         string? Code,
-        string? BoundId,
-        long? FlightId,
+        string? Reference,
         decimal Amount,
-        int? CurrencyId,
+        int CurrencyId,
         decimal EquivalentAmount,
-        int? EquivalentCurrencyId,
+        int EquivalentCurrencyId,
         string? RateOfExchangePeriodId);
 
-    public sealed record OfferCharge(
-        string AirChargeId,
-        AirChargeKind Kind,
-        string? Code,
-        string? Name,
-        bool IsRefundable);
+    public enum OfferPriceCategory
+    {
+        Fare = 0,
+        Tax = 1,
+        Fee = 2,
+        Surcharge = 3
+    }
 
     public sealed record OfferRate(
         string RateOfExchangePeriodId,

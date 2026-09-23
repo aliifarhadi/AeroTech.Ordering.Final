@@ -44,6 +44,7 @@ namespace AeroTech.Ordering.ReferenceData
             services.AddScoped<AirlineSyncer>();
             services.AddScoped<CitySyncer>();
             services.AddScoped<AirportSyncer>();
+            services.AddScoped<CountrySyncer>();
             services.AddScoped<CustomerSyncer>();
             services.AddScoped<OperatorSettingsSyncer>();
             services.AddScoped<AirlineOfficeSyncer>();

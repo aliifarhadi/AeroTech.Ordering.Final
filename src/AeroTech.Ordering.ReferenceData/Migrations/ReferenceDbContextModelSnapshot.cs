@@ -227,6 +227,45 @@ namespace AeroTech.Ordering.ReferenceData.Migrations
                     b.ToTable("Cities", "ReferenceData");
                 });
 
+            modelBuilder.Entity("AeroTech.Ordering.ReferenceData.ReadModels.CountryReadModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Alpha2Code")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Alpha3Code")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset>("LastUpdateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("NumericCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PhoneCode")
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Alpha2Code")
+                        .IsUnique();
+
+                    b.HasIndex("Alpha3Code");
+
+                    b.ToTable("Countries", "ReferenceData");
+                });
+
             modelBuilder.Entity("AeroTech.Ordering.ReferenceData.ReadModels.CurrencyReadModel", b =>
                 {
                     b.Property<int>("Id")

@@ -11,5 +11,7 @@ namespace AeroTech.Ordering.ReferenceData.AirInfo
         Task<List<CityDto>> GetCitiesAsync(DateTimeOffset? modifiedAfter, CancellationToken cancellationToken = default);
 
         Task<List<AirportDto>> GetAirportsAsync(DateTimeOffset? modifiedAfter, CancellationToken cancellationToken = default);
+
+        Task<List<CountryDto>> GetCountriesAsync(DateTimeOffset? modifiedAfter, CancellationToken cancellationToken = default);
     }
 }

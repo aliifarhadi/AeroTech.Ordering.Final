@@ -1,5 +1,6 @@
 using AeroTech.Ordering.Consumers.Inbox;
 using AeroTech.Ordering.Consumers.Jobs;
+using AeroTech.Ordering.Consumers.Ordering.OrderAggregate.WhenOrderCreated;
 using AeroTech.Ordering.Consumers.Outbox;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +24,8 @@ namespace AeroTech.Ordering.Consumers
             {
                 bus.SetKebabCaseEndpointNameFormatter();
 
+                bus.AddConsumer<SyncQueryDbWhenOrderCreated>();
+
                 bus.UsingRabbitMq((context, rabbit) =>
                 {
                     rabbit.Host(broker.Server, broker.Port, broker.VirtualHost, configurator =>
@@ -32,6 +35,12 @@ namespace AeroTech.Ordering.Consumers
                     });
 
                     rabbit.UseConsumeFilter(typeof(InboxConsumeFilter<>), context);
+
+                    rabbit.ReceiveEndpoint("DotAir.AeroTech.Ordering.QuerySynchronizer", endpoint =>
+                    {
+                        endpoint.UseMessageRetry(retry => retry.Immediate(3));
+                        endpoint.ConfigureConsumer<SyncQueryDbWhenOrderCreated>(context);
+                    });
                 });
             });
 

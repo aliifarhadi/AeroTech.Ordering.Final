@@ -8,61 +8,60 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
 
         public OfferReader(OfferDetail offer) => _offer = offer;
 
+        public string OfferId => _offer.OfferId;
+
         public int CurrencyId => _offer.CurrencyId;
 
         public DateTimeOffset? LastTicketingDate => _offer.LastTicketingDate;
+
+        public IReadOnlyList<OfferTraveller> Travellers => _offer.Travellers;
 
         public IReadOnlyList<OfferBound> BoundsInSequence()
             => _offer.Bounds.OrderBy(bound => bound.Sequence).ToList();
 
         public IReadOnlyList<OfferFlight> BoundFlightsInOrder(OfferBound bound)
-            => bound.Flights.OrderBy(flight => flight.DepartureDateTime).ToList();
+            => bound.Flights.OrderBy(flight => flight.Sequence).ThenBy(flight => flight.DepartureDateTime).ToList();
 
-        public string GetTravellerRef(int travellerIndex)
-        {
-            var traveller = _offer.Travellers.FirstOrDefault(t => t.TravellerIndex == travellerIndex);
-            if (traveller is null)
-                throw ExceptionFactory.OfferHasNoTravellerWithIndex(travellerIndex);
-            return traveller.TravellerRef;
-        }
+        public OfferTraveller Traveller(int travellerIndex)
+            => _offer.Travellers.FirstOrDefault(traveller => traveller.TravellerIndex == travellerIndex)
+               ?? throw ExceptionFactory.OfferHasNoTravellerWithIndex(travellerIndex);
 
-        public OfferFareComponent? PrimaryFareComponent(string boundId)
-            => _offer.FareComponents.FirstOrDefault(component => SameRef(component.BoundId, boundId));
+        public string GetTravellerRef(int travellerIndex) => Traveller(travellerIndex).TravellerRef;
+
+        public OfferTicket Ticket(string travellerRef)
+            => _offer.Tickets.FirstOrDefault(ticket => SameRef(ticket.TravellerRef, travellerRef))
+               ?? throw ExceptionFactory.OfferHasNoTicketForTraveller(travellerRef);
+
+        public OfferCoupon Coupon(string travellerRef, long flightId)
+            => Ticket(travellerRef).Coupons.FirstOrDefault(coupon => coupon.FlightId == flightId)
+               ?? throw ExceptionFactory.OfferHasNoCouponForFlight(travellerRef, flightId);
+
+        public IReadOnlyList<OfferCoupon> BoundCoupons(string travellerRef, string boundId)
+            => Ticket(travellerRef).Coupons.Where(coupon => SameRef(coupon.BoundId, boundId)).ToList();
 
         public OfferFareComponent? FareComponent(string boundId, long airFareId)
             => _offer.FareComponents.FirstOrDefault(component => SameRef(component.BoundId, boundId) && component.AirFareId == airFareId)
-               ?? PrimaryFareComponent(boundId);
+               ?? _offer.FareComponents.FirstOrDefault(component => SameRef(component.BoundId, boundId));
 
-        public IReadOnlyList<OfferPriceLine> BaseLines(string travellerRef, string boundId)
-            => _offer.PriceLines
-                .Where(line => SameRef(line.TravellerRef, travellerRef) && line.IsBase && SameRef(line.BoundId, boundId))
-                .ToList();
+        public IReadOnlyList<OfferPriceLine> OrderChargeLines() => _offer.OrderCharges;
 
-        public IReadOnlyList<OfferPriceLine> ChargeLines(string travellerRef)
-            => _offer.PriceLines
-                .Where(line => SameRef(line.TravellerRef, travellerRef) && !line.IsBase)
-                .ToList();
-
-        public IReadOnlyList<OfferPriceLine> OrderChargeLines()
-            => _offer.OrderCharges.Where(line => !line.IsBase).ToList();
-
-        public long ResolveTravellerBoundAirFareId(IReadOnlyList<OfferPriceLine> baseLines, string boundId)
+        public long ResolveTravellerBoundAirFareId(string travellerRef, string boundId)
         {
-            var fromLines = baseLines.Select(line => line.AirFareId ?? 0).FirstOrDefault(id => id > 0);
-            if (fromLines > 0)
-                return fromLines;
+            var reference = BoundCoupons(travellerRef, boundId)
+                .SelectMany(coupon => coupon.PriceLines)
+                .Where(line => line.Category == OfferPriceCategory.Fare)
+                .Select(line => long.TryParse(line.Reference, out var parsed) ? parsed : 0)
+                .FirstOrDefault(id => id > 0);
 
-            var fareComponent = PrimaryFareComponent(boundId);
+            if (reference > 0)
+                return reference;
+
+            var fareComponent = _offer.FareComponents.FirstOrDefault(component => SameRef(component.BoundId, boundId));
             if (fareComponent is not null && fareComponent.AirFareId > 0)
                 return fareComponent.AirFareId;
 
             throw ExceptionFactory.CouldNotResolveAirFareForBound(boundId);
         }
-
-        public OfferCharge? Charge(string? airChargeId)
-            => string.IsNullOrWhiteSpace(airChargeId)
-                ? null
-                : _offer.Charges.FirstOrDefault(charge => string.Equals(charge.AirChargeId, airChargeId, StringComparison.Ordinal));
 
         public OfferRate? Rate(string? rateOfExchangePeriodId)
             => string.IsNullOrWhiteSpace(rateOfExchangePeriodId)
@@ -71,23 +70,20 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
 
         public int SourceCurrencyId(OfferPriceLine line)
         {
-            if (line.CurrencyId is > 0)
-                return line.CurrencyId.Value;
+            if (line.CurrencyId > 0)
+                return line.CurrencyId;
 
             var rate = Rate(line.RateOfExchangePeriodId);
-            if (rate is not null && rate.FromCurrencyId > 0)
-                return rate.FromCurrencyId;
-
-            return _offer.CurrencyId;
+            return rate is not null && rate.FromCurrencyId > 0 ? rate.FromCurrencyId : _offer.CurrencyId;
         }
 
         public int EquivalentCurrencyId(OfferPriceLine line)
         {
-            var rate = Rate(line.RateOfExchangePeriodId);
-            if (rate is not null && rate.ToCurrencyId > 0)
-                return rate.ToCurrencyId;
+            if (line.EquivalentCurrencyId > 0)
+                return line.EquivalentCurrencyId;
 
-            return _offer.CurrencyId;
+            var rate = Rate(line.RateOfExchangePeriodId);
+            return rate is not null && rate.ToCurrencyId > 0 ? rate.ToCurrencyId : _offer.CurrencyId;
         }
 
         private static bool SameRef(string? left, string? right)

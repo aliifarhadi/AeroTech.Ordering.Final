@@ -62,9 +62,16 @@ namespace AeroTech.Ordering.ReferenceData.AirInfo.Wire
         public CountryDto? Country { get; set; }
     }
 
-    public sealed class CountryDto
+    public sealed class CountryDto : ISyncSourceDto<int>, ISoftDeletable
     {
         public int Id { get; set; }
+        public string Alpha2Code { get; set; } = default!;
+        public string? Alpha3Code { get; set; }
+        public int NumericCode { get; set; }
+        public string? PhoneCode { get; set; }
+        public ICollection<DisplayNameDto>? DisplayNames { get; set; }
+        public DateTimeOffset LastUpdateTime { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     public sealed class AirportDto : ISyncSourceDto<int>, ISoftDeletable

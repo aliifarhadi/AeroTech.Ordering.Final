@@ -4,8 +4,8 @@ namespace AeroTech.Messages.Ordering.Enums
 {
     public enum SellingOfficeKind
     {
-        [Display(Name = "AirlineOffice")] AirlineOffice = 1,
+        [Display(Name = "Airline Office")] AirlineOffice = 1,
 
-        [Display(Name = "TravelAgencyOffice")] TravelAgencyOffice = 2
+        [Display(Name = "Travel Agency Office")] TravelAgencyOffice = 2
     }
 }

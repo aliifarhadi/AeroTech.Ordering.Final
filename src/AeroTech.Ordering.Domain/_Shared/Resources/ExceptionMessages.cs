@@ -1,4 +1,4 @@
-namespace AeroTech.Ordering.Domain._Shared.Resources
+﻿namespace AeroTech.Ordering.Domain._Shared.Resources
 {
     public static class ExceptionMessages
     {
@@ -67,6 +67,8 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         // Offer
         public const string OfferHasNoTravellerWithIndex = "Offer has no traveller with index {0}.";
         public const string CouldNotResolveAirFareForBound = "Could not resolve an air fare id for bound {0}.";
+        public const string OfferHasNoTicketForTraveller = "Offer has no ticket for traveller {0}.";
+        public const string OfferHasNoCouponForFlight = "Offer has no coupon for traveller {0} on flight {1}.";
 
         // Application: lookups and orchestration
         public const string OrderNotFound = "Order '{0}' was not found.";
@@ -92,5 +94,36 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public const string SeatHoldCouldNotBeReleased = "The seat hold '{0}' could not be released. {1}";
         public const string OfferCouldNotBeRetrieved = "The offer '{0}' could not be retrieved.";
         public const string FareReservationCouldNotBeValidated = "The fare reservation could not be validated.";
-    }
+
+        // Initial sale
+        public const string SalesContextActorIsRequired = "Sales context requires an actor id.";
+        public const string BaggagePiecesCannotBeNegative = "Baggage pieces cannot be negative.";
+        public const string BaggageWeightCannotBeNegative = "Baggage weight cannot be negative.";
+        public const string BaggageUnitIsNotRecognised = "Baggage unit {0} is not recognised.";
+        public const string ExchangeRateMustBePositive = "Exchange rate must be greater than zero.";
+        public const string ExchangeRateDecimalPlacesCannotBeNegative = "Exchange rate decimal places cannot be negative.";
+        public const string TravellerIndexIsDuplicated = "Traveller indexes must be unique in the request.";
+        public const string OfferTravellerIndexIsDuplicated = "Traveller indexes must be unique in the offer.";
+        public const string TravellerSetDoesNotMatchOffer = "The requested traveller set does not match the offer traveller set.";
+        public const string OfferPassengerCodeIsNotRecognised = "Offer passenger code {0} is not recognised.";
+        public const string TravellerPassengerTypeDoesNotMatchOffer = "Traveller {0} passenger type does not match the offer.";
+        public const string InfantRequiresParentTraveller = "Infant traveller {0} requires a parent traveller.";
+        public const string InfantParentMustBeAnAdult = "The parent of infant traveller {0} must be an adult.";
+        public const string OrderHasNoTravellerWithIndex = "Order has no traveller with index {0}.";
+        public const string OrderHasNoSegmentForFlight = "Order has no segment for flight {0}.";
+        public const string OrderHasNoAirServiceForFlight = "Order has no air transport service for flight {0}.";
+        public const string SeatSelectionBoundIsNotInOrder = "Seat selection references bound {0} which is not in the order.";
+        public const string SeatSelectionHasNoMatchingAirService = "Seat selection for traveller {0} on bound {1} has no matching air transport service.";
+        public const string OfferPriceCategoryIsNotRecognised = "Offer price category {0} is not recognised.";
+        public const string PricingAllocationsDoNotReconcile = "Allocations of pricing line {0} do not reconcile with the line amount.";
+        public const string CustomerPriceLineCurrencyDoesNotMatchOrder = "Every customer-price line must be expressed in the order currency.";
+        public const string DocumentScopedRemarkIsNotSupportedYet = "Document-scoped remarks are not supported in this stage.";
+        public const string OrderDoesNotBelongToCaller = "Order {0} does not belong to the calling customer.";
+        public const string CallerHasNoCustomerContext = "The caller has no customer context.";
+        public const string CountryCodeIsNotRecognised = "Country code {0} is not recognised.";
+        public const string CallerPrincipalTypeIsNotRecognised = "Caller principal type {0} is not recognised.";
+        public const string CallerContextTypeIsNotRecognised = "Caller context type {0} is not recognised.";
+        public const string SellingOfficeIsIncomplete = "A selling office requires both its kind and its identifier.";
+        public const string SellingOfficeIsAmbiguous = "The caller holds {0} travel agency offices; the selling office cannot be resolved.";
+}
 }

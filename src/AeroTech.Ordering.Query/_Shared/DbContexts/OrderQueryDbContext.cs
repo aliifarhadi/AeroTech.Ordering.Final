@@ -1,3 +1,4 @@
+using AeroTech.Ordering.Query.OrderAggregate.Models;
 using AeroTech.Ordering.ReferenceData.Persistence;
 using AeroTech.Ordering.ReferenceData.ReadModels;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,30 @@ namespace AeroTech.Ordering.Query._Shared.DbContexts
         {
         }
 
+        public DbSet<OrderReadModel> Orders => Set<OrderReadModel>();
+
+        public DbSet<OrderTravellerReadModel> OrderTravellers => Set<OrderTravellerReadModel>();
+
+        public DbSet<OrderTravellerDocumentReadModel> OrderTravellerDocuments => Set<OrderTravellerDocumentReadModel>();
+
+        public DbSet<OrderJourneyReadModel> OrderJourneys => Set<OrderJourneyReadModel>();
+
+        public DbSet<OrderSegmentReadModel> OrderSegments => Set<OrderSegmentReadModel>();
+
+        public DbSet<OrderItemReadModel> OrderItems => Set<OrderItemReadModel>();
+
+        public DbSet<OrderServiceReadModel> OrderServices => Set<OrderServiceReadModel>();
+
+        public DbSet<OrderPricingLineReadModel> OrderPricingLines => Set<OrderPricingLineReadModel>();
+
+        public DbSet<OrderPricingAllocationReadModel> OrderPricingAllocations => Set<OrderPricingAllocationReadModel>();
+
+        public DbSet<OrderContactReadModel> OrderContacts => Set<OrderContactReadModel>();
+
+        public DbSet<OrderContactPointReadModel> OrderContactPoints => Set<OrderContactPointReadModel>();
+
+        public DbSet<OrderRemarkReadModel> OrderRemarks => Set<OrderRemarkReadModel>();
+
         public DbSet<CustomerReadModel> Customers => Set<CustomerReadModel>();
 
         public DbSet<CurrencyReadModel> Currencies => Set<CurrencyReadModel>();
@@ -21,6 +46,12 @@ namespace AeroTech.Ordering.Query._Shared.DbContexts
         public DbSet<AirportReadModel> Airports => Set<AirportReadModel>();
 
         public DbSet<AirlineReadModel> Airlines => Set<AirlineReadModel>();
+
+        public DbSet<CountryReadModel> Countries => Set<CountryReadModel>();
+
+        public DbSet<AirlineOfficeReadModel> AirlineOffices => Set<AirlineOfficeReadModel>();
+
+        public DbSet<TravelAgencyOfficeReadModel> TravelAgencyOffices => Set<TravelAgencyOfficeReadModel>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,6 +63,9 @@ namespace AeroTech.Ordering.Query._Shared.DbContexts
             MapReferenceReadModel<CurrencyReadModel>(modelBuilder, "Currencies");
             MapReferenceReadModel<AirportReadModel>(modelBuilder, "Airports");
             MapReferenceReadModel<AirlineReadModel>(modelBuilder, "Airlines");
+            MapReferenceReadModel<CountryReadModel>(modelBuilder, "Countries");
+            MapReferenceReadModel<AirlineOfficeReadModel>(modelBuilder, "AirlineOffices");
+            MapReferenceReadModel<TravelAgencyOfficeReadModel>(modelBuilder, "TravelAgencyOffices");
         }
 
         private static void MapReferenceReadModel<TEntity>(ModelBuilder modelBuilder, string table)

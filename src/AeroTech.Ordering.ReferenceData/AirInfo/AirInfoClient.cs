@@ -11,6 +11,7 @@ namespace AeroTech.Ordering.ReferenceData.AirInfo
         private const string AirlinesRoute = "v1/Locations/Airlines";
         private const string CitiesRoute = "v1/Locations/Cities";
         private const string AirportsRoute = "v1/Locations/Airports";
+        private const string CountriesRoute = "v1/Locations/Countries";
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -34,6 +35,9 @@ namespace AeroTech.Ordering.ReferenceData.AirInfo
 
         public Task<List<AirportDto>> GetAirportsAsync(DateTimeOffset? modifiedAfter, CancellationToken cancellationToken = default)
             => GetListAsync<AirportDto>(AirportsRoute, modifiedAfter, cancellationToken);
+
+        public Task<List<CountryDto>> GetCountriesAsync(DateTimeOffset? modifiedAfter, CancellationToken cancellationToken = default)
+            => GetListAsync<CountryDto>(CountriesRoute, modifiedAfter, cancellationToken);
 
         private async Task<List<T>> GetListAsync<T>(string route, DateTimeOffset? modifiedAfter, CancellationToken cancellationToken)
         {

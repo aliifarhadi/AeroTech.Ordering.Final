@@ -157,6 +157,12 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException CouldNotResolveAirFareForBound(params object?[] args) =>
             new(2401, ExceptionMessages.CouldNotResolveAirFareForBound, args) { HttpStatus = 422 };
 
+        public static BusinessException OfferHasNoTicketForTraveller(params object?[] args) =>
+            new(2402, ExceptionMessages.OfferHasNoTicketForTraveller, args) { HttpStatus = 422 };
+
+        public static BusinessException OfferHasNoCouponForFlight(params object?[] args) =>
+            new(2403, ExceptionMessages.OfferHasNoCouponForFlight, args) { HttpStatus = 422 };
+
         // Application lookups / orchestration: 2500-2599
         public static BusinessException OrderNotFound(params object?[] args) =>
             new(2500, ExceptionMessages.OrderNotFound, args) { HttpStatus = 404 };
@@ -221,6 +227,94 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
 
         public static BusinessException FareReservationCouldNotBeValidated(string? detail) =>
             new(2607, Detail(detail, ExceptionMessages.FareReservationCouldNotBeValidated)) { HttpStatus = 502 };
+
+        // Initial sale: 2700-2729
+        public static BusinessException SalesContextActorIsRequired(params object?[] args) =>
+            new(2700, ExceptionMessages.SalesContextActorIsRequired, args) { HttpStatus = 422 };
+
+        public static BusinessException BaggagePiecesCannotBeNegative(params object?[] args) =>
+            new(2701, ExceptionMessages.BaggagePiecesCannotBeNegative, args) { HttpStatus = 422 };
+
+        public static BusinessException BaggageWeightCannotBeNegative(params object?[] args) =>
+            new(2702, ExceptionMessages.BaggageWeightCannotBeNegative, args) { HttpStatus = 422 };
+
+        public static BusinessException BaggageUnitIsNotRecognised(params object?[] args) =>
+            new(2703, ExceptionMessages.BaggageUnitIsNotRecognised, args) { HttpStatus = 422 };
+
+        public static BusinessException ExchangeRateMustBePositive(params object?[] args) =>
+            new(2704, ExceptionMessages.ExchangeRateMustBePositive, args) { HttpStatus = 422 };
+
+        public static BusinessException ExchangeRateDecimalPlacesCannotBeNegative(params object?[] args) =>
+            new(2705, ExceptionMessages.ExchangeRateDecimalPlacesCannotBeNegative, args) { HttpStatus = 422 };
+
+        public static BusinessException TravellerIndexIsDuplicated(params object?[] args) =>
+            new(2706, ExceptionMessages.TravellerIndexIsDuplicated, args) { HttpStatus = 422 };
+
+        public static BusinessException OfferTravellerIndexIsDuplicated(params object?[] args) =>
+            new(2707, ExceptionMessages.OfferTravellerIndexIsDuplicated, args) { HttpStatus = 422 };
+
+        public static BusinessException TravellerSetDoesNotMatchOffer(params object?[] args) =>
+            new(2708, ExceptionMessages.TravellerSetDoesNotMatchOffer, args) { HttpStatus = 422 };
+
+        public static BusinessException OfferPassengerCodeIsNotRecognised(params object?[] args) =>
+            new(2709, ExceptionMessages.OfferPassengerCodeIsNotRecognised, args) { HttpStatus = 422 };
+
+        public static BusinessException TravellerPassengerTypeDoesNotMatchOffer(params object?[] args) =>
+            new(2710, ExceptionMessages.TravellerPassengerTypeDoesNotMatchOffer, args) { HttpStatus = 422 };
+
+        public static BusinessException InfantRequiresParentTraveller(params object?[] args) =>
+            new(2711, ExceptionMessages.InfantRequiresParentTraveller, args) { HttpStatus = 422 };
+
+        public static BusinessException InfantParentMustBeAnAdult(params object?[] args) =>
+            new(2712, ExceptionMessages.InfantParentMustBeAnAdult, args) { HttpStatus = 422 };
+
+        public static BusinessException OrderHasNoTravellerWithIndex(params object?[] args) =>
+            new(2713, ExceptionMessages.OrderHasNoTravellerWithIndex, args) { HttpStatus = 422 };
+
+        public static BusinessException OrderHasNoSegmentForFlight(params object?[] args) =>
+            new(2714, ExceptionMessages.OrderHasNoSegmentForFlight, args) { HttpStatus = 422 };
+
+        public static BusinessException OrderHasNoAirServiceForFlight(params object?[] args) =>
+            new(2715, ExceptionMessages.OrderHasNoAirServiceForFlight, args) { HttpStatus = 422 };
+
+        public static BusinessException SeatSelectionBoundIsNotInOrder(params object?[] args) =>
+            new(2716, ExceptionMessages.SeatSelectionBoundIsNotInOrder, args) { HttpStatus = 422 };
+
+        public static BusinessException SeatSelectionHasNoMatchingAirService(params object?[] args) =>
+            new(2717, ExceptionMessages.SeatSelectionHasNoMatchingAirService, args) { HttpStatus = 422 };
+
+        public static BusinessException OfferPriceCategoryIsNotRecognised(params object?[] args) =>
+            new(2718, ExceptionMessages.OfferPriceCategoryIsNotRecognised, args) { HttpStatus = 422 };
+
+        public static BusinessException PricingAllocationsDoNotReconcile(params object?[] args) =>
+            new(2719, ExceptionMessages.PricingAllocationsDoNotReconcile, args) { HttpStatus = 422 };
+
+        public static BusinessException CustomerPriceLineCurrencyDoesNotMatchOrder(params object?[] args) =>
+            new(2720, ExceptionMessages.CustomerPriceLineCurrencyDoesNotMatchOrder, args) { HttpStatus = 422 };
+
+        public static BusinessException DocumentScopedRemarkIsNotSupportedYet(params object?[] args) =>
+            new(2721, ExceptionMessages.DocumentScopedRemarkIsNotSupportedYet, args) { HttpStatus = 422 };
+
+        public static BusinessException OrderDoesNotBelongToCaller(params object?[] args) =>
+            new(2722, ExceptionMessages.OrderDoesNotBelongToCaller, args) { HttpStatus = 403 };
+
+        public static BusinessException CallerHasNoCustomerContext(params object?[] args) =>
+            new(2723, ExceptionMessages.CallerHasNoCustomerContext, args) { HttpStatus = 403 };
+
+        public static BusinessException CountryCodeIsNotRecognised(params object?[] args) =>
+            new(2724, ExceptionMessages.CountryCodeIsNotRecognised, args) { HttpStatus = 422 };
+
+        public static BusinessException CallerPrincipalTypeIsNotRecognised(params object?[] args) =>
+            new(2725, ExceptionMessages.CallerPrincipalTypeIsNotRecognised, args) { HttpStatus = 403 };
+
+        public static BusinessException CallerContextTypeIsNotRecognised(params object?[] args) =>
+            new(2726, ExceptionMessages.CallerContextTypeIsNotRecognised, args) { HttpStatus = 403 };
+
+        public static BusinessException SellingOfficeIsIncomplete(params object?[] args) =>
+            new(2727, ExceptionMessages.SellingOfficeIsIncomplete, args) { HttpStatus = 422 };
+
+        public static BusinessException SellingOfficeIsAmbiguous(params object?[] args) =>
+            new(2728, ExceptionMessages.SellingOfficeIsAmbiguous, args) { HttpStatus = 422 };
 
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;

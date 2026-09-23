@@ -14,7 +14,9 @@ namespace AeroTech.Ordering.Domain._Shared.Contracts
     {
         None = 0,
         Human = 1,
-        Machine = 2
+        TravelAgencyApi = 2,
+        InternalService = 3,
+        PlatformAutomation = 4
     }
 
     public interface ICallerContext
@@ -24,6 +26,8 @@ namespace AeroTech.Ordering.Domain._Shared.Contracts
         CallerPrincipalType PrincipalType { get; }
 
         long? AirlineUserId { get; }
+
+        long? AirlineOfficeId { get; }
 
         long? TravelAgencyUserId { get; }
 

@@ -5,23 +5,18 @@ namespace AeroTech.Messages.Ordering.IntegrationEvents.V1
 {
     public record OrderCreated(
         long OrderId,
-        Guid UniqueIdentifierId,
+        Guid OrderReference,
+        string SourceOfferId,
         long CustomerId,
-        long AirlineOfficeId,
-        long CreatorUserId,
         SalesChannel Channel,
+        long ActorId,
+        SellingOfficeKind? OfficeKind,
+        long? OfficeId,
         OrderStatus Status,
-        OrderType Type,
         int CurrencyId,
-        int Pax,
-        decimal GrandTotal,
-        decimal TotalTax,
-        decimal CommissionAmount,
-        decimal CommissionRate,
+        decimal CustomerTotal,
         int CommercialVersion,
-        int EventOrdinal,
-        long? LinkedOrderId,
-        string? LinkedPNR,
-        DateTimeOffset? TimeToLive,
-        DateTimeOffset CreationDate) : BaseIntegrationEvent;
+        int TravellerCount,
+        DateTimeOffset? LastTicketingDate,
+        DateTimeOffset CreatedAt) : BaseIntegrationEvent;
 }

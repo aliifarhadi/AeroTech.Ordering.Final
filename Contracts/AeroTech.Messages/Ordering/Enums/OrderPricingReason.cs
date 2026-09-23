@@ -1,32 +1,31 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace AeroTech.Messages.Ordering.Enums
 {
-    public enum OrderPricingReason 
+    public enum OrderPricingReason
     {
-
-        [Display(Description = "Initial Sale")]
+        [Display(Name = "Initial Sale", Description = "Initial Sale")]
         InitialSale = 1,
 
-        [Display(Description = "Exchange")]
+        [Display(Name = "Exchange", Description = "Exchange")]
         Exchange = 2,
 
-        [Display(Description = "Refund")]
+        [Display(Name = "Refund", Description = "Refund")]
         Refund = 3,
 
-        [Display(Description = "Upgrade")]
+        [Display(Name = "Upgrade", Description = "Upgrade")]
         Upgrade = 4,
 
-        [Display(Description = "Penalty Collection")]
+        [Display(Name = "Penalty Collection", Description = "Penalty Collection")]
         Penalty = 5,
 
-        [Display(Description = "Residual Issuance")]
+        [Display(Name = "Residual Issuance", Description = "Residual Issuance")]
         ResidualIssuance = 6,
 
-        [Display(Description = "Void")]
+        [Display(Name = "Void", Description = "Void")]
         Void = 7,
 
-        [Display(Description = "Cancel")]
-        Cancel = 8,
+        [Display(Name = "Cancel", Description = "Cancel")]
+        Cancel = 8
     }
 }

@@ -16,6 +16,7 @@ namespace AeroTech.Ordering.ReferenceData.Persistence
         public DbSet<CurrencyReadModel> Currencies => Set<CurrencyReadModel>();
         public DbSet<AirlineReadModel> Airlines => Set<AirlineReadModel>();
         public DbSet<CityReadModel> Cities => Set<CityReadModel>();
+        public DbSet<CountryReadModel> Countries => Set<CountryReadModel>();
         public DbSet<AirportReadModel> Airports => Set<AirportReadModel>();
         public DbSet<AirportTerminalReadModel> AirportTerminals => Set<AirportTerminalReadModel>();
         public DbSet<CustomerReadModel> Customers => Set<CustomerReadModel>();
@@ -53,6 +54,18 @@ namespace AeroTech.Ordering.ReferenceData.Persistence
                 entity.Property(city => city.Id).ValueGeneratedNever();
                 entity.Property(city => city.IataCode).HasMaxLength(8);
                 entity.HasIndex(city => city.IataCode);
+            });
+
+            modelBuilder.Entity<CountryReadModel>(entity =>
+            {
+                entity.ToTable("Countries");
+                entity.HasKey(country => country.Id);
+                entity.Property(country => country.Id).ValueGeneratedNever();
+                entity.Property(country => country.Alpha2Code).HasMaxLength(2).IsRequired();
+                entity.Property(country => country.Alpha3Code).HasMaxLength(3);
+                entity.Property(country => country.PhoneCode).HasMaxLength(8);
+                entity.HasIndex(country => country.Alpha2Code).IsUnique();
+                entity.HasIndex(country => country.Alpha3Code);
             });
 
             modelBuilder.Entity<AirportReadModel>(entity =>

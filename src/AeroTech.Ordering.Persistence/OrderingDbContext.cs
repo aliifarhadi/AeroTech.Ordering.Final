@@ -1,6 +1,7 @@
 using AeroTech.Framework.Core.Domain.Repository;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Framework.Infrastructure.Persistence;
+using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Persistence.Inbox;
 using AeroTech.Ordering.Persistence.Outbox;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,8 @@ namespace AeroTech.Ordering.Persistence
             : base(options, actorResolver, clock, domainEventDispatcher)
         {
         }
+
+        public DbSet<Order> Orders => Set<Order>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

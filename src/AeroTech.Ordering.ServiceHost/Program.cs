@@ -9,7 +9,9 @@ using AeroTech.Ordering.Providers;
 using AeroTech.Ordering.Query;
 using AeroTech.Ordering.ReferenceData;
 using AeroTech.Ordering.RestApi;
+using AeroTech.Ordering.RestApi.V1._Shared;
 using AeroTech.Ordering.ServiceHost.CallerContext;
+using AeroTech.Ordering.ServiceHost.ReferenceData;
 using AeroTech.Ordering.Synchronizer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
@@ -28,9 +30,11 @@ builder.Services
     .AddConsumers(builder.Configuration)
     .AddApplication(builder.Configuration)
     .AddReferenceData(builder.Configuration)
-    .AddPresentation(builder.Configuration, typeof(RestApiAssembly).Assembly, typeof(ReferenceDataAssembly).Assembly);
+    .AddPresentation(builder.Configuration, typeof(RestApiAssembly).Assembly, typeof(ReferenceDataAssembly).Assembly)
+    .AddSurfaceAuthorization();
 
 builder.Services.AddScoped<ICallerContext, ClaimsCallerContext>();
+builder.Services.AddScoped<ICountryCodeResolver, ReferenceDataCountryCodeResolver>();
 builder.Services.Replace(ServiceDescriptor.Scoped<IActorResolver, CallerContextActorResolver>());
 
 var app = builder.Build();

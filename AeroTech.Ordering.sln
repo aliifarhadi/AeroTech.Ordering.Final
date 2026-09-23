@@ -43,6 +43,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroTech.Ordering.Reference
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroTech.Messages", "Contracts\AeroTech.Messages\AeroTech.Messages.csproj", "{5473DF46-EB85-43C7-8B51-C0D655D46027}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AeroTech.Ordering.Domain.ConformanceTests", "tests\AeroTech.Ordering.Domain.ConformanceTests\AeroTech.Ordering.Domain.ConformanceTests.csproj", "{481E472D-0C92-4DDB-B784-095F2ADB2B2A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -221,6 +225,18 @@ Global
 		{5473DF46-EB85-43C7-8B51-C0D655D46027}.Release|x64.Build.0 = Release|Any CPU
 		{5473DF46-EB85-43C7-8B51-C0D655D46027}.Release|x86.ActiveCfg = Release|Any CPU
 		{5473DF46-EB85-43C7-8B51-C0D655D46027}.Release|x86.Build.0 = Release|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Debug|x64.Build.0 = Debug|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Debug|x86.Build.0 = Debug|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Release|x64.ActiveCfg = Release|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Release|x64.Build.0 = Release|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Release|x86.ActiveCfg = Release|Any CPU
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -243,5 +259,6 @@ Global
 		{E1EAEF2A-0C67-4265-A8E4-35F64D4FA43C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C6AC737E-A7A2-4051-BB40-1E79EAD7F5BE} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{5473DF46-EB85-43C7-8B51-C0D655D46027} = {A73F2606-6D4C-3EEE-1759-0E59DCFEF523}
+		{481E472D-0C92-4DDB-B784-095F2ADB2B2A} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

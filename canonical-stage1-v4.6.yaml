@@ -1,0 +1,90 @@
+version: '4.6'
+authority: ORDERING-IMPLEMENTATION-PACK-v4.6-FINAL.md
+note: >-
+  Thin guardrail. This file lists ONLY the Stage-1 type set, value-object set and the
+  numeric values of the enums Stage 1 actually uses. It deliberately does not describe
+  properties, SQL types, lengths, precision, indexes, namespaces, assemblies, table names
+  or mapping strategy: all of those are repository decisions or are covered by the Pack's
+  section 24 acceptance behavior, which is the real completion criterion.
+
+stage_file: .canonical-stage
+
+stage1:
+  # Pack section 21 — the only domain types implemented in Stage 1.
+  types:
+    - Order
+    - OrderItem
+    - OrderService            # abstract business base
+    - OrderAirTransportService
+    - OrderSeatService
+    - OrderTraveller
+    - TravellerProfileRevision
+    - OrderTravellerDocument
+    - OrderContact
+    - OrderContactPoint
+    - OrderJourney
+    - OrderSegment
+    - OrderSegmentLeg
+    - OrderChange
+    - PricingLine
+    - PricingAllocation
+    - OrderRemark
+
+  # The abstract base is excluded from the concrete entity/aggregate set but is still
+  # expected to exist and to be the base of the two service subtypes.
+  abstract_types:
+    - OrderService
+
+  service_base: OrderService
+  service_subtypes:
+    - OrderAirTransportService
+    - OrderSeatService
+
+  # Pack section 21 — Stage-1 value objects.
+  value_objects:
+    - SalesContext
+    - BaggageAllowance
+    - ExchangeRateSnapshot
+
+  # Enums whose numeric values Stage 1 freezes. Where the repository already has an enum
+  # of the same name, it is amended in place; existing numeric values are never renumbered.
+  # Enums reused unchanged (ProductType, OrderStatus, PassengerTypeCode, AgeRange, Gender,
+  # TravelerDocumentType, ContactPointType, ContactRole, OrderServiceType, StopType,
+  # OrderPricingReason, OrderPricingLineCategory, OrderPricingLineSubCategory,
+  # OrderPricingLineDirection, RefundabilityRule, OrderRemarkType, OrderRemarkVisibility,
+  # OrderRemarkScope, OrderRemarkStatus, SalesChannel, WeightUnit, CallerContextType,
+  # CallerPrincipalType) are not listed: their members are not this Pack's to freeze.
+  enums:
+    OrderItemCommercialState:
+      Active: 1
+      Replaced: 2
+      Cancelled: 3
+      Transferred: 4
+    OrderServiceCommercialState:
+      Active: 1
+      Replaced: 2
+      Cancelled: 3
+      Transferred: 4
+    OrderTravellerStatus:
+      Active: 1
+      Transferred: 2
+    PricingLineTreatment:
+      CustomerPrice: 1
+      SettlementOnly: 2
+    PricingLineScope:
+      Order: 1
+      OrderItem: 2
+      OrderService: 3
+      Journey: 4
+      Segment: 5
+      Traveller: 6
+    OrderChangeType:
+      Create: 1
+      AddProduct: 2
+      Cancel: 3
+      ChangeService: 4
+      TravellerCorrection: 8
+      Split: 9
+      RemoveService: 12
+      Refund: 13
+      ContactCorrection: 15

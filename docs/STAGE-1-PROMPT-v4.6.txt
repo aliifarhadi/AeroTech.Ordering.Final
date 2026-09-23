@@ -1,0 +1,34 @@
+TARGET
+aliifarhadi/AeroTech.Ordering.Final / k8s-stg
+
+AUTHORITY
+ORDERING-IMPLEMENTATION-PACK-v4.6-FINAL.md for domain shape and behavior.
+Use existing repository/framework rules for implementation architecture.
+
+TASK
+Implement Stage 1 — Initial Sale only.
+
+DO NOT audit/redesign the framework.
+DO NOT create architecture/report docs.
+DO NOT implement Reservation, Payment, Ticket, EMD, DocumentStock, Split, Refund or Change early.
+DO NOT invent domain fields, statuses or generic abstractions.
+
+MANDATORY DOMAIN RULES
+- one AirFare OrderItem per traveller x bound
+- one OrderAirTransportService per traveller x segment
+- coupon facts come from matching traveller x flight coupon
+- fare facts come from accepted bound/fare component
+- reconcile request traveller set/types against the Offer before creation
+- unknown passenger code or baggage unit => reject, never default
+- selected seat only => Seat Service; no independent price in Stage 1
+- accepted pricing/FX is immutable
+- CustomerTotal and allocations must reconcile exactly
+- initial Order and Create OrderChange commercial version = 1
+- no PNR/RecordLocator until Reserve slice
+- OrderRemark is an Order child; revisions append rather than overwrite
+
+DONE ONLY WHEN
+all Stage-1 acceptance behavior in section 24 of the Pack passes end-to-end,
+including CreateOrderFromOffer through the actual API/read path.
+
+If a missing fact requires a business/domain decision, report BLOCKED with the exact scenario/source gap.

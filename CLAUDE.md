@@ -138,3 +138,23 @@ write code in another service's repo.
   the index, set Direction `Ordering → <Owner>` and Status: Requested.
 - **To verify:** once an owner reports Done, read their repo read-only against the checklist and set
   Status: Verified (or Blocked with the gap).
+
+---
+
+## Canonical domain contract (Ordering redesign)
+
+**Authority split — read this before anything else in this file.**
+
+- `ORDERING-IMPLEMENTATION-PACK-v4.6-FINAL.md` is the authority for **domain shape and domain behavior**. For those it **overrides the legacy "Domain model essentials" section of this file**: the aggregate list above (Order / TrafficDocument / Payment / FulfillmentTask / ProviderInteraction) is superseded.
+- This file continues to win for **framework, layering, project / namespace / folder placement, DI, messaging, repository patterns, table and column naming, EF mapping strategy, and coding conventions**. The Pack does not govern any of those.
+- The Pack authorizes the conformance and acceptance tests required by this redesign, despite any older "tests paused" note.
+
+`canonical-stage1-v4.6.yaml` is a thin CI guardrail: it pins the Stage-1 type set, value-object set and frozen enum values, and nothing else. It is not a design authority and does not describe properties, lengths, indexes or mapping.
+
+Rules:
+- Implement a concept in a slice only when that slice's scenario, a real contract, a slice invariant or a known later servicing need requires it (Pack section 1).
+- Do not add a domain type, value object or frozen enum member absent from the Pack and the guardrail.
+- Commercial occurrences are closed, never deleted or mutated. Lineage columns arrive with their slice, but read models and queries must not assume every row is current.
+- Donor repositories are read-only implementation evidence, never design authority.
+- On missing or contradictory contract evidence, report `BLOCKED`; never infer — and never infer from V2/V3 or from Amadeus/Sabre behaviour.
+- Do not create `docs/` or `reports/` architecture artifacts. Completion reporting belongs in the PR description.

@@ -2,6 +2,7 @@
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer.OtaPanel;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById.OtaPanel;
+using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrdersPaginated.OtaPanel;
 using AeroTech.Ordering.RestApi.V1.OrderAggregate.Requests;
 using AeroTech.Ordering.RestApi.V1._Shared;
 using Asp.Versioning;
@@ -37,6 +38,12 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate
 
             return Ok(await _mediator.Send(command, cancellationToken));
         }
+
+        [HttpGet("Paginated")]
+        public async Task<IActionResult> Paginated(
+            [FromQuery] OtaPanelGetOrdersPaginatedQuery query,
+            CancellationToken cancellationToken)
+            => Ok(await _mediator.Send(query, cancellationToken));
 
         [HttpGet("{orderId:long}")]
         public async Task<IActionResult> GetById(long orderId, CancellationToken cancellationToken)

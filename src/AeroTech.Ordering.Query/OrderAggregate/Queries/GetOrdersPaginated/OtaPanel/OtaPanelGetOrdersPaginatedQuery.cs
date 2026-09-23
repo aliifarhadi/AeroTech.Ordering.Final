@@ -4,16 +4,15 @@ using AeroTech.Messages.Shared.Enums;
 using AeroTech.Ordering.Query.OrderAggregate.Dto;
 using MediatR;
 
-namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrdersPaginated.Backoffice
+namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrdersPaginated.OtaPanel
 {
-    public sealed class BackofficeGetOrdersPaginatedQuery
+    public sealed class OtaPanelGetOrdersPaginatedQuery
         : PaginationQuery, IRequest<GridData<OrderPaginatedRowDto>>, IOrdersPaginatedQuery
     {
         public Guid? OrderReference { get; set; }
         public string? SourceOfferId { get; set; }
         public OrderStatus? Status { get; set; }
         public SalesChannel? Channel { get; set; }
-        public long? CustomerId { get; set; }
         public string? TravellerName { get; set; }
         public string? FlightNumber { get; set; }
         public DateTimeOffset? CreatedFrom { get; set; }

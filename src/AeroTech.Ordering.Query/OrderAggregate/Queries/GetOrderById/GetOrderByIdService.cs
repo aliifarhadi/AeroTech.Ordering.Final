@@ -49,6 +49,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
             return new OrderDetailDto(
                 order.Id,
                 order.OrderReference,
+                order.RecordLocator,
                 order.SourceOfferId,
                 order.Status,
                 order.Channel,

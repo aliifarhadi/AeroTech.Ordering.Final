@@ -1,0 +1,418 @@
+{
+  "data": {
+    "offerId": "2|0|0;1544009211417985689~1469435200688619520_1550116065948729631~1469436768104218624;3|1543368160932003840||70|1789762580",
+    "pricedAt": "2026-09-18T20:16:20+00:00",
+    "lastTicketingDate": null,
+    "currencyId": 70,
+    "currencyCode": "IRR",
+    "journeyType": "RoundTrip",
+    "baseAmount": 480000000,
+    "chargeAmount": 48010024.00,
+    "totalAmount": 528010024.00,
+    "airTransports": [
+      {
+        "boundId": "B1",
+        "direction": 1,
+        "sequence": 1,
+        "originAirportId": "2",
+        "destinationAirportId": "6",
+        "flights": [
+          {
+            "sequence": 1,
+            "cabinClassId": 1,
+            "rbdId": 25,
+            "bookingClass": "Y",
+            "flightCapacityId": "1544009211417985689",
+            "flightId": "1544009211417985664",
+            "flightVersion": 1,
+            "flightNumber": "1597",
+            "originAirportId": 2,
+            "originAirportTerminalId": 2,
+            "destinationAirportId": 6,
+            "destinationAirportTerminalId": 6,
+            "operatingAirlineId": 1,
+            "marketingAirlineId": 1,
+            "departureDateTime": "2026-09-27T13:13:00+03:30",
+            "arrivalDateTime": "2026-09-27T15:15:00+03:00",
+            "duration": 152,
+            "aircraftId": 1,
+            "stop": null,
+            "legs": [
+              {
+                "sequence": 1,
+                "legId": "1544009211417985663",
+                "originAirportId": 2,
+                "originAirportTerminalId": 2,
+                "destinationAirportId": 6,
+                "destinationAirportTerminalId": 6,
+                "departureDateTime": "2026-09-27T13:13:00+03:30",
+                "arrivalDateTime": "2026-09-27T15:15:00+03:00",
+                "stop": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "boundId": "B2",
+        "direction": 2,
+        "sequence": 2,
+        "originAirportId": "6",
+        "destinationAirportId": "2",
+        "flights": [
+          {
+            "sequence": 1,
+            "cabinClassId": 1,
+            "rbdId": 25,
+            "bookingClass": "Y",
+            "flightCapacityId": "1550116065948729631",
+            "flightId": "1550116065948729606",
+            "flightVersion": 1,
+            "flightNumber": "1598",
+            "originAirportId": 6,
+            "originAirportTerminalId": 6,
+            "destinationAirportId": 2,
+            "destinationAirportTerminalId": 2,
+            "operatingAirlineId": 1,
+            "marketingAirlineId": 3,
+            "departureDateTime": "2026-09-27T19:40:00+03:00",
+            "arrivalDateTime": "2026-09-27T23:33:00+03:30",
+            "duration": 203,
+            "aircraftId": 1,
+            "stop": null,
+            "legs": [
+              {
+                "sequence": 1,
+                "legId": "1550116065948729605",
+                "originAirportId": 6,
+                "originAirportTerminalId": 6,
+                "destinationAirportId": 2,
+                "destinationAirportTerminalId": 2,
+                "departureDateTime": "2026-09-27T19:40:00+03:00",
+                "arrivalDateTime": "2026-09-27T23:33:00+03:30",
+                "stop": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "pricingUnits": [
+      {
+        "kind": "OneWay",
+        "coveredBoundOfferIds": [
+          "1544009211417985664"
+        ],
+        "fareComponents": [
+          {
+            "airFareId": "1469435125056929792",
+            "cabinClassId": 1,
+            "rbdId": "25",
+            "bookingClass": "Y",
+            "fareBasis": "YIKAIST/OW",
+            "fareFamily": "Flex",
+            "fareType": "Public",
+            "ticketingRestrictionMinutes": null
+          }
+        ]
+      },
+      {
+        "kind": "OneWay",
+        "coveredBoundOfferIds": [
+          "1550116065948729606"
+        ],
+        "fareComponents": [
+          {
+            "airFareId": "1469436464520495104",
+            "cabinClassId": 1,
+            "rbdId": "25",
+            "bookingClass": "Y",
+            "fareBasis": "YISTIKA/OW",
+            "fareFamily": "Flex",
+            "fareType": "Public",
+            "ticketingRestrictionMinutes": null
+          }
+        ]
+      }
+    ],
+    "tickets": [
+      {
+        "travellerRef": "ADT-1",
+        "travellerIndex": 1,
+        "passengerTypeCode": "ADT",
+        "baseAmount": 240000000,
+        "chargeAmount": 5012.00,
+        "totalAmount": 240005012.00,
+        "coupons": [
+          {
+            "couponId": "ADT-1-1544009211417985664",
+            "sequence": 1,
+            "boundId": "B1",
+            "flightId": "1544009211417985664",
+            "baggagePieces": 1,
+            "baggageWeight": 25,
+            "baggageUnit": "Kg",
+            "cabinBaggagePieces": 1,
+            "cabinBaggageWeight": 20,
+            "cabinBaggageUnit": "Kg",
+            "isRefundable": true,
+            "isChangeable": true,
+            "isUpgradable": true,
+            "baseAmount": 120000000,
+            "chargeAmount": 2506.00,
+            "totalAmount": 120002506.00,
+            "pricings": [
+              {
+                "category": 0,
+                "name": "YIKAIST/OW",
+                "code": "Flex",
+                "reference": "1469435125056929792",
+                "amount": 120.00,
+                "currencyId": 155,
+                "isPercentage": false,
+                "equivalentAmount": 120000000,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "1533121255006273536"
+              },
+              {
+                "category": 1,
+                "name": "IR PerPax PerSeg.",
+                "code": "Ch.Sg",
+                "reference": "1523517299657539584",
+                "amount": 1101.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1101.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              },
+              {
+                "category": 1,
+                "name": "PerPax PerBound",
+                "code": "C.Bnd",
+                "reference": "1523517558634840064",
+                "amount": 1405.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1405.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              }
+            ]
+          },
+          {
+            "couponId": "ADT-1-1550116065948729606",
+            "sequence": 2,
+            "boundId": "B2",
+            "flightId": "1550116065948729606",
+            "baggagePieces": 1,
+            "baggageWeight": 25,
+            "baggageUnit": "Kg",
+            "cabinBaggagePieces": 1,
+            "cabinBaggageWeight": 20,
+            "cabinBaggageUnit": "Kg",
+            "isRefundable": true,
+            "isChangeable": true,
+            "isUpgradable": true,
+            "baseAmount": 120000000,
+            "chargeAmount": 2506.00,
+            "totalAmount": 120002506.00,
+            "pricings": [
+              {
+                "category": 0,
+                "name": "YISTIKA/OW",
+                "code": "Flex",
+                "reference": "1469436464520495104",
+                "amount": 120.00,
+                "currencyId": 155,
+                "isPercentage": false,
+                "equivalentAmount": 120000000,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "1533121255006273536"
+              },
+              {
+                "category": 1,
+                "name": "IR PerPax PerSeg.",
+                "code": "Ch.Sg",
+                "reference": "1523517299657539584",
+                "amount": 1101.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1101.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              },
+              {
+                "category": 1,
+                "name": "PerPax PerBound",
+                "code": "C.Bnd",
+                "reference": "1523517558634840064",
+                "amount": 1405.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1405.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "travellerRef": "ADT-2",
+        "travellerIndex": 2,
+        "passengerTypeCode": "ADT",
+        "baseAmount": 240000000,
+        "chargeAmount": 5012.00,
+        "totalAmount": 240005012.00,
+        "coupons": [
+          {
+            "couponId": "ADT-2-1544009211417985664",
+            "sequence": 1,
+            "boundId": "B1",
+            "flightId": "1544009211417985664",
+            "baggagePieces": 1,
+            "baggageWeight": 25,
+            "baggageUnit": "Kg",
+            "cabinBaggagePieces": 1,
+            "cabinBaggageWeight": 20,
+            "cabinBaggageUnit": "Kg",
+            "isRefundable": true,
+            "isChangeable": true,
+            "isUpgradable": true,
+            "baseAmount": 120000000,
+            "chargeAmount": 2506.00,
+            "totalAmount": 120002506.00,
+            "pricings": [
+              {
+                "category": 0,
+                "name": "YIKAIST/OW",
+                "code": "Flex",
+                "reference": "1469435125056929792",
+                "amount": 120.00,
+                "currencyId": 155,
+                "isPercentage": false,
+                "equivalentAmount": 120000000,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "1533121255006273536"
+              },
+              {
+                "category": 1,
+                "name": "IR PerPax PerSeg.",
+                "code": "Ch.Sg",
+                "reference": "1523517299657539584",
+                "amount": 1101.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1101.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              },
+              {
+                "category": 1,
+                "name": "PerPax PerBound",
+                "code": "C.Bnd",
+                "reference": "1523517558634840064",
+                "amount": 1405.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1405.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              }
+            ]
+          },
+          {
+            "couponId": "ADT-2-1550116065948729606",
+            "sequence": 2,
+            "boundId": "B2",
+            "flightId": "1550116065948729606",
+            "baggagePieces": 1,
+            "baggageWeight": 25,
+            "baggageUnit": "Kg",
+            "cabinBaggagePieces": 1,
+            "cabinBaggageWeight": 20,
+            "cabinBaggageUnit": "Kg",
+            "isRefundable": true,
+            "isChangeable": true,
+            "isUpgradable": true,
+            "baseAmount": 120000000,
+            "chargeAmount": 2506.00,
+            "totalAmount": 120002506.00,
+            "pricings": [
+              {
+                "category": 0,
+                "name": "YISTIKA/OW",
+                "code": "Flex",
+                "reference": "1469436464520495104",
+                "amount": 120.00,
+                "currencyId": 155,
+                "isPercentage": false,
+                "equivalentAmount": 120000000,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "1533121255006273536"
+              },
+              {
+                "category": 1,
+                "name": "IR PerPax PerSeg.",
+                "code": "Ch.Sg",
+                "reference": "1523517299657539584",
+                "amount": 1101.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1101.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              },
+              {
+                "category": 1,
+                "name": "PerPax PerBound",
+                "code": "C.Bnd",
+                "reference": "1523517558634840064",
+                "amount": 1405.00,
+                "currencyId": 70,
+                "isPercentage": false,
+                "equivalentAmount": 1405.00,
+                "equivalentCurrencyId": 70,
+                "rateOfExchangePeriodId": "70"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "orderCharges": [
+      {
+        "category": 1,
+        "name": "IR",
+        "code": "IR",
+        "reference": "1523481403071660032",
+        "amount": 10.00,
+        "currencyId": 0,
+        "isPercentage": true,
+        "equivalentAmount": 48000000,
+        "equivalentCurrencyId": 70,
+        "rateOfExchangePeriodId": "70"
+      }
+    ],
+    "ratesOfExchange": [
+      {
+        "rateOfExchangePeriodId": "1533121255006273536",
+        "fromCurrencyId": 71,
+        "toCurrencyId": 70,
+        "rate": 1000.000000000000,
+        "decimalPlaces": 0,
+        "roundingFactor": 1000
+      },
+      {
+        "rateOfExchangePeriodId": "70",
+        "fromCurrencyId": 70,
+        "toCurrencyId": 70,
+        "rate": 1.000000000000,
+        "decimalPlaces": 0,
+        "roundingFactor": 1000
+      }
+    ]
+  },
+  "errors": null
+}

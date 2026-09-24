@@ -1,0 +1,77 @@
+TARGET
+aliifarhadi/AeroTech.Ordering.Final / k8s-stg
+
+STAGE
+Stage 1 is complete.
+Implement Stage 2 Reservation only.
+
+SOLE STAGE-2 AUTHORITY
+AeroTech-Ordering-Stage2-Reservation-Implementation-Spec-v1.1-FINAL-REVISED.md
+
+BASELINE
+ORDERING-IMPLEMENTATION-PACK-v4.6-FINAL.md remains authority for the frozen Stage-1 commercial model and later aggregate boundaries.
+
+AUTHORIZED STAGE-1 EXTENSIONS
+- add required immutable OrderService.FulfillmentProviderKey;
+- assign FlightFlow in CreateOrderFromOffer for current Air/Seat Services;
+- add Order.RecordLocator;
+- create the planned Stage-2 migration.
+No other Stage-1 domain redesign is allowed.
+
+IMPLEMENT
+- provider/service reservation capability resolution;
+- automatic ReserveOrder selecting all eligible reservable Services;
+- targeted ReserveServices for a subset;
+- group selected Services by provider;
+- one FulfillmentReservation per logical provider operation;
+- ReservationUnit covering 1..N OrderServices;
+- common typed Reservation ACL;
+- AirPrice BoundReservationValidation BEFORE FlightFlow CreateHold;
+- use validation TimeLimit in requested expiry;
+- FulfillmentTask/Target/Attempt/ProviderInteraction for Reserve/Release recovery;
+- FlightFlow CreateHold and ReleaseHeld;
+- same-operation retry for Unknown with same idempotency;
+- new operation only after definitive Rejected/Released/Expired/Cancelled;
+- FlightFlow all-or-error normalization;
+- PNR generation on first positive Air hold;
+- service-based Order reservation summary.
+
+FLIGHTFLOW FROZEN DECISIONS
+- HoldId == HoldBatchId.
+- CreateHold never legitimate Partial.
+- ConfirmHold succeeds by no exception, but execution belongs to Stage 3.
+- Split mapping is BLOCKED until FlightFlow changes result contract.
+- Map response by (FlightId, PaxReference), never array order.
+- request uses FlightCapacityId as FlightCapId.
+- PaxReference = OrderTraveller.Id.ToString().
+- PassengerType enum mapping must be semantic, never numeric cast.
+- null Gender -> explicit Gender.UnSpecified.
+- lap infant consumes no independent reservation seat unit.
+
+OPEN PROVIDER QUESTIONS — DO NOT GUESS
+1. Must INF be present in FlightFlow Passengers[] without a Seats[] entry, or omitted entirely?
+2. Is Revenue=0m guaranteed semantically neutral/accepted by FlightFlow?
+
+Until answered, isolate those provider-specific mappings and report BLOCKED only for their exact scenarios. Do not redesign the domain.
+
+AIRFARE VALIDATION
+A real donor contract exists at v1/BoundReservationValidation.
+Before any FlightFlow CreateHold, validate only the targeted air reservation scope.
+Validation failure => NO CreateHold.
+RequestedExpiry =
+min(now + configured AirHoldDuration,
+    Order.LastTicketingDate if present,
+    validation TimeLimit if present).
+Provider ExpiresAt becomes authoritative after hold succeeds.
+
+DO NOT
+- audit/redesign framework;
+- copy donor V2 wholesale;
+- implement ConfirmHold/payment/ticket/EMD/split/refund;
+- implement production hotel/ground/baggage adapters;
+- create cross-provider compensation;
+- invent generic JSON metadata;
+- guess provider contract semantics.
+
+DONE
+Only when all non-blocked acceptance scenarios in Section 35 of the Stage-2 spec pass, and the two open FlightFlow mapping scenarios pass after provider answers are supplied.

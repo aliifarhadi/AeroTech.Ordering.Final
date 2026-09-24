@@ -10,7 +10,8 @@ namespace AeroTech.Messages.Ordering.Enums
         [Display(Name = "Failed")] Failed = 4,
         [Display(Name = "Manual Action Required")] ManualActionRequired = 5,
         [Display(Name = "Cancelled")] Cancelled = 6,
-        [Display(Name = "Reversed")] Reversed = 7
-
+        [Display(Name = "Reversed")] Reversed = 7,
+        [Display(Name = "Succeeded")] Succeeded = 8,
+        [Display(Name = "Unknown")] Unknown = 9
     }
 }

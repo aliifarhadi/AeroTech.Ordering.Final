@@ -94,6 +94,7 @@
         public const string SeatHoldCouldNotBeReleased = "The seat hold '{0}' could not be released. {1}";
         public const string OfferCouldNotBeRetrieved = "The offer '{0}' could not be retrieved.";
         public const string FareReservationCouldNotBeValidated = "The fare reservation could not be validated.";
+        public const string FareReservationIsNotPermitted = "The fare reservation is not permitted.";
 
         // Initial sale
         public const string SalesContextActorIsRequired = "Sales context requires an actor id.";
@@ -125,5 +126,26 @@
         public const string CallerContextTypeIsNotRecognised = "Caller context type {0} is not recognised.";
         public const string SellingOfficeIsIncomplete = "A selling office requires both its kind and its identifier.";
         public const string SellingOfficeIsAmbiguous = "The caller holds {0} travel agency offices; the selling office cannot be resolved.";
-}
+        public const string FulfillmentProviderIsRequired = "A fulfillable order service requires a fulfillment provider.";
+        public const string RecordLocatorIsRequired = "A record locator cannot be empty.";
+        public const string OrderIsNotReservable = "Order '{0}' in status {1} cannot be reserved.";
+        public const string OrderServiceIsNotInOrder = "Order service '{0}' does not belong to order '{1}'.";
+        public const string OrderServiceIsNotActive = "Order service '{0}' is not active.";
+        public const string OrderServiceDoesNotRequireReservation = "Order service '{0}' has no reservation step.";
+        public const string ReservationUnitIncludesCoveredService = "Reservation unit '{0}' would add order service '{1}' to an existing provider operation; adding to an existing hold is not supported.";
+        public const string InfantReservationMappingIsBlocked = "Reserving lap infant '{0}' with {1} is blocked until the provider's infant request mapping is confirmed.";
+        public const string AirServiceValidationFactsAreMissing = "Air service '{0}' lacks the accepted facts needed to validate its fare for reservation.";
+        public const string ReservationNotFound = "Reservation '{0}' was not found for order '{1}'.";
+        public const string ReservationIsNotReleasable = "Reservation '{0}' in status {1} cannot be released.";
+        public const string ReservationOutcomeCannotBeRecorded = "Reservation '{0}' in status {1} cannot record a provider outcome.";
+        public const string ReservationOutcomeDoesNotMatchUnits = "The provider outcome for reservation '{0}' does not match its units.";
+        public const string ProviderReferenceCannotChange = "Provider reference of {0} '{1}' cannot change from '{2}' to '{3}'.";
+        public const string ReservationUnitMustCoverServices = "A reservation unit must cover at least one order service.";
+        public const string ReservationUnitCoversDuplicateService = "Order service '{0}' is covered more than once in one reservation.";
+        public const string ReservationRequiresUnits = "A reservation must contain at least one unit.";
+        public const string FulfillmentTaskCannotStartAttempt = "Fulfillment task '{0}' in status {1} cannot start a new attempt.";
+        public const string FulfillmentTaskHasNoAttemptInProgress = "Fulfillment task '{0}' has no attempt in progress.";
+        public const string ReservationPlanDiffersFromPersistedUnits = "Re-planned units of reservation '{0}' differ from its persisted units.";
+        public const string PassengerTypeIsNotSupportedByProvider = "Passenger type {0} has no counterpart in the {1} passenger type contract.";
+    }
 }

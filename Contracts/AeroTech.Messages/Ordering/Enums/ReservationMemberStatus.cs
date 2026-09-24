@@ -23,6 +23,12 @@ namespace AeroTech.Messages.Ordering.Enums
         Expired = 6,
 
         [Display(Name = "Unknown")]
-        Unknown = 7
+        Unknown = 7,
+
+        [Display(Name = "Held")]
+        Held = 8,
+
+        [Display(Name = "Cancelled")]
+        Cancelled = 9
     }
 }

@@ -13,6 +13,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Configurations
             builder.Property(order => order.Id).ValueGeneratedNever();
 
             builder.Property(order => order.SourceOfferId).HasMaxLength(512).IsRequired();
+            builder.Property(order => order.RecordLocator).HasMaxLength(6);
 
             builder.HasIndex(order => order.OrderReference).IsUnique();
             builder.HasIndex(order => order.CustomerId);

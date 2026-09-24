@@ -1,0 +1,110 @@
+version: '1.1'
+authority: AeroTech-Ordering-Stage2-Reservation-Implementation-Spec-v1.1-FINAL-REVISED.md
+note: >-
+  Thin guardrail. This file lists ONLY the Stage-2 type set, value-object set and the
+  numeric values of the enums Stage 2 introduces or amends. It deliberately does not
+  describe properties, SQL types, lengths, indexes, namespaces, assemblies, table names
+  or mapping strategy. Whether Stage 2 is finished is decided by the spec's section 35
+  acceptance scenarios.
+
+stage_file: .canonical-stage
+
+stage2:
+  types:
+    - Order
+    - OrderItem
+    - OrderService
+    - OrderAirTransportService
+    - OrderSeatService
+    - OrderTraveller
+    - TravellerProfileRevision
+    - OrderTravellerDocument
+    - OrderContact
+    - OrderContactPoint
+    - OrderJourney
+    - OrderSegment
+    - OrderSegmentLeg
+    - OrderChange
+    - PricingLine
+    - PricingAllocation
+    - OrderRemark
+    - FulfillmentReservation
+    - ReservationUnit
+    - FulfillmentTask
+    - FulfillmentTaskTarget
+    - FulfillmentTaskAttempt
+    - ProviderInteraction
+
+  abstract_types:
+    - OrderService
+
+  value_objects:
+    - SalesContext
+    - BaggageAllowance
+    - ExchangeRateSnapshot
+
+  enums:
+    ReservationMode:
+      HoldThenConfirm: 1
+      ImmediateConfirm: 2
+      None: 3
+    BatchResultMode:
+      AtomicAllOrNothing: 1
+      PerUnit: 2
+    ReservationActionScope:
+      Operation: 1
+      Unit: 2
+    FulfillmentAttemptOutcome:
+      Succeeded: 1
+      Failed: 2
+      Unknown: 3
+    FulfillmentReservationStatus:
+      Pending: 1
+      Waitlisted: 2
+      Confirmed: 3
+      Rejected: 4
+      CancellationPending: 5
+      Released: 6
+      Unknown: 7
+      Expired: 8
+      Mixed: 9
+      Held: 10
+      Cancelled: 11
+    ReservationMemberStatus:
+      Pending: 1
+      Waitlisted: 2
+      Confirmed: 3
+      Rejected: 4
+      Released: 5
+      Expired: 6
+      Unknown: 7
+      Held: 8
+      Cancelled: 9
+    ProviderOperationOutcome:
+      Confirmed: 1
+      Rejected: 2
+      Pending: 3
+      Unknown: 4
+      Succeeded: 5
+      Partial: 6
+    OrderFulfillmentStatus:
+      Pending: 1
+      InProgress: 2
+      Confirmed: 3
+      Failed: 4
+      ManualActionRequired: 5
+      Cancelled: 6
+      Reversed: 7
+      Succeeded: 8
+      Unknown: 9
+    OrderFulfillmentTargetAction:
+      Reserve: 1
+      Cancel: 2
+      Issue: 3
+      Void: 4
+      Refund: 5
+      Exchange: 6
+      Modify: 7
+      Confirm: 8
+      Sync: 9
+      Release: 10

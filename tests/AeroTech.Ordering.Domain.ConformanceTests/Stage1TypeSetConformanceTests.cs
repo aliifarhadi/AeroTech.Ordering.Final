@@ -48,7 +48,7 @@ public sealed class Stage1TypeSetConformanceTests
     [Fact]
     public void Stage1_domain_type_set_is_exact()
     {
-        if (_stage < 1) return;
+        if (_stage != 1) return;
 
         var expectedConcrete = _manifest.Stage1.Types
             .Except(_manifest.Stage1.AbstractTypes, StringComparer.Ordinal)
@@ -95,7 +95,7 @@ public sealed class Stage1TypeSetConformanceTests
     [Fact]
     public void Stage1_value_object_set_is_exact()
     {
-        if (_stage < 1) return;
+        if (_stage != 1) return;
 
         var expected = _manifest.Stage1.ValueObjects
             .Distinct(StringComparer.Ordinal)
@@ -149,16 +149,16 @@ public sealed class Stage1TypeSetConformanceTests
         }
     }
 
-    private static string Render(IDictionary<string, long> members)
+    internal static string Render(IDictionary<string, long> members)
         => string.Join(",", members.OrderBy(x => x.Key, StringComparer.Ordinal).Select(x => $"{x.Key}={x.Value}"));
 
     /// <summary>Concrete and abstract domain model types, wherever they live.</summary>
-    private static IEnumerable<Type> DomainModelTypes()
+    internal static IEnumerable<Type> DomainModelTypes()
         => DomainAssemblyTypes()
             .Where(t => t.IsClass)
             .Where(t => DerivesFromGeneric(t, typeof(Entity<>)) || DerivesFromGeneric(t, typeof(AggregateRoot<>)));
 
-    private static Type? FindDomainType(string simpleName)
+    internal static Type? FindDomainType(string simpleName)
     {
         var matches = DomainAssemblyTypes()
             .Where(t => t.IsClass && string.Equals(t.Name, simpleName, StringComparison.Ordinal))
@@ -176,7 +176,7 @@ public sealed class Stage1TypeSetConformanceTests
     /// The solution legitimately contains same-named enums in different areas, so ambiguity
     /// is reported rather than silently resolved.
     /// </summary>
-    private static Type? FindEnum(string simpleName)
+    internal static Type? FindEnum(string simpleName)
     {
         var matches = DomainAssemblyTypes()
             .Concat(ContractsAssemblyTypes())
@@ -196,7 +196,7 @@ public sealed class Stage1TypeSetConformanceTests
         return matches.SingleOrDefault();
     }
 
-    private static IEnumerable<Type> DomainAssemblyTypes() => SafeTypes(DomainAssembly());
+    internal static IEnumerable<Type> DomainAssemblyTypes() => SafeTypes(DomainAssembly());
 
     private static IEnumerable<Type> ContractsAssemblyTypes()
     {
@@ -204,7 +204,7 @@ public sealed class Stage1TypeSetConformanceTests
         return assembly is null ? [] : SafeTypes(assembly);
     }
 
-    private static IEnumerable<Type> FrameworkTypes()
+    internal static IEnumerable<Type> FrameworkTypes()
     {
         var assembly = LoadAssembly("AeroTech.Framework.Core");
         return assembly is null ? [] : SafeTypes(assembly);
@@ -255,10 +255,10 @@ public sealed class Stage1TypeSetConformanceTests
             .Deserialize<Manifest>(yaml);
     }
 
-    private static int LoadStage()
+    internal static int LoadStage()
         => int.Parse(File.ReadAllText(Path.Combine(FindRepoRoot(), ".canonical-stage")).Trim());
 
-    private static string FindRepoRoot()
+    internal static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)

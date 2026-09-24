@@ -11,6 +11,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
             => new(
                 order.Id,
                 order.OrderReference,
+                order.RecordLocator,
                 order.SourceOfferId,
                 order.Status,
                 order.SalesContext.Channel,

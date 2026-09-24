@@ -8,6 +8,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
     public sealed record OrderReadModelSnapshot(
         long OrderId,
         Guid OrderReference,
+        string? RecordLocator,
         string SourceOfferId,
         OrderStatus Status,
         SalesChannel Channel,

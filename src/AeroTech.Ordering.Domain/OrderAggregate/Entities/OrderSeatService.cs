@@ -16,9 +16,10 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             long segmentId,
             long associatedAirServiceId,
             string seatNumber,
+            string fulfillmentProviderKey,
             long createdByChangeId,
             DateTimeOffset createdAt)
-            : base(id, orderId, orderItemId, travellerId, OrderServiceType.SeatAssignment, createdByChangeId, createdAt)
+            : base(id, orderId, orderItemId, travellerId, OrderServiceType.SeatAssignment, fulfillmentProviderKey, createdByChangeId, createdAt)
         {
             SegmentId = segmentId;
             AssociatedAirServiceId = associatedAirServiceId;

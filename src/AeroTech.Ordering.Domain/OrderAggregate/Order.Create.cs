@@ -4,6 +4,7 @@ using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 using AeroTech.Ordering.Domain.OrderAggregate.DomainEvents;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
+using AeroTech.Ordering.Domain.Providers;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain._Shared.Resources;
 
@@ -239,11 +240,10 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                     var item = new OrderItem(idGenerator.NewId(), Id, ProductType.AirFare, changeId, createdAt);
                     _items.Add(item);
 
-                    var airFareId = reader.ResolveTravellerBoundAirFareId(traveller.SourceTravellerRef!, bound.BoundId);
-                    var fareComponent = reader.FareComponent(bound.BoundId, airFareId);
-
                     foreach (var flight in reader.BoundFlightsInOrder(bound))
                     {
+                        var airFareId = reader.ResolveCouponAirFareId(traveller.SourceTravellerRef!, bound.BoundId, flight.FlightId);
+                        var fareComponent = reader.FareComponent(bound.BoundId, airFareId);
                         var coupon = reader.Coupon(traveller.SourceTravellerRef!, flight.FlightId);
                         var segment = SegmentOf(flight.FlightId);
 
@@ -259,11 +259,13 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                             fareComponent?.FareBasis,
                             fareComponent?.FareFamily,
                             fareComponent?.FareType,
+                            flight.RbdId,
                             ToAllowance(coupon.CheckedBaggage),
                             ToAllowance(coupon.CabinBaggage),
                             coupon.IsRefundable,
                             coupon.IsChangeable,
                             coupon.IsUpgradable,
+                            FulfillmentProviderKeys.FlightFlow,
                             changeId,
                             createdAt));
                     }
@@ -307,6 +309,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                         airService.SegmentId,
                         airService.Id,
                         selection.SeatNumber,
+                        airService.FulfillmentProviderKey,
                         changeId,
                         createdAt));
             }

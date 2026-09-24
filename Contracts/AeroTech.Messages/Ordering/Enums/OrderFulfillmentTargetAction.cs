@@ -12,6 +12,7 @@ namespace AeroTech.Messages.Ordering.Enums
         [Display(Name = "Exchange")] Exchange = 6,
         [Display(Name = "Modify")] Modify = 7,
         [Display(Name = "Confirm")] Confirm = 8,
-        [Display(Name = "Sync")] Sync = 9
+        [Display(Name = "Sync")] Sync = 9,
+        [Display(Name = "Release")] Release = 10
     }
 }

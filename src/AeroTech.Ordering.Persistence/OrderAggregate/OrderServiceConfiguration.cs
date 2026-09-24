@@ -13,6 +13,8 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.HasKey(service => service.Id);
             builder.Property(service => service.Id).ValueGeneratedNever();
 
+            builder.Property(service => service.FulfillmentProviderKey).HasMaxLength(64).IsRequired();
+
             builder.HasIndex(service => service.OrderItemId);
             builder.HasIndex(service => service.TravellerId);
             builder.HasIndex(service => new { service.OrderId, service.CommercialStatus });

@@ -23,6 +23,7 @@ namespace AeroTech.Ordering.Consumers.Ordering.OrderAggregate.WhenOrderCreated
             await _synchronizer.ProjectCreatedAsync(new OrderReadModelSnapshot(
                 @event.OrderId,
                 @event.OrderReference,
+                RecordLocator: null,
                 @event.SourceOfferId,
                 @event.Status,
                 @event.Channel,

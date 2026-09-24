@@ -17,6 +17,9 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         public Task ProjectRemarkedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
             => UpsertAsync(snapshot, cancellationToken);
 
+        public Task ProjectReservationChangedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
+            => UpsertAsync(snapshot, cancellationToken);
+
         private async Task UpsertAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken)
         {
             var order = await _dbContext.Orders
@@ -95,6 +98,7 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         private static OrderReadModel Apply(OrderReadModelSnapshot snapshot, OrderReadModel target)
         {
             target.OrderReference = snapshot.OrderReference;
+            target.RecordLocator = snapshot.RecordLocator;
             target.SourceOfferId = snapshot.SourceOfferId;
             target.Status = snapshot.Status;
             target.Channel = snapshot.Channel;

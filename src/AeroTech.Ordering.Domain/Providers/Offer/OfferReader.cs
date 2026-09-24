@@ -45,10 +45,9 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
 
         public IReadOnlyList<OfferPriceLine> OrderChargeLines() => _offer.OrderCharges;
 
-        public long ResolveTravellerBoundAirFareId(string travellerRef, string boundId)
+        public long ResolveCouponAirFareId(string travellerRef, string boundId, long flightId)
         {
-            var reference = BoundCoupons(travellerRef, boundId)
-                .SelectMany(coupon => coupon.PriceLines)
+            var reference = Coupon(travellerRef, flightId).PriceLines
                 .Where(line => line.Category == OfferPriceCategory.Fare)
                 .Select(line => long.TryParse(line.Reference, out var parsed) ? parsed : 0)
                 .FirstOrDefault(id => id > 0);

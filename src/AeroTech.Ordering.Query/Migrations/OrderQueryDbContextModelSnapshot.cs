@@ -294,6 +294,10 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.Property<Guid>("OrderReference")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("RecordLocator")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
                     b.Property<string>("SourceOfferId")
                         .IsRequired()
                         .HasMaxLength(512)

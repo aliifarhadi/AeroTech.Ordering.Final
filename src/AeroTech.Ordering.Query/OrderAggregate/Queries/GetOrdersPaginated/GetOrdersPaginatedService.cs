@@ -115,6 +115,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrdersPaginated
             return new OrderPaginatedRowDto
             {
                 Id = order.Id.ToString(CultureInfo.InvariantCulture),
+                RecordLocator = order.RecordLocator,
                 OrderReference = order.OrderReference.ToString(),
                 CreatedAt = order.CreatedAt.ToString("o", CultureInfo.InvariantCulture),
                 Channel = EnumValueDto.Of(order.Channel),

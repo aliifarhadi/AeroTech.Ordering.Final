@@ -10,6 +10,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
             => new(
                 order.Id,
                 order.OrderReference,
+                order.RecordLocator,
                 order.SourceOfferId,
                 EnumValueDto.Of(order.Status),
                 EnumValueDto.Of(order.Channel),

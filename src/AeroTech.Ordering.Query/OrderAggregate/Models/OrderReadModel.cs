@@ -9,6 +9,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
 
         public Guid OrderReference { get; set; }
 
+        public string? RecordLocator { get; set; }
+
         public string SourceOfferId { get; set; } = default!;
 
         public OrderStatus Status { get; set; }

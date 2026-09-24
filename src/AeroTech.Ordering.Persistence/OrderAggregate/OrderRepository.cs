@@ -19,6 +19,9 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
         public Task<Order?> GetByReferenceAsync(Guid orderReference, CancellationToken cancellationToken = default)
             => AggregateQuery().FirstOrDefaultAsync(order => order.OrderReference == orderReference, cancellationToken);
 
+        public Task<bool> RecordLocatorExistsAsync(string recordLocator, CancellationToken cancellationToken = default)
+            => _dbContext.Orders.AnyAsync(order => order.RecordLocator == recordLocator, cancellationToken);
+
         private IQueryable<Order> AggregateQuery()
             => _dbContext.Orders
                 .Include(order => order.Items)

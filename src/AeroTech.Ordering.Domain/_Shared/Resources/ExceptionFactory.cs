@@ -228,6 +228,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException FareReservationCouldNotBeValidated(string? detail) =>
             new(2607, Detail(detail, ExceptionMessages.FareReservationCouldNotBeValidated)) { HttpStatus = 502 };
 
+        public static BusinessException FareReservationIsNotPermitted(string? detail) =>
+            new(2608, Detail(detail, ExceptionMessages.FareReservationIsNotPermitted)) { HttpStatus = 422 };
+
         // Initial sale: 2700-2729
         public static BusinessException SalesContextActorIsRequired(params object?[] args) =>
             new(2700, ExceptionMessages.SalesContextActorIsRequired, args) { HttpStatus = 422 };
@@ -315,6 +318,69 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
 
         public static BusinessException SellingOfficeIsAmbiguous(params object?[] args) =>
             new(2728, ExceptionMessages.SellingOfficeIsAmbiguous, args) { HttpStatus = 422 };
+
+        public static BusinessException FulfillmentProviderIsRequired(params object?[] args) =>
+            new(2729, ExceptionMessages.FulfillmentProviderIsRequired, args) { HttpStatus = 422 };
+
+        public static BusinessException RecordLocatorIsRequired(params object?[] args) =>
+            new(2730, ExceptionMessages.RecordLocatorIsRequired, args) { HttpStatus = 422 };
+
+        public static BusinessException OrderIsNotReservable(params object?[] args) =>
+            new(2731, ExceptionMessages.OrderIsNotReservable, args) { HttpStatus = 409 };
+
+        public static BusinessException OrderServiceIsNotInOrder(params object?[] args) =>
+            new(2732, ExceptionMessages.OrderServiceIsNotInOrder, args) { HttpStatus = 404 };
+
+        public static BusinessException OrderServiceIsNotActive(params object?[] args) =>
+            new(2733, ExceptionMessages.OrderServiceIsNotActive, args) { HttpStatus = 409 };
+
+        public static BusinessException OrderServiceDoesNotRequireReservation(params object?[] args) =>
+            new(2734, ExceptionMessages.OrderServiceDoesNotRequireReservation, args) { HttpStatus = 422 };
+
+        public static BusinessException ReservationUnitIncludesCoveredService(params object?[] args) =>
+            new(2735, ExceptionMessages.ReservationUnitIncludesCoveredService, args) { HttpStatus = 422 };
+
+        public static BusinessException InfantReservationMappingIsBlocked(params object?[] args) =>
+            new(2736, ExceptionMessages.InfantReservationMappingIsBlocked, args) { HttpStatus = 501 };
+
+        public static BusinessException AirServiceValidationFactsAreMissing(params object?[] args) =>
+            new(2737, ExceptionMessages.AirServiceValidationFactsAreMissing, args) { HttpStatus = 422 };
+
+        public static BusinessException ReservationNotFound(params object?[] args) =>
+            new(2738, ExceptionMessages.ReservationNotFound, args) { HttpStatus = 404 };
+
+        public static BusinessException ReservationIsNotReleasable(params object?[] args) =>
+            new(2739, ExceptionMessages.ReservationIsNotReleasable, args) { HttpStatus = 409 };
+
+        public static BusinessException ReservationOutcomeCannotBeRecorded(params object?[] args) =>
+            new(2740, ExceptionMessages.ReservationOutcomeCannotBeRecorded, args) { HttpStatus = 409 };
+
+        public static BusinessException ReservationOutcomeDoesNotMatchUnits(params object?[] args) =>
+            new(2741, ExceptionMessages.ReservationOutcomeDoesNotMatchUnits, args) { HttpStatus = 500 };
+
+        public static BusinessException ProviderReferenceCannotChange(params object?[] args) =>
+            new(2742, ExceptionMessages.ProviderReferenceCannotChange, args) { HttpStatus = 500 };
+
+        public static BusinessException ReservationUnitMustCoverServices(params object?[] args) =>
+            new(2743, ExceptionMessages.ReservationUnitMustCoverServices, args) { HttpStatus = 500 };
+
+        public static BusinessException ReservationUnitCoversDuplicateService(params object?[] args) =>
+            new(2744, ExceptionMessages.ReservationUnitCoversDuplicateService, args) { HttpStatus = 500 };
+
+        public static BusinessException ReservationRequiresUnits(params object?[] args) =>
+            new(2745, ExceptionMessages.ReservationRequiresUnits, args) { HttpStatus = 500 };
+
+        public static BusinessException FulfillmentTaskCannotStartAttempt(params object?[] args) =>
+            new(2746, ExceptionMessages.FulfillmentTaskCannotStartAttempt, args) { HttpStatus = 409 };
+
+        public static BusinessException FulfillmentTaskHasNoAttemptInProgress(params object?[] args) =>
+            new(2747, ExceptionMessages.FulfillmentTaskHasNoAttemptInProgress, args) { HttpStatus = 500 };
+
+        public static BusinessException ReservationPlanDiffersFromPersistedUnits(params object?[] args) =>
+            new(2748, ExceptionMessages.ReservationPlanDiffersFromPersistedUnits, args) { HttpStatus = 500 };
+
+        public static BusinessException PassengerTypeIsNotSupportedByProvider(params object?[] args) =>
+            new(2749, ExceptionMessages.PassengerTypeIsNotSupportedByProvider, args) { HttpStatus = 422 };
 
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;

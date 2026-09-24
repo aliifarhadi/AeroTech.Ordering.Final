@@ -1,5 +1,3 @@
-using AeroTech.Ordering.Domain._Shared.Resources;
-using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -245,18 +243,42 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
         public async Task<ReleaseHeldSeatsResult> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default)
         {
-            using var response = await _httpClient.DeleteAsync($"{SeatHoldsRoute}/{request.HoldId}", cancellationToken);
+            HttpResponseMessage response;
+            string body;
 
-            if (response.IsSuccessStatusCode)
-                return new ReleaseHeldSeatsResult(true, null);
+            try
+            {
+                response = await _httpClient.DeleteAsync($"{SeatHoldsRoute}/{request.HoldId}", cancellationToken);
+                body = await response.Content.ReadAsStringAsync(cancellationToken);
+            }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new ProviderRequestException(
+                    FulfillmentFailureKind.Indeterminate,
+                    FulfillmentFailureReason.UnknownOutcome,
+                    "The seat-hold release timed out; the hold may or may not have been released.");
+            }
+            catch (HttpRequestException exception)
+            {
+                throw new ProviderRequestException(
+                    FulfillmentFailureKind.Retriable,
+                    FulfillmentFailureReason.TechnicalFailed,
+                    $"The seat-hold release failed to reach FlightFlow. {exception.Message}");
+            }
 
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            var reason = FirstError(Deserialize<object>(body)) ?? $"HTTP {(int)response.StatusCode}: {Truncate(body)}";
+            using (response)
+            {
+                if (response.IsSuccessStatusCode)
+                    return new ReleaseHeldSeatsResult(true, null);
 
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-                return new ReleaseHeldSeatsResult(false, reason);
-
-            throw ExceptionFactory.SeatHoldCouldNotBeReleased(request.HoldId, reason);
+                var (kind, reason) = Classify((int)response.StatusCode);
+                throw new ProviderRequestException(
+                    kind,
+                    reason,
+                    FirstError(Deserialize<object>(body)) ?? $"The seat hold '{request.HoldId}' could not be released (HTTP {(int)response.StatusCode}): {Truncate(body)}",
+                    (int)response.StatusCode,
+                    body);
+            }
         }
 
         public async Task<CancelConfirmedSeatsResult> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default)

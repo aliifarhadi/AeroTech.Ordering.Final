@@ -7,5 +7,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         Task<Order?> GetAsync(long id, CancellationToken cancellationToken = default);
 
         Task<Order?> GetByReferenceAsync(Guid orderReference, CancellationToken cancellationToken = default);
+
+        Task<bool> RecordLocatorExistsAsync(string recordLocator, CancellationToken cancellationToken = default);
     }
 }

@@ -8,6 +8,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
     public sealed record OrderDetailDto(
         long Id,
         Guid OrderReference,
+        string? RecordLocator,
         string SourceOfferId,
         OrderStatus Status,
         SalesChannel Channel,

@@ -37,6 +37,7 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
         DateTimeOffset ArrivalDateTime,
         int Duration,
         long? AircraftId,
+        long? RbdId,
         long FlightCapacityId,
         IReadOnlyList<OfferFlightLeg> Legs);
 

@@ -14,6 +14,12 @@ namespace AeroTech.Messages.Ordering.Enums
         Pending = 3,
 
         [Display(Name = "Unknown")]
-        Unknown = 4
+        Unknown = 4,
+
+        [Display(Name = "Succeeded")]
+        Succeeded = 5,
+
+        [Display(Name = "Partial")]
+        Partial = 6
     }
 }

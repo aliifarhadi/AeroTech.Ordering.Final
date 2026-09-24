@@ -29,6 +29,12 @@ namespace AeroTech.Messages.Ordering.Enums
         Expired = 8,
 
         [Display(Name = "Mixed")]
-        Mixed = 9
+        Mixed = 9,
+
+        [Display(Name = "Held")]
+        Held = 10,
+
+        [Display(Name = "Cancelled")]
+        Cancelled = 11
     }
 }

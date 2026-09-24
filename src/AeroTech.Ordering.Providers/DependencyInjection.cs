@@ -1,6 +1,8 @@
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
 using AeroTech.Ordering.Domain.Providers.Pricing;
+using AeroTech.Ordering.Domain.Providers.Reservation;
+using AeroTech.Ordering.Providers.FlightFlow;
 using AeroTech.Ordering.Providers.FlightFlow.Services;
 using AeroTech.Ordering.Providers.Offer.Services;
 using AeroTech.Ordering.Providers.Pricing.Services;
@@ -34,6 +36,15 @@ namespace AeroTech.Ordering.Providers
                 if (!string.IsNullOrWhiteSpace(pricingBaseUrl))
                     client.BaseAddress = new Uri(pricingBaseUrl);
             });
+
+            var flightFlowReservation = configuration.GetSection(FlightFlowReservationOptions.SectionName);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                flightFlowReservation.Get<FlightFlowReservationOptions>()?.HoldMinutes ?? 0,
+                $"{FlightFlowReservationOptions.SectionName}:{nameof(FlightFlowReservationOptions.HoldMinutes)}");
+
+            services.Configure<FlightFlowReservationOptions>(flightFlowReservation);
+            services.AddScoped<IAirFareReservationValidator, AirFareReservationValidator>();
+            services.AddScoped<IReservationProvider, FlightFlowReservationProvider>();
 
             return services;
         }

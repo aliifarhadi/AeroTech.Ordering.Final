@@ -23,6 +23,308 @@ namespace AeroTech.Ordering.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Entities.ReservationUnit", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("FulfillmentReservationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("LastUpdateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastUpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ObservedSeat")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.PrimitiveCollection<string>("OrderServiceIds")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProviderUnitRef")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RawStatusCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UnitCorrelationKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FulfillmentReservationId", "UnitCorrelationKey")
+                        .IsUnique();
+
+                    b.ToTable("ReservationUnits", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentReservationAggregate.FulfillmentReservation", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CorrelationReference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FulfillmentProviderKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("LastObservedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("LastUpdateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastUpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("int");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ProviderOperationRef")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset?>("RequestedExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("FulfillmentReservations", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities.FulfillmentTaskAttempt", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("FailureKind")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FailureReason")
+                        .HasColumnType("int");
+
+                    b.Property<long>("FulfillmentTaskId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("LastUpdateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastUpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("Outcome")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FulfillmentTaskId", "AttemptNumber")
+                        .IsUnique();
+
+                    b.ToTable("FulfillmentTaskAttempts", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities.FulfillmentTaskTarget", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<long>("FulfillmentTaskId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("LastUpdateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastUpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ReservationUnitId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FulfillmentTaskId");
+
+                    b.HasIndex("ReservationUnitId");
+
+                    b.ToTable("FulfillmentTaskTargets", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities.ProviderInteraction", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<long>("FulfillmentTaskId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("InteractionType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("LastUpdateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastUpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("ProviderStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FulfillmentTaskId", "AttemptNumber")
+                        .IsUnique();
+
+                    b.ToTable("ProviderInteractions", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.FulfillmentTask", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CorrelationReference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FulfillmentProviderKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("FulfillmentReservationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("LastFailureKind")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LastFailureReason")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("LastUpdateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("LastUpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TaskType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("FulfillmentReservationId", "TaskType");
+
+                    b.ToTable("FulfillmentTasks", "Order");
+                });
+
             modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderChange", b =>
                 {
                     b.Property<long>("Id")
@@ -411,6 +713,11 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.Property<long>("CreatedByChangeId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("FulfillmentProviderKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<DateTimeOffset>("LastUpdateTime")
                         .HasColumnType("datetimeoffset");
 
@@ -749,6 +1056,10 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.Property<Guid>("OrderReference")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("RecordLocator")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -771,6 +1082,10 @@ namespace AeroTech.Ordering.Persistence.Migrations
 
                     b.HasIndex("OrderReference")
                         .IsUnique();
+
+                    b.HasIndex("RecordLocator")
+                        .IsUnique()
+                        .HasFilter("[RecordLocator] IS NOT NULL");
 
                     b.HasIndex("Status");
 
@@ -867,6 +1182,9 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.Property<bool>("IsUpgradable")
                         .HasColumnType("bit");
 
+                    b.Property<long?>("RbdId")
+                        .HasColumnType("bigint");
+
                     b.Property<long>("SegmentId")
                         .HasColumnType("bigint");
 
@@ -895,6 +1213,42 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.HasIndex("SegmentId");
 
                     b.ToTable("OrderSeatServices", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Entities.ReservationUnit", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.FulfillmentReservationAggregate.FulfillmentReservation", null)
+                        .WithMany("Units")
+                        .HasForeignKey("FulfillmentReservationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities.FulfillmentTaskAttempt", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.FulfillmentTask", null)
+                        .WithMany("Attempts")
+                        .HasForeignKey("FulfillmentTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities.FulfillmentTaskTarget", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.FulfillmentTask", null)
+                        .WithMany("Targets")
+                        .HasForeignKey("FulfillmentTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities.ProviderInteraction", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.FulfillmentTask", null)
+                        .WithMany("Interactions")
+                        .HasForeignKey("FulfillmentTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderChange", b =>
@@ -1255,6 +1609,20 @@ namespace AeroTech.Ordering.Persistence.Migrations
                         .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderSeatService", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentReservationAggregate.FulfillmentReservation", b =>
+                {
+                    b.Navigation("Units");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.FulfillmentTaskAggregate.FulfillmentTask", b =>
+                {
+                    b.Navigation("Attempts");
+
+                    b.Navigation("Interactions");
+
+                    b.Navigation("Targets");
                 });
 
             modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderContact", b =>

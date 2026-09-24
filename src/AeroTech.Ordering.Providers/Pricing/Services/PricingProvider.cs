@@ -1,8 +1,9 @@
-using AeroTech.Ordering.Domain._Shared.Resources;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AeroTech.Ordering.Domain.Providers.Pricing;
+using AeroTech.Ordering.Domain._Shared.Resources;
 using AeroTech.Ordering.Providers.Pricing.Wire;
 
 namespace AeroTech.Ordering.Providers.Pricing.Services
@@ -13,9 +14,9 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             PropertyNameCaseInsensitive = true,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            Converters = { new JsonStringEnumConverter() }
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
 
         private readonly HttpClient _httpClient;
@@ -26,14 +27,33 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
             AirFareBoundReservationValidationRequest request,
             CancellationToken cancellationToken = default)
         {
-            using var response = await _httpClient.PostAsJsonAsync(ReservationValidationRoute, request, JsonOptions, cancellationToken);
+            HttpResponseMessage response;
 
-            var envelope = await ReadEnvelopeAsync(response, cancellationToken);
+            try
+            {
+                response = await _httpClient.PostAsJsonAsync(ReservationValidationRoute, request, JsonOptions, cancellationToken);
+            }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw ExceptionFactory.FareReservationCouldNotBeValidated("The fare reservation validation request timed out.");
+            }
+            catch (HttpRequestException exception)
+            {
+                throw ExceptionFactory.FareReservationCouldNotBeValidated($"The fare reservation validation request failed to reach AirPrice. {exception.Message}");
+            }
 
-            if (!response.IsSuccessStatusCode || envelope?.Data is null)
+            using (response)
+            {
+                var envelope = await ReadEnvelopeAsync(response, cancellationToken);
+
+                if (response.IsSuccessStatusCode && envelope?.Data is { } result)
+                    return result;
+
+                if (response.StatusCode == HttpStatusCode.BadRequest && envelope?.Errors?.FirstOrDefault(error => error.Code > 0) is { } rejection)
+                    throw ExceptionFactory.FareReservationIsNotPermitted(rejection.Detail ?? rejection.Title);
+
                 throw ExceptionFactory.FareReservationCouldNotBeValidated(FirstError(envelope));
-
-            return envelope.Data;
+            }
         }
 
         private static async Task<PricingEnvelope<AirFareBoundReservationValidationResult>?> ReadEnvelopeAsync(

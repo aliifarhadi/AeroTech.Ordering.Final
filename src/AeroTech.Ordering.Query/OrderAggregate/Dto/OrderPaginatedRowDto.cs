@@ -7,6 +7,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
     {
         public string Id { get; set; } = null!;
 
+        [Grid("PNR")] public string? RecordLocator { get; set; }
+
         [Grid("Reference")] public string OrderReference { get; set; } = null!;
 
         [Grid("Created")] public string CreatedAt { get; set; } = null!;

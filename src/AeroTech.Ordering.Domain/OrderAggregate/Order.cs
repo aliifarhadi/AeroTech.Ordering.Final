@@ -54,6 +54,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 
         public string SourceOfferId { get; private set; } = default!;
 
+        public string? RecordLocator { get; private set; }
+
         public DateTimeOffset? LastTicketingDate { get; private set; }
 
         public OrderStatus Status { get; private set; }

@@ -5,6 +5,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
     public sealed record BackofficeOrderDto(
         long Id,
         Guid OrderReference,
+        string? RecordLocator,
         string SourceOfferId,
         EnumValueDto Status,
         EnumValueDto Channel,

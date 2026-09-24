@@ -101,6 +101,7 @@ namespace AeroTech.Ordering.Providers.Offer.Services
                 flight.ArrivalDateTime,
                 flight.Duration,
                 flight.AircraftId,
+                flight.RbdId,
                 flight.FlightCapacityId,
                 flight.Legs
                     .Select(leg => new OfferFlightLeg(

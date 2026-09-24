@@ -21,14 +21,16 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             string? fareBasis,
             string? fareFamily,
             string? fareType,
+            long? rbdId,
             BaggageAllowance? checkedBaggageAllowance,
             BaggageAllowance? cabinBaggageAllowance,
             bool isRefundable,
             bool isChangeable,
             bool isUpgradable,
+            string fulfillmentProviderKey,
             long createdByChangeId,
             DateTimeOffset createdAt)
-            : base(id, orderId, orderItemId, travellerId, OrderServiceType.AirTransportation, createdByChangeId, createdAt)
+            : base(id, orderId, orderItemId, travellerId, OrderServiceType.AirTransportation, fulfillmentProviderKey, createdByChangeId, createdAt)
         {
             SegmentId = segmentId;
             FlightCapacityId = flightCapacityId;
@@ -37,6 +39,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             FareBasis = fareBasis;
             FareFamily = fareFamily;
             FareType = fareType;
+            RbdId = rbdId;
             CheckedBaggageAllowance = checkedBaggageAllowance;
             CabinBaggageAllowance = cabinBaggageAllowance;
             IsRefundable = isRefundable;
@@ -57,6 +60,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
         public string? FareFamily { get; private set; }
 
         public string? FareType { get; private set; }
+
+        public long? RbdId { get; private set; }
 
         public BaggageAllowance? CheckedBaggageAllowance { get; private set; }
 

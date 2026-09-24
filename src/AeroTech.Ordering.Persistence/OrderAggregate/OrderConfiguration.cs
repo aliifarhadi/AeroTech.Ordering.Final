@@ -14,8 +14,10 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.Property(order => order.Id).ValueGeneratedNever();
 
             builder.Property(order => order.SourceOfferId).HasMaxLength(512).IsRequired();
+            builder.Property(order => order.RecordLocator).HasMaxLength(6);
 
             builder.HasIndex(order => order.OrderReference).IsUnique();
+            builder.HasIndex(order => order.RecordLocator).IsUnique().HasFilter("[RecordLocator] IS NOT NULL");
             builder.HasIndex(order => order.CustomerId);
             builder.HasIndex(order => order.Status);
             builder.HasIndex(order => order.LastTicketingDate);

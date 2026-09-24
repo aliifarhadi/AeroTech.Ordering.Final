@@ -1,6 +1,8 @@
 using AeroTech.Framework.Core.Domain.Repository;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Framework.Infrastructure.Persistence;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
+using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Persistence.Inbox;
 using AeroTech.Ordering.Persistence.Outbox;
@@ -23,6 +25,10 @@ namespace AeroTech.Ordering.Persistence
         }
 
         public DbSet<Order> Orders => Set<Order>();
+
+        public DbSet<FulfillmentReservation> FulfillmentReservations => Set<FulfillmentReservation>();
+
+        public DbSet<FulfillmentTask> FulfillmentTasks => Set<FulfillmentTask>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

@@ -36,24 +36,30 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
 
         private AirFareBoundReservationValidationRequest RequestFor(Order order, IReadOnlyCollection<long> airServiceIds)
         {
-            var travellers = order.Travellers.ToDictionary(traveller => traveller.Id);
-            var segments = order.Segments.ToDictionary(segment => segment.Id);
-            var journeys = order.Journeys.ToDictionary(journey => journey.Id);
+            var itinerary = new Itinerary(order);
+            var scope = airServiceIds.ToHashSet();
 
-            var airServices = order.Services
-                .OfType<OrderAirTransportService>()
-                .Where(service => service.CommercialStatus == OrderServiceCommercialState.Active)
+            var coveredServiceIds = order.FarePricingUnits
+                .SelectMany(pricingUnit => pricingUnit.FareComponents)
+                .SelectMany(component => component.CoveredOrderServiceIds)
+                .ToHashSet();
+
+            if (scope.Except(coveredServiceIds).ToList() is [var uncoveredServiceId, ..])
+                throw ExceptionFactory.AirServiceValidationFactsAreMissing(uncoveredServiceId);
+
+            var pricingUnits = order.FarePricingUnits
+                .OrderBy(pricingUnit => pricingUnit.Sequence)
+                .Select(pricingUnit => new ScopedPricingUnit(
+                    pricingUnit,
+                    pricingUnit.FareComponents
+                        .OrderBy(component => component.Sequence)
+                        .Select(component => new ScopedFareComponent(
+                            component,
+                            component.CoveredOrderServiceIds.Where(scope.Contains).Select(itinerary.Priced).ToList()))
+                        .Where(component => component.Services.Count > 0)
+                        .ToList()))
+                .Where(pricingUnit => pricingUnit.FareComponents.Count > 0)
                 .ToList();
-
-            var pricedServices = airServices
-                .Where(service => airServiceIds.Contains(service.Id))
-                .Select(service => Priced(service, segments[service.SegmentId], travellers[service.TravellerId]))
-                .ToList();
-
-            var fares = pricedServices
-                .Select(priced => priced.AirFareId)
-                .Distinct()
-                .ToDictionary(airFareId => airFareId, airFareId => FareOf(airFareId, airServices, segments, journeys));
 
             return new AirFareBoundReservationValidationRequest(
                 new AirFareBoundReservationSalesContext(
@@ -63,59 +69,51 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                     order.CustomerId,
                     _clock.GetDateTime(),
                     order.CurrencyId),
-                pricedServices
+                pricingUnits
+                    .SelectMany(pricingUnit => pricingUnit.FareComponents)
+                    .SelectMany(component => component.Services)
                     .Select(priced => priced.Traveller)
                     .DistinctBy(traveller => traveller.Id)
                     .Select(traveller => new AirFareBoundReservationPassenger(
                         traveller.Id.ToString(CultureInfo.InvariantCulture),
                         AirPricePassengerTypes.From(traveller.PassengerType, ProviderName)))
                     .ToList(),
-                pricedServices
-                    .GroupBy(priced => fares[priced.AirFareId].PricingUnit)
-                    .Select(pricingUnit => new AirFareBoundReservationPricingUnit(
-                        $"{pricingUnit.Key.JourneyType}:{pricingUnit.Key.OriginAirportId}-{pricingUnit.Key.DestinationAirportId}",
-                        pricingUnit.Key.JourneyType,
-                        pricingUnit.SelectMany(priced => fares[priced.AirFareId].BoundIds).Distinct(StringComparer.Ordinal).ToList(),
-                        pricingUnit.Key.OriginAirportId,
-                        pricingUnit.Key.DestinationAirportId,
-                        pricingUnit
-                            .GroupBy(priced => priced.AirFareId)
-                            .Select(fare => new AirFareBoundReservationAirFare(
-                                fare.Key.ToString(CultureInfo.InvariantCulture),
-                                fare.GroupBy(priced => priced.Segment.Id).Select(FlightOf).ToList()))
-                            .ToList()))
-                    .ToList());
+                pricingUnits.Select(pricingUnit => PricingUnitOf(pricingUnit, itinerary)).ToList());
         }
 
-        private static Fare FareOf(
-            long airFareId,
-            IReadOnlyList<OrderAirTransportService> airServices,
-            IReadOnlyDictionary<long, OrderSegment> segments,
-            IReadOnlyDictionary<long, OrderJourney> journeys)
+        private static AirFareBoundReservationPricingUnit PricingUnitOf(ScopedPricingUnit scoped, Itinerary itinerary)
         {
-            var fareSegments = airServices
-                .Where(service => service.AirFareId == airFareId)
-                .Select(service => segments[service.SegmentId])
-                .DistinctBy(segment => segment.Id)
-                .ToList();
-
-            var fareJourneys = fareSegments
-                .Select(segment => journeys[segment.OrderJourneyId])
-                .DistinctBy(journey => journey.Id)
+            var journeys = scoped.PricingUnit.CoveredJourneyIds
+                .Select(itinerary.Journey)
                 .OrderBy(journey => journey.Sequence)
                 .ToList();
 
-            var pricingSegments = fareSegments
-                .Where(segment => segment.OrderJourneyId == fareJourneys[0].Id)
-                .OrderBy(segment => segment.Sequence)
+            var coveredSegments = scoped.PricingUnit.FareComponents
+                .SelectMany(component => component.CoveredOrderServiceIds)
+                .Select(itinerary.SegmentOf)
+                .DistinctBy(segment => segment.Id)
+                .OrderBy(segment => itinerary.Journey(segment.OrderJourneyId).Sequence)
+                .ThenBy(segment => segment.Sequence)
                 .ToList();
 
-            return new Fare(
-                new PricingUnit(
-                    fareJourneys.Count > 1 ? AirPriceJourneyType.RoundTrip : AirPriceJourneyType.OneWay,
-                    pricingSegments[0].OriginAirportId,
-                    pricingSegments[^1].DestinationAirportId),
-                fareJourneys.Select(journey => journey.BoundId).ToList());
+            var pricingSegments = coveredSegments
+                .Where(segment => segment.OrderJourneyId == coveredSegments[0].OrderJourneyId)
+                .ToList();
+
+            return new AirFareBoundReservationPricingUnit(
+                scoped.PricingUnit.Id.ToString(CultureInfo.InvariantCulture),
+                JourneyTypeOf(scoped.PricingUnit.Kind),
+                journeys.Select(journey => journey.BoundId).ToList(),
+                pricingSegments[0].OriginAirportId,
+                pricingSegments[^1].DestinationAirportId,
+                scoped.FareComponents
+                    .Select(fare => new AirFareBoundReservationAirFare(
+                        fare.Component.AirFareId.ToString(CultureInfo.InvariantCulture),
+                        fare.Services
+                            .GroupBy(priced => priced.Segment.Id)
+                            .Select(FlightOf)
+                            .ToList()))
+                    .ToList());
         }
 
         private static AirFareBoundReservationFlight FlightOf(IGrouping<long, PricedService> flight)
@@ -135,22 +133,48 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                 flight.Count(service => service.Traveller.InfantParentTravellerId is null));
         }
 
-        private static PricedService Priced(OrderAirTransportService service, OrderSegment segment, OrderTraveller traveller)
-            => service is { AirFareId: { } airFareId, RbdId: { } rbdId }
-               && segment is { FlightNumber: { } flightNumber, AircraftId: { } aircraftId }
-                ? new PricedService(segment, traveller, airFareId, rbdId, flightNumber, aircraftId)
-                : throw ExceptionFactory.AirServiceValidationFactsAreMissing(service.Id);
+        private static AirPriceJourneyType JourneyTypeOf(PricingUnitKind kind) => kind switch
+        {
+            PricingUnitKind.OneWay => AirPriceJourneyType.OneWay,
+            PricingUnitKind.ThroughOneWay => AirPriceJourneyType.OneWay,
+            PricingUnitKind.RoundTripFare => AirPriceJourneyType.RoundTrip,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+        };
 
-        private sealed record PricingUnit(AirPriceJourneyType JourneyType, int OriginAirportId, int DestinationAirportId);
+        private sealed class Itinerary
+        {
+            private readonly Dictionary<long, OrderAirTransportService> _airServices;
+            private readonly Dictionary<long, OrderSegment> _segments;
+            private readonly Dictionary<long, OrderJourney> _journeys;
+            private readonly Dictionary<long, OrderTraveller> _travellers;
 
-        private sealed record Fare(PricingUnit PricingUnit, IReadOnlyList<string> BoundIds);
+            public Itinerary(Order order)
+            {
+                _airServices = order.Services.OfType<OrderAirTransportService>().ToDictionary(service => service.Id);
+                _segments = order.Segments.ToDictionary(segment => segment.Id);
+                _journeys = order.Journeys.ToDictionary(journey => journey.Id);
+                _travellers = order.Travellers.ToDictionary(traveller => traveller.Id);
+            }
 
-        private sealed record PricedService(
-            OrderSegment Segment,
-            OrderTraveller Traveller,
-            long AirFareId,
-            long RbdId,
-            string FlightNumber,
-            int AircraftId);
+            public OrderJourney Journey(long journeyId) => _journeys[journeyId];
+
+            public OrderSegment SegmentOf(long airServiceId) => _segments[_airServices[airServiceId].SegmentId];
+
+            public PricedService Priced(long airServiceId)
+            {
+                var service = _airServices[airServiceId];
+                var segment = _segments[service.SegmentId];
+
+                return service is { RbdId: { } rbdId } && segment is { FlightNumber: { } flightNumber, AircraftId: { } aircraftId }
+                    ? new PricedService(segment, _travellers[service.TravellerId], rbdId, flightNumber, aircraftId)
+                    : throw ExceptionFactory.AirServiceValidationFactsAreMissing(service.Id);
+            }
+        }
+
+        private sealed record ScopedPricingUnit(OrderFarePricingUnit PricingUnit, IReadOnlyList<ScopedFareComponent> FareComponents);
+
+        private sealed record ScopedFareComponent(OrderFareComponent Component, IReadOnlyList<PricedService> Services);
+
+        private sealed record PricedService(OrderSegment Segment, OrderTraveller Traveller, long RbdId, string FlightNumber, int AircraftId);
     }
 }

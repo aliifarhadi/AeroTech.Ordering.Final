@@ -34,6 +34,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             order.BuildTravellers(args, reader, idGenerator, change.Id, createdAt);
             order.BuildItinerary(reader, idGenerator);
             order.BuildItemsAndServices(args, reader, idGenerator, change.Id, createdAt);
+            order.BuildFarePricingUnits(reader, idGenerator, change.Id);
             order.BuildPricing(reader, idGenerator, change.Id, createdAt);
             order.BuildRemarks(args, idGenerator, createdAt);
             order.ReconcileTotals();
@@ -274,6 +275,65 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 
             BuildSeatServices(args, idGenerator, changeId, createdAt);
         }
+
+        private void BuildFarePricingUnits(OfferReader reader, IIdGenerator idGenerator, long changeId)
+        {
+            var journeyIdByBound = _journeys.ToDictionary(journey => journey.BoundId, journey => journey.Id, StringComparer.OrdinalIgnoreCase);
+            var coveredServiceIds = new HashSet<long>();
+
+            foreach (var source in reader.PricingUnits)
+            {
+                var journeyIds = source.CoveredBoundIds
+                    .Select(boundId => journeyIdByBound.TryGetValue(boundId, out var journeyId)
+                        ? journeyId
+                        : throw ExceptionFactory.FarePricingUnitBoundIsNotInOrder(source.Sequence, boundId))
+                    .ToList();
+
+                var pricingUnit = new OrderFarePricingUnit(idGenerator.NewId(), Id, changeId, source.Sequence, source.Kind, journeyIds);
+
+                foreach (var component in source.FareComponents)
+                {
+                    if (!journeyIdByBound.TryGetValue(component.BoundId, out var componentJourneyId) || !journeyIds.Contains(componentJourneyId))
+                        throw ExceptionFactory.FareComponentBoundIsNotInPricingUnit(source.Sequence, component.Sequence, component.BoundId);
+
+                    var services = _services
+                        .OfType<OrderAirTransportService>()
+                        .Where(service => service.AirFareId == component.AirFareId && SegmentJourneyId(service.SegmentId) == componentJourneyId)
+                        .ToList();
+
+                    if (services.Count == 0)
+                        throw ExceptionFactory.FareComponentCoversNoAirService(source.Sequence, component.Sequence);
+
+                    foreach (var service in services)
+                    {
+                        if (!coveredServiceIds.Add(service.Id))
+                            throw ExceptionFactory.FareComponentCoverageIsAmbiguous(source.Sequence, component.AirFareId, component.BoundId);
+
+                        if (!Agrees(service, component))
+                            throw ExceptionFactory.FareComponentContradictsAirService(source.Sequence, component.Sequence, service.Id);
+                    }
+
+                    pricingUnit.AddFareComponent(new OrderFareComponent(
+                        idGenerator.NewId(),
+                        pricingUnit.Id,
+                        component.Sequence,
+                        component.AirFareId,
+                        component.BookingClass,
+                        component.FareBasis,
+                        component.FareFamily,
+                        component.FareType,
+                        services.Select(service => service.Id).ToList()));
+                }
+
+                _farePricingUnits.Add(pricingUnit);
+            }
+        }
+
+        private static bool Agrees(OrderAirTransportService service, OfferFareComponent component)
+            => service.BookingClass == component.BookingClass
+               && service.FareBasis == component.FareBasis
+               && service.FareFamily == component.FareFamily
+               && service.FareType == component.FareType;
 
         private void BuildSeatServices(
             CreateOrderArgs args,

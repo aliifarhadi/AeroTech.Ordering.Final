@@ -59,7 +59,7 @@ public sealed class Stage2TypeSetConformanceTests
 
         foreach (var (enumName, expectedMembers) in _manifest.Stage2.Enums)
         {
-            var type = FindEnum(enumName);
+            var type = EnumNamed(enumName);
             Assert.True(type is not null, $"STAGE2_ENUM_MISSING::{enumName}");
 
             var actual = Enum.GetNames(type!)
@@ -70,6 +70,9 @@ public sealed class Stage2TypeSetConformanceTests
                 $"STAGE2_ENUM_MISMATCH::{enumName}::expected=[{Render(expectedMembers)}]::actual=[{Render(actual)}]");
         }
     }
+
+    private static Type? EnumNamed(string name)
+        => name.Contains('.') ? Type.GetType($"{name}, AeroTech.Messages") : FindEnum(name);
 
     private static string[] Sorted(IEnumerable<string> names)
         => names.Distinct(StringComparer.Ordinal).OrderBy(name => name, StringComparer.Ordinal).ToArray();

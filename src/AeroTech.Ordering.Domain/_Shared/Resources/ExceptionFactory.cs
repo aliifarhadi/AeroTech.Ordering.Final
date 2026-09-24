@@ -382,6 +382,36 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException PassengerTypeIsNotSupportedByProvider(params object?[] args) =>
             new(2749, ExceptionMessages.PassengerTypeIsNotSupportedByProvider, args) { HttpStatus = 422 };
 
+        public static BusinessException OfferPricingUnitKindIsNotRecognised(params object?[] args) =>
+            new(2750, ExceptionMessages.OfferPricingUnitKindIsNotRecognised, args) { HttpStatus = 422 };
+
+        public static BusinessException OfferCoveredBoundIsNotRecognised(params object?[] args) =>
+            new(2751, ExceptionMessages.OfferCoveredBoundIsNotRecognised, args) { HttpStatus = 422 };
+
+        public static BusinessException FarePricingUnitBoundIsNotInOrder(params object?[] args) =>
+            new(2752, ExceptionMessages.FarePricingUnitBoundIsNotInOrder, args) { HttpStatus = 422 };
+
+        public static BusinessException FareComponentCoverageIsAmbiguous(params object?[] args) =>
+            new(2753, ExceptionMessages.FareComponentCoverageIsAmbiguous, args) { HttpStatus = 501 };
+
+        public static BusinessException FareComponentCoversNoAirService(params object?[] args) =>
+            new(2754, ExceptionMessages.FareComponentCoversNoAirService, args) { HttpStatus = 422 };
+
+        public static BusinessException FareComponentContradictsAirService(params object?[] args) =>
+            new(2755, ExceptionMessages.FareComponentContradictsAirService, args) { HttpStatus = 500 };
+
+        public static BusinessException FarePricingUnitCoversNoJourney(params object?[] args) =>
+            new(2756, ExceptionMessages.FarePricingUnitCoversNoJourney, args) { HttpStatus = 422 };
+
+        public static BusinessException FareComponentBoundIsNotInPricingUnit(params object?[] args) =>
+            new(2757, ExceptionMessages.FareComponentBoundIsNotInPricingUnit, args) { HttpStatus = 422 };
+
+        public static BusinessException OfferBoundOfferIdIsMissing(params object?[] args) =>
+            new(2758, ExceptionMessages.OfferBoundOfferIdIsMissing, args) { HttpStatus = 422 };
+
+        public static BusinessException OfferFareComponentBoundIsMissing(params object?[] args) =>
+            new(2759, ExceptionMessages.OfferFareComponentBoundIsMissing, args) { HttpStatus = 422 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

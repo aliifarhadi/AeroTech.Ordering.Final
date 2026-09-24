@@ -1,3 +1,4 @@
+using System.Reflection;
 using AeroTech.Framework.Core.Domain.Exceptions;
 using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Messages.FlightFlow.Enums;
@@ -9,6 +10,7 @@ using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Pricing;
 using AeroTech.Ordering.Providers.Pricing.Services;
 using Xunit;
+using PricingUnitKind = AeroTech.Messages.Ordering.Enums.PricingUnitKind;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Pricing;
 
@@ -18,7 +20,25 @@ public sealed class AirFareReservationValidatorTests
     private readonly RecordingPricingProvider _pricing = new();
 
     [Fact]
-    public async Task One_way_fare_per_bound_is_validated_as_one_one_way_pricing_unit_per_bound()
+    public async Task Round_trip_pricing_unit_is_validated_as_one_pricing_unit_scope()
+    {
+        var order = _harness.SeedOrder(
+            [TravellerSpec.Adult(1)],
+            [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
+            pricingUnits: [new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101), new FareSpec(9002, 201))]);
+
+        await ValidateAsync(order, ReservationHarness.AirServices(order));
+
+        var unit = Assert.Single(_pricing.Requests.Single().PricingUnits);
+        Assert.Equal(order.FarePricingUnits.Single().Id.ToString(), unit.PricingUnitId);
+        Assert.Equal(JourneyType.RoundTrip, unit.JourneyType);
+        Assert.Equal(["OUT", "IN"], unit.BoundIds);
+        Assert.Equal((OrderFixture.AirportOf(1, 0), OrderFixture.AirportOf(1, 1)), (unit.PricingOriginAirportId, unit.PricingDestinationAirportId));
+        Assert.Equal([("9001", "101"), ("9002", "201")], unit.AirFares.Select(fare => (fare.AirFareId, fare.Flights.Single().FlightId)));
+    }
+
+    [Fact]
+    public async Task Two_one_way_pricing_units_are_validated_as_two_pricing_unit_scopes()
     {
         var order = _harness.SeedOrder([TravellerSpec.Adult(1), TravellerSpec.Adult(2)], [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)]);
 
@@ -48,59 +68,51 @@ public sealed class AirFareReservationValidatorTests
     }
 
     [Fact]
-    public async Task Fare_shared_by_outbound_and_inbound_is_a_round_trip_pricing_unit_on_the_outbound()
+    public async Task Connecting_through_fare_is_one_air_fare_over_both_segments()
     {
-        var order = _harness.SeedOrder(
-            [TravellerSpec.Adult(1)],
-            [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
-            fares: [new FareSpec(9001, 101, 201)]);
+        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101, 102)]);
 
         await ValidateAsync(order, ReservationHarness.AirServices(order));
 
-        var unit = _pricing.Requests.Single().PricingUnits.Single();
-        Assert.Equal(JourneyType.RoundTrip, unit.JourneyType);
-        Assert.Equal((OrderFixture.AirportOf(1, 0), OrderFixture.AirportOf(1, 1)), (unit.PricingOriginAirportId, unit.PricingDestinationAirportId));
-        Assert.Equal(["OUT", "IN"], unit.BoundIds);
-        Assert.Equal(["101", "201"], unit.AirFares.Single().Flights.Select(flight => flight.FlightId));
+        var unit = Assert.Single(_pricing.Requests.Single().PricingUnits);
+        Assert.Equal(JourneyType.OneWay, unit.JourneyType);
+        Assert.Equal((OrderFixture.AirportOf(1, 0), OrderFixture.AirportOf(1, 2)), (unit.PricingOriginAirportId, unit.PricingDestinationAirportId));
+        Assert.Equal(["101", "102"], Assert.Single(unit.AirFares).Flights.Select(flight => flight.FlightId));
     }
 
     [Fact]
-    public async Task Round_trip_fare_keeps_its_journey_type_when_only_one_direction_is_validated()
+    public async Task Same_air_fare_in_two_pricing_units_is_validated_in_two_scopes()
     {
         var order = _harness.SeedOrder(
             [TravellerSpec.Adult(1)],
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
-            fares: [new FareSpec(9001, 101, 201)]);
+            pricingUnits:
+            [
+                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7000, 101)),
+                new PricingUnitSpec(PricingUnitKind.OneWay, ["IN"], new FareSpec(7000, 201))
+            ]);
+
+        await ValidateAsync(order, ReservationHarness.AirServices(order));
+
+        Assert.Equal(
+            [("OUT", "7000", "101"), ("IN", "7000", "201")],
+            _pricing.Requests.Single().PricingUnits.Select(unit => (unit.BoundIds.Single(), unit.AirFares.Single().AirFareId, unit.AirFares.Single().Flights.Single().FlightId)));
+    }
+
+    [Fact]
+    public async Task Round_trip_pricing_unit_keeps_its_scope_when_only_one_direction_is_validated()
+    {
+        var order = _harness.SeedOrder(
+            [TravellerSpec.Adult(1)],
+            [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
+            pricingUnits: [new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101, 201))]);
 
         await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
 
-        var unit = _pricing.Requests.Single().PricingUnits.Single();
+        var unit = Assert.Single(_pricing.Requests.Single().PricingUnits);
         Assert.Equal(JourneyType.RoundTrip, unit.JourneyType);
-        Assert.Equal(["101"], unit.AirFares.Single().Flights.Select(flight => flight.FlightId));
-    }
-
-    [Fact]
-    public async Task Sector_fares_on_one_bound_are_one_way_units_over_their_own_flights()
-    {
-        var order = _harness.SeedOrder(
-            [TravellerSpec.Adult(1)],
-            [new BoundSpec("OUT", 101, 102)],
-            fares: [new FareSpec(8001, 101), new FareSpec(8002, 102)]);
-
-        await ValidateAsync(order, ReservationHarness.AirServices(order));
-
-        Assert.Equal([8001L, 8002L], ReservationHarness.AirServices(order).Select(service => service.AirFareId!.Value));
-        Assert.Equal(
-            [
-                (JourneyType.OneWay, OrderFixture.AirportOf(1, 0), OrderFixture.AirportOf(1, 1), "8001", "101"),
-                (JourneyType.OneWay, OrderFixture.AirportOf(1, 1), OrderFixture.AirportOf(1, 2), "8002", "102")
-            ],
-            _pricing.Requests.Single().PricingUnits.Select(unit => (
-                unit.JourneyType,
-                unit.PricingOriginAirportId,
-                unit.PricingDestinationAirportId,
-                unit.AirFares.Single().AirFareId,
-                unit.AirFares.Single().Flights.Single().FlightId)));
+        Assert.Equal(["OUT", "IN"], unit.BoundIds);
+        Assert.Equal(["101"], Assert.Single(unit.AirFares).Flights.Select(flight => flight.FlightId));
     }
 
     [Fact]
@@ -123,6 +135,18 @@ public sealed class AirFareReservationValidatorTests
         typeof(OrderAirTransportService).GetProperty(nameof(OrderAirTransportService.RbdId))!.SetValue(air, null);
 
         var exception = await Assert.ThrowsAsync<BusinessException>(() => ValidateAsync(order, [air]));
+
+        Assert.Equal(2737, exception.Code);
+        Assert.Empty(_pricing.Requests);
+    }
+
+    [Fact]
+    public async Task Order_created_before_fare_topology_was_preserved_cannot_be_validated()
+    {
+        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)]);
+        ((List<OrderFarePricingUnit>)typeof(Order).GetField("_farePricingUnits", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(order)!).Clear();
+
+        var exception = await Assert.ThrowsAsync<BusinessException>(() => ValidateAsync(order, ReservationHarness.AirServices(order)));
 
         Assert.Equal(2737, exception.Code);
         Assert.Equal(422, exception.HttpStatus);

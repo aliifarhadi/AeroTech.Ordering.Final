@@ -147,5 +147,15 @@
         public const string FulfillmentTaskHasNoAttemptInProgress = "Fulfillment task '{0}' has no attempt in progress.";
         public const string ReservationPlanDiffersFromPersistedUnits = "Re-planned units of reservation '{0}' differ from its persisted units.";
         public const string PassengerTypeIsNotSupportedByProvider = "Passenger type {0} has no counterpart in the {1} passenger type contract.";
+        public const string OfferPricingUnitKindIsNotRecognised = "Offer pricing unit kind '{0}' is not recognised.";
+        public const string OfferCoveredBoundIsNotRecognised = "Offer pricing unit covers bound offer '{0}', which is not one of the offer's bounds.";
+        public const string FarePricingUnitBoundIsNotInOrder = "Fare pricing unit {0} covers bound '{1}', which is not a journey of this order.";
+        public const string FareComponentCoverageIsAmbiguous = "Fare components of pricing unit {0} share AirFareId '{1}' on bound '{2}', so the offer contract does not identify which air services each one covers.";
+        public const string FareComponentCoversNoAirService = "Fare component {1} of pricing unit {0} covers no air service of this order.";
+        public const string FareComponentContradictsAirService = "Fare component {1} of pricing unit {0} contradicts the fare facts of air service '{2}'.";
+        public const string FarePricingUnitCoversNoJourney = "Fare pricing unit {0} covers no journey.";
+        public const string FareComponentBoundIsNotInPricingUnit = "Fare component {1} of pricing unit {0} covers bound '{2}', which the pricing unit does not cover.";
+        public const string OfferBoundOfferIdIsMissing = "Offer bound '{0}' carries no bound offer id.";
+        public const string OfferFareComponentBoundIsMissing = "Offer fare component '{0}' carries no bound id.";
     }
 }

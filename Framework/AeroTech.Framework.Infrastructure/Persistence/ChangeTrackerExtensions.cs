@@ -1,4 +1,5 @@
 using AeroTech.Framework.Core.Domain.Aggregates;
+using AeroTech.Framework.Core.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -6,10 +7,10 @@ namespace AeroTech.Framework.Infrastructure.Persistence
 {
     public static class ChangeTrackerExtensions
     {
-        public static IEnumerable<IAggregateRoot> GetChangedAggregates(this ChangeTracker changeTracker)
+        public static IEnumerable<IEntity> GetChangedEntities(this ChangeTracker changeTracker)
         {
             return changeTracker
-                .Entries<IAggregateRoot>()
+                .Entries<IEntity>()
                 .Where(entry => entry.State is EntityState.Added or EntityState.Modified)
                 .Select(entry => entry.Entity);
         }

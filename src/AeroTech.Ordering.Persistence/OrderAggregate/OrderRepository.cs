@@ -32,6 +32,7 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
                 .Include(order => order.Journeys)
                 .Include(order => order.Segments).ThenInclude(segment => segment.Legs)
                 .Include(order => order.PricingLines).ThenInclude(line => line.Allocations)
+                .Include(order => order.FarePricingUnits).ThenInclude(pricingUnit => pricingUnit.FareComponents)
                 .Include(order => order.Changes)
                 .Include(order => order.Remarks)
                 .AsSplitQuery();

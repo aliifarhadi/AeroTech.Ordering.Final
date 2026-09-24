@@ -28,6 +28,8 @@ stage2:
     - PricingLine
     - PricingAllocation
     - OrderRemark
+    - OrderFarePricingUnit
+    - OrderFareComponent
     - FulfillmentReservation
     - ReservationUnit
     - FulfillmentTask
@@ -97,6 +99,10 @@ stage2:
       Reversed: 7
       Succeeded: 8
       Unknown: 9
+    AeroTech.Messages.Ordering.Enums.PricingUnitKind:
+      OneWay: 1
+      RoundTripFare: 2
+      ThroughOneWay: 3
     OrderFulfillmentTargetAction:
       Reserve: 1
       Cancel: 2

@@ -16,6 +16,8 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
 
         public IReadOnlyList<OfferTraveller> Travellers => _offer.Travellers;
 
+        public IReadOnlyList<OfferPricingUnit> PricingUnits => _offer.PricingUnits;
+
         public IReadOnlyList<OfferBound> BoundsInSequence()
             => _offer.Bounds.OrderBy(bound => bound.Sequence).ToList();
 
@@ -40,8 +42,8 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
             => Ticket(travellerRef).Coupons.Where(coupon => SameRef(coupon.BoundId, boundId)).ToList();
 
         public OfferFareComponent? FareComponent(string boundId, long airFareId)
-            => _offer.FareComponents.FirstOrDefault(component => SameRef(component.BoundId, boundId) && component.AirFareId == airFareId)
-               ?? _offer.FareComponents.FirstOrDefault(component => SameRef(component.BoundId, boundId));
+            => BoundFareComponents(boundId).FirstOrDefault(component => component.AirFareId == airFareId)
+               ?? BoundFareComponents(boundId).FirstOrDefault();
 
         public IReadOnlyList<OfferPriceLine> OrderChargeLines() => _offer.OrderCharges;
 
@@ -55,7 +57,7 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
             if (reference > 0)
                 return reference;
 
-            var fareComponent = _offer.FareComponents.FirstOrDefault(component => SameRef(component.BoundId, boundId));
+            var fareComponent = BoundFareComponents(boundId).FirstOrDefault();
             if (fareComponent is not null && fareComponent.AirFareId > 0)
                 return fareComponent.AirFareId;
 
@@ -84,6 +86,11 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
             var rate = Rate(line.RateOfExchangePeriodId);
             return rate is not null && rate.ToCurrencyId > 0 ? rate.ToCurrencyId : _offer.CurrencyId;
         }
+
+        private IEnumerable<OfferFareComponent> BoundFareComponents(string boundId)
+            => _offer.PricingUnits
+                .SelectMany(unit => unit.FareComponents)
+                .Where(component => SameRef(component.BoundId, boundId));
 
         private static bool SameRef(string? left, string? right)
             => string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);

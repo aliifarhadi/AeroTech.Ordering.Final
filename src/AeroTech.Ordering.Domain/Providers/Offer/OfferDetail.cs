@@ -1,4 +1,5 @@
 using AeroTech.Messages.AirPrice.Enums;
+using PricingUnitKind = AeroTech.Messages.Ordering.Enums.PricingUnitKind;
 
 namespace AeroTech.Ordering.Domain.Providers.Offer
 {
@@ -8,7 +9,7 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
         DateTimeOffset? LastTicketingDate,
         IReadOnlyList<OfferTraveller> Travellers,
         IReadOnlyList<OfferBound> Bounds,
-        IReadOnlyList<OfferFareComponent> FareComponents,
+        IReadOnlyList<OfferPricingUnit> PricingUnits,
         IReadOnlyList<OfferTicket> Tickets,
         IReadOnlyList<OfferPriceLine> OrderCharges,
         IReadOnlyList<OfferRate> Rates);
@@ -57,9 +58,16 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
         StopType StopType,
         bool PassengersCanBoardOrLeave);
 
+    public sealed record OfferPricingUnit(
+        int Sequence,
+        PricingUnitKind Kind,
+        IReadOnlyList<string> CoveredBoundIds,
+        IReadOnlyList<OfferFareComponent> FareComponents);
+
     public sealed record OfferFareComponent(
-        long AirFareId,
+        int Sequence,
         string BoundId,
+        long AirFareId,
         string? BookingClass,
         string? FareBasis,
         string? FareFamily,

@@ -7,11 +7,12 @@
     "currencyCode": "IRR",
     "journeyType": "RoundTrip",
     "baseAmount": 480000000,
-    "chargeAmount": 48010024.00,
-    "totalAmount": 528010024.00,
+    "chargeAmount": 48010024.0,
+    "totalAmount": 528010024.0,
     "airTransports": [
       {
         "boundId": "B1",
+        "boundOfferId": "1544009211417985664",
         "direction": 1,
         "sequence": 1,
         "originAirportId": "2",
@@ -55,6 +56,7 @@
       },
       {
         "boundId": "B2",
+        "boundOfferId": "1550116065948729606",
         "direction": 2,
         "sequence": 2,
         "originAirportId": "6",
@@ -106,6 +108,9 @@
         "fareComponents": [
           {
             "airFareId": "1469435125056929792",
+            "boundId": "B1",
+            "origin": "IKA",
+            "destination": "IST",
             "cabinClassId": 1,
             "rbdId": "25",
             "bookingClass": "Y",
@@ -124,6 +129,9 @@
         "fareComponents": [
           {
             "airFareId": "1469436464520495104",
+            "boundId": "B2",
+            "origin": "IST",
+            "destination": "IKA",
             "cabinClassId": 1,
             "rbdId": "25",
             "bookingClass": "Y",
@@ -141,8 +149,8 @@
         "travellerIndex": 1,
         "passengerTypeCode": "ADT",
         "baseAmount": 240000000,
-        "chargeAmount": 5012.00,
-        "totalAmount": 240005012.00,
+        "chargeAmount": 5012.0,
+        "totalAmount": 240005012.0,
         "coupons": [
           {
             "couponId": "ADT-1-1544009211417985664",
@@ -159,15 +167,15 @@
             "isChangeable": true,
             "isUpgradable": true,
             "baseAmount": 120000000,
-            "chargeAmount": 2506.00,
-            "totalAmount": 120002506.00,
+            "chargeAmount": 2506.0,
+            "totalAmount": 120002506.0,
             "pricings": [
               {
                 "category": 0,
                 "name": "YIKAIST/OW",
                 "code": "Flex",
                 "reference": "1469435125056929792",
-                "amount": 120.00,
+                "amount": 120.0,
                 "currencyId": 155,
                 "isPercentage": false,
                 "equivalentAmount": 120000000,
@@ -179,10 +187,10 @@
                 "name": "IR PerPax PerSeg.",
                 "code": "Ch.Sg",
                 "reference": "1523517299657539584",
-                "amount": 1101.00,
+                "amount": 1101.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1101.00,
+                "equivalentAmount": 1101.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               },
@@ -191,10 +199,10 @@
                 "name": "PerPax PerBound",
                 "code": "C.Bnd",
                 "reference": "1523517558634840064",
-                "amount": 1405.00,
+                "amount": 1405.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1405.00,
+                "equivalentAmount": 1405.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               }
@@ -215,15 +223,15 @@
             "isChangeable": true,
             "isUpgradable": true,
             "baseAmount": 120000000,
-            "chargeAmount": 2506.00,
-            "totalAmount": 120002506.00,
+            "chargeAmount": 2506.0,
+            "totalAmount": 120002506.0,
             "pricings": [
               {
                 "category": 0,
                 "name": "YISTIKA/OW",
                 "code": "Flex",
                 "reference": "1469436464520495104",
-                "amount": 120.00,
+                "amount": 120.0,
                 "currencyId": 155,
                 "isPercentage": false,
                 "equivalentAmount": 120000000,
@@ -235,10 +243,10 @@
                 "name": "IR PerPax PerSeg.",
                 "code": "Ch.Sg",
                 "reference": "1523517299657539584",
-                "amount": 1101.00,
+                "amount": 1101.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1101.00,
+                "equivalentAmount": 1101.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               },
@@ -247,10 +255,10 @@
                 "name": "PerPax PerBound",
                 "code": "C.Bnd",
                 "reference": "1523517558634840064",
-                "amount": 1405.00,
+                "amount": 1405.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1405.00,
+                "equivalentAmount": 1405.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               }
@@ -263,8 +271,8 @@
         "travellerIndex": 2,
         "passengerTypeCode": "ADT",
         "baseAmount": 240000000,
-        "chargeAmount": 5012.00,
-        "totalAmount": 240005012.00,
+        "chargeAmount": 5012.0,
+        "totalAmount": 240005012.0,
         "coupons": [
           {
             "couponId": "ADT-2-1544009211417985664",
@@ -281,15 +289,15 @@
             "isChangeable": true,
             "isUpgradable": true,
             "baseAmount": 120000000,
-            "chargeAmount": 2506.00,
-            "totalAmount": 120002506.00,
+            "chargeAmount": 2506.0,
+            "totalAmount": 120002506.0,
             "pricings": [
               {
                 "category": 0,
                 "name": "YIKAIST/OW",
                 "code": "Flex",
                 "reference": "1469435125056929792",
-                "amount": 120.00,
+                "amount": 120.0,
                 "currencyId": 155,
                 "isPercentage": false,
                 "equivalentAmount": 120000000,
@@ -301,10 +309,10 @@
                 "name": "IR PerPax PerSeg.",
                 "code": "Ch.Sg",
                 "reference": "1523517299657539584",
-                "amount": 1101.00,
+                "amount": 1101.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1101.00,
+                "equivalentAmount": 1101.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               },
@@ -313,10 +321,10 @@
                 "name": "PerPax PerBound",
                 "code": "C.Bnd",
                 "reference": "1523517558634840064",
-                "amount": 1405.00,
+                "amount": 1405.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1405.00,
+                "equivalentAmount": 1405.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               }
@@ -337,15 +345,15 @@
             "isChangeable": true,
             "isUpgradable": true,
             "baseAmount": 120000000,
-            "chargeAmount": 2506.00,
-            "totalAmount": 120002506.00,
+            "chargeAmount": 2506.0,
+            "totalAmount": 120002506.0,
             "pricings": [
               {
                 "category": 0,
                 "name": "YISTIKA/OW",
                 "code": "Flex",
                 "reference": "1469436464520495104",
-                "amount": 120.00,
+                "amount": 120.0,
                 "currencyId": 155,
                 "isPercentage": false,
                 "equivalentAmount": 120000000,
@@ -357,10 +365,10 @@
                 "name": "IR PerPax PerSeg.",
                 "code": "Ch.Sg",
                 "reference": "1523517299657539584",
-                "amount": 1101.00,
+                "amount": 1101.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1101.00,
+                "equivalentAmount": 1101.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               },
@@ -369,10 +377,10 @@
                 "name": "PerPax PerBound",
                 "code": "C.Bnd",
                 "reference": "1523517558634840064",
-                "amount": 1405.00,
+                "amount": 1405.0,
                 "currencyId": 70,
                 "isPercentage": false,
-                "equivalentAmount": 1405.00,
+                "equivalentAmount": 1405.0,
                 "equivalentCurrencyId": 70,
                 "rateOfExchangePeriodId": "70"
               }
@@ -387,7 +395,7 @@
         "name": "IR",
         "code": "IR",
         "reference": "1523481403071660032",
-        "amount": 10.00,
+        "amount": 10.0,
         "currencyId": 0,
         "isPercentage": true,
         "equivalentAmount": 48000000,
@@ -400,7 +408,7 @@
         "rateOfExchangePeriodId": "1533121255006273536",
         "fromCurrencyId": 71,
         "toCurrencyId": 70,
-        "rate": 1000.000000000000,
+        "rate": 1000.0,
         "decimalPlaces": 0,
         "roundingFactor": 1000
       },
@@ -408,7 +416,7 @@
         "rateOfExchangePeriodId": "70",
         "fromCurrencyId": 70,
         "toCurrencyId": 70,
-        "rate": 1.000000000000,
+        "rate": 1.0,
         "decimalPlaces": 0,
         "roundingFactor": 1000
       }

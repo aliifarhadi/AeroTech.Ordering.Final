@@ -40,8 +40,8 @@ namespace AeroTech.Framework.Infrastructure.Persistence
             var userId = _actorResolver.Resolve().ActorId;
             var dateTime = _clock.GetDateTime();
 
-            foreach (var aggregate in ChangeTracker.GetChangedAggregates())
-                aggregate.SetLastUpdated(userId, dateTime);
+            foreach (var entity in ChangeTracker.GetChangedEntities())
+                entity.SetLastUpdated(userId, dateTime);
         }
 
         private async Task DispatchDomainEventsAsync(CancellationToken cancellationToken = default)

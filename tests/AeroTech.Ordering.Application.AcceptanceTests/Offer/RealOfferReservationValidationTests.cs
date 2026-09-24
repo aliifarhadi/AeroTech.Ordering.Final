@@ -6,6 +6,7 @@ using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 using AeroTech.Ordering.Providers.Offer.Services;
 using AeroTech.Ordering.Providers.Pricing.Services;
 using Xunit;
+using PricingUnitKind = AeroTech.Messages.Ordering.Enums.PricingUnitKind;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Offer;
 
@@ -30,6 +31,13 @@ public sealed class RealOfferReservationValidationTests
         await new AirFareReservationValidator(pricing, clock).ValidateAsync(order, ReservationHarness.AirServices(order).Select(service => service.Id).ToList());
 
         Assert.All(ReservationHarness.AirServices(order), service => Assert.Equal(25, service.RbdId));
+        Assert.Equal(
+            [(PricingUnitKind.OneWay, "B1", 1469435125056929792L, 2), (PricingUnitKind.OneWay, "B2", 1469436464520495104L, 2)],
+            order.FarePricingUnits.Select(unit => (
+                unit.Kind,
+                order.Journeys.Single(journey => journey.Id == unit.CoveredJourneyIds.Single()).BoundId,
+                unit.FareComponents.Single().AirFareId,
+                unit.FareComponents.Single().CoveredOrderServiceIds.Count)));
         Assert.Equal(
             [
                 (JourneyType.OneWay, 2, 6, "B1", "1469435125056929792", "1544009211417985664", "1597", 1, 25L, 2),

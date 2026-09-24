@@ -14,6 +14,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
         private readonly List<OrderJourney> _journeys = new();
         private readonly List<OrderSegment> _segments = new();
         private readonly List<PricingLine> _pricingLines = new();
+        private readonly List<OrderFarePricingUnit> _farePricingUnits = new();
         private readonly List<OrderChange> _changes = new();
         private readonly List<OrderRemark> _remarks = new();
 
@@ -79,6 +80,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
         public IReadOnlyCollection<OrderSegment> Segments => _segments.AsReadOnly();
 
         public IReadOnlyCollection<PricingLine> PricingLines => _pricingLines.AsReadOnly();
+
+        public IReadOnlyCollection<OrderFarePricingUnit> FarePricingUnits => _farePricingUnits.AsReadOnly();
 
         public IReadOnlyCollection<OrderChange> Changes => _changes.AsReadOnly();
 

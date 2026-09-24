@@ -25,6 +25,8 @@ public sealed record SeatSpec(int TravellerIndex, string BoundId, string SeatNum
 
 public sealed record FareSpec(long AirFareId, params long[] FlightIds);
 
+public sealed record PricingUnitSpec(PricingUnitKind Kind, string[] BoundIds, params FareSpec[] FareComponents);
+
 public static class OrderFixture
 {
     public const long RbdId = 25;
@@ -45,10 +47,10 @@ public static class OrderFixture
         IReadOnlyList<BoundSpec> bounds,
         IReadOnlyList<SeatSpec>? seats = null,
         DateTimeOffset? lastTicketingDate = null,
-        IReadOnlyList<FareSpec>? fares = null)
+        IReadOnlyList<PricingUnitSpec>? pricingUnits = null)
         => Order.Create(
             Args(travellers, seats ?? []),
-            Offer(clock, travellers, bounds, fares, lastTicketingDate),
+            Offer(clock, travellers, bounds, pricingUnits, lastTicketingDate),
             ids,
             clock);
 
@@ -89,11 +91,12 @@ public static class OrderFixture
         IClock clock,
         IReadOnlyList<TravellerSpec> travellers,
         IReadOnlyList<BoundSpec> bounds,
-        IReadOnlyList<FareSpec>? fares,
+        IReadOnlyList<PricingUnitSpec>? pricingUnits,
         DateTimeOffset? lastTicketingDate)
     {
         var offerBounds = bounds.Select((bound, index) => OfferBound(clock, bound, index + 1)).ToList();
-        var offerFares = fares ?? offerBounds.Select(OneWayFareOf).ToList();
+        var offerPricingUnits = pricingUnits ?? offerBounds.Select(OneWayPricingUnitOf).ToList();
+        var offerFares = offerPricingUnits.SelectMany(unit => unit.FareComponents).ToList();
 
         return new OfferDetail(
             "OFFER-1",
@@ -101,18 +104,34 @@ public static class OrderFixture
             lastTicketingDate,
             travellers.Select(traveller => new OfferTraveller(TravellerRef(traveller), traveller.Index, traveller.PassengerType.ToString())).ToList(),
             offerBounds,
-            offerFares
-                .SelectMany(fare => offerBounds
-                    .Where(bound => bound.Flights.Any(flight => fare.FlightIds.Contains(flight.FlightId)))
-                    .Select(bound => new OfferFareComponent(fare.AirFareId, bound.BoundId, "Y", "YOW", null, null)))
+            offerPricingUnits
+                .Select((unit, unitIndex) => new OfferPricingUnit(
+                    unitIndex + 1,
+                    unit.Kind,
+                    unit.BoundIds,
+                    unit.FareComponents
+                        .SelectMany(fare => BoundsPricedBy(fare, unit, offerBounds).Select(boundId => (fare.AirFareId, BoundId: boundId)))
+                        .Select((occurrence, occurrenceIndex) => new OfferFareComponent(occurrenceIndex + 1, occurrence.BoundId, occurrence.AirFareId, "Y", "YOW", null, null))
+                        .ToList()))
                 .ToList(),
             travellers.Select(traveller => Ticket(traveller, offerBounds, offerFares)).ToList(),
             [],
             []);
     }
 
-    private static FareSpec OneWayFareOf(OfferBound bound)
-        => new(7_000 + bound.Sequence, bound.Flights.Select(flight => flight.FlightId).ToArray());
+    private static IReadOnlyList<string> BoundsPricedBy(FareSpec fare, PricingUnitSpec unit, IReadOnlyList<OfferBound> bounds)
+        => fare.FlightIds.Length == 0
+            ? [unit.BoundIds[0]]
+            : bounds
+                .Where(bound => bound.Flights.Any(flight => fare.FlightIds.Contains(flight.FlightId)))
+                .Select(bound => bound.BoundId)
+                .ToList();
+
+    private static PricingUnitSpec OneWayPricingUnitOf(OfferBound bound)
+        => new(
+            bound.Flights.Count > 1 ? PricingUnitKind.ThroughOneWay : PricingUnitKind.OneWay,
+            [bound.BoundId],
+            new FareSpec(7_000 + bound.Sequence, bound.Flights.Select(flight => flight.FlightId).ToArray()));
 
     public static int AirportOf(int boundSequence, int stop) => 10 * boundSequence + stop;
 

@@ -75,9 +75,9 @@ public sealed class ReservationHarness
         IReadOnlyList<BoundSpec> bounds,
         IReadOnlyList<SeatSpec>? seats = null,
         DateTimeOffset? lastTicketingDate = null,
-        IReadOnlyList<FareSpec>? fares = null)
+        IReadOnlyList<PricingUnitSpec>? pricingUnits = null)
     {
-        var order = OrderFixture.Create(Ids, Clock, travellers, bounds, seats, lastTicketingDate, fares);
+        var order = OrderFixture.Create(Ids, Clock, travellers, bounds, seats, lastTicketingDate, pricingUnits);
         Orders.Seed(order);
         return order;
     }

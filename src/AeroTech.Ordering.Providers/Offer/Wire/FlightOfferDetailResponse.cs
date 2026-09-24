@@ -41,6 +41,8 @@ namespace AeroTech.Ordering.Providers.Offer.Wire
     {
         public string BoundId { get; set; } = string.Empty;
 
+        public string BoundOfferId { get; set; } = string.Empty;
+
         public int Sequence { get; set; }
 
         public long OriginAirportId { get; set; }
@@ -168,6 +170,8 @@ namespace AeroTech.Ordering.Providers.Offer.Wire
     public sealed class OfferFareComponent
     {
         public long AirFareId { get; set; }
+
+        public string BoundId { get; set; } = string.Empty;
 
         public string? BookingClass { get; set; }
 

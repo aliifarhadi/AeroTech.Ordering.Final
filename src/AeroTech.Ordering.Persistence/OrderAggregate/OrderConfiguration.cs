@@ -45,6 +45,7 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.HasMany(order => order.Journeys).WithOne().HasForeignKey(journey => journey.OrderId).OnDelete(DeleteBehavior.Cascade);
             builder.HasMany(order => order.Segments).WithOne().HasForeignKey(segment => segment.OrderId).OnDelete(DeleteBehavior.Cascade);
             builder.HasMany(order => order.PricingLines).WithOne().HasForeignKey(line => line.OrderId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasMany(order => order.FarePricingUnits).WithOne().HasForeignKey(pricingUnit => pricingUnit.OrderId).OnDelete(DeleteBehavior.Cascade);
             builder.HasMany(order => order.Changes).WithOne().HasForeignKey(change => change.OrderId).OnDelete(DeleteBehavior.Cascade);
             builder.HasMany(order => order.Remarks).WithOne().HasForeignKey(remark => remark.OrderId).OnDelete(DeleteBehavior.Cascade);
 
@@ -55,6 +56,7 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.Navigation(order => order.Journeys).UsePropertyAccessMode(PropertyAccessMode.Field);
             builder.Navigation(order => order.Segments).UsePropertyAccessMode(PropertyAccessMode.Field);
             builder.Navigation(order => order.PricingLines).UsePropertyAccessMode(PropertyAccessMode.Field);
+            builder.Navigation(order => order.FarePricingUnits).UsePropertyAccessMode(PropertyAccessMode.Field);
             builder.Navigation(order => order.Changes).UsePropertyAccessMode(PropertyAccessMode.Field);
             builder.Navigation(order => order.Remarks).UsePropertyAccessMode(PropertyAccessMode.Field);
         }

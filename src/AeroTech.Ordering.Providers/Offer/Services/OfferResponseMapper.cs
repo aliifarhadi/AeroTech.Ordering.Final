@@ -1,16 +1,13 @@
+using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.Providers.Offer;
+using AeroTech.Ordering.Domain._Shared.Resources;
 
 namespace AeroTech.Ordering.Providers.Offer.Services
 {
     public static class OfferResponseMapper
     {
         public static OfferDetail ToDomain(Wire.FlightOfferDetailResponse source)
-        {
-            var boundByFlight = source.AirTransports
-                .SelectMany(transport => transport.Flights.Select(flight => (transport.BoundId, flight.FlightId)))
-                .ToDictionary(pair => pair.FlightId, pair => pair.BoundId);
-
-            return new OfferDetail(
+            => new(
                 source.OfferId,
                 source.CurrencyId,
                 source.LastTicketingDate,
@@ -25,7 +22,7 @@ namespace AeroTech.Ordering.Providers.Offer.Services
                         transport.DestinationAirportId,
                         transport.Flights.Select(MapFlight).ToList()))
                     .ToList(),
-                MapFareComponents(source, boundByFlight),
+                MapPricingUnits(source),
                 source.Tickets
                     .Select(ticket => new OfferTicket(
                         ticket.TravellerRef,
@@ -41,35 +38,46 @@ namespace AeroTech.Ordering.Providers.Offer.Services
                         rate.Rate,
                         rate.DecimalPlaces))
                     .ToList());
+
+        private static List<OfferPricingUnit> MapPricingUnits(Wire.FlightOfferDetailResponse source)
+        {
+            var boundByBoundOfferId = source.AirTransports.ToDictionary(
+                transport => string.IsNullOrWhiteSpace(transport.BoundOfferId)
+                    ? throw ExceptionFactory.OfferBoundOfferIdIsMissing(transport.BoundId)
+                    : transport.BoundOfferId,
+                transport => transport.BoundId,
+                StringComparer.Ordinal);
+
+            return source.PricingUnits
+                .Select((unit, unitIndex) => new OfferPricingUnit(
+                    unitIndex + 1,
+                    KindOf(unit.Kind),
+                    unit.CoveredBoundOfferIds
+                        .Select(boundOfferId => boundByBoundOfferId.TryGetValue(boundOfferId, out var boundId)
+                            ? boundId
+                            : throw ExceptionFactory.OfferCoveredBoundIsNotRecognised(boundOfferId))
+                        .ToList(),
+                    unit.FareComponents
+                        .Select((component, componentIndex) => new OfferFareComponent(
+                            componentIndex + 1,
+                            string.IsNullOrWhiteSpace(component.BoundId)
+                                ? throw ExceptionFactory.OfferFareComponentBoundIsMissing(component.AirFareId)
+                                : component.BoundId,
+                            component.AirFareId,
+                            component.BookingClass,
+                            component.FareBasis,
+                            component.FareFamily,
+                            component.FareType))
+                        .ToList()))
+                .ToList();
         }
 
-        private static List<OfferFareComponent> MapFareComponents(
-            Wire.FlightOfferDetailResponse source,
-            IReadOnlyDictionary<long, string> boundByFlight)
-            => source.PricingUnits
-                .SelectMany(unit => unit.FareComponents)
-                .SelectMany(fareComponent => BoundsPricedBy(source, boundByFlight, fareComponent.AirFareId)
-                    .Select(boundId => new OfferFareComponent(
-                        fareComponent.AirFareId,
-                        boundId,
-                        fareComponent.BookingClass,
-                        fareComponent.FareBasis,
-                        fareComponent.FareFamily,
-                        fareComponent.FareType)))
-                .DistinctBy(fareComponent => (fareComponent.AirFareId, fareComponent.BoundId))
-                .ToList();
+        private static PricingUnitKind KindOf(string kind)
+        {
+            var parsed = Enum.GetValues<PricingUnitKind>().FirstOrDefault(value => string.Equals(value.ToString(), kind, StringComparison.Ordinal));
 
-        private static IEnumerable<string> BoundsPricedBy(
-            Wire.FlightOfferDetailResponse source,
-            IReadOnlyDictionary<long, string> boundByFlight,
-            long airFareId)
-            => source.Tickets
-                .SelectMany(ticket => ticket.Coupons)
-                .Where(coupon => coupon.Pricings.Any(line =>
-                    line.Category == Wire.OfferPricingCategory.Fare
-                    && line.Reference == airFareId.ToString()))
-                .Select(coupon => boundByFlight.TryGetValue(coupon.FlightId, out var boundId) ? boundId : coupon.BoundId)
-                .Distinct(StringComparer.Ordinal);
+            return Enum.IsDefined(parsed) ? parsed : throw ExceptionFactory.OfferPricingUnitKindIsNotRecognised(kind);
+        }
 
         private static OfferCoupon MapCoupon(Wire.OfferCoupon coupon)
             => new(

@@ -54,6 +54,8 @@ namespace AeroTech.Ordering.Application
             services.AddScoped<IReservationLock, ReservationLock>();
             services.AddScoped<IReservationProviderResolver, ReservationProviderResolver>();
             services.AddScoped<IOrderReservationSummarizer, OrderReservationSummarizer>();
+            services.AddScoped<IReservationReleaser, ReservationReleaser>();
+            services.AddScoped<IReservationDeadlineService, ReservationDeadlineService>();
             services.AddScoped<IReserveService, ReserveService>();
             services.AddScoped<IReleaseReservationService, ReleaseReservationService>();
 

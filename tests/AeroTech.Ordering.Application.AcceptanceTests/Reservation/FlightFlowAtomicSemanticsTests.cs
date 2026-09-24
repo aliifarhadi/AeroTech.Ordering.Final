@@ -127,10 +127,10 @@ public sealed class FlightFlowAtomicSemanticsTests
             FulfillmentProviderKeys.FlightFlow,
             "reserve-hold:1",
             "order:1:reservation:1",
-            _harness.Clock.Now.AddMinutes(ReservationHarness.HoldMinutes),
+            _harness.Clock.Now.AddHours(1),
             units);
 
-        var outcome = await _harness.FlightFlowReservation.ReserveAsync(order, intent);
+        var outcome = await _harness.FlightFlowReservation.ReserveAsync(intent, _harness.FlightFlowReservation.ReserveRequestFor(order, intent));
 
         Assert.NotEqual(ProviderOperationOutcome.Partial, outcome.OperationOutcome);
         Assert.Contains(outcome.OperationOutcome, new[] { ProviderOperationOutcome.Succeeded, ProviderOperationOutcome.Rejected, ProviderOperationOutcome.Unknown });

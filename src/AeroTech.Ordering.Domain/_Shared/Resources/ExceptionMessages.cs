@@ -157,5 +157,12 @@
         public const string OfferBoundOfferIdIsMissing = "Offer bound '{0}' carries no bound offer id.";
         public const string OfferFareComponentBoundIsMissing = "Offer fare component '{0}' carries no bound id.";
         public const string FarePricingUnitContradictsOffer = "Fare pricing unit {0} covers different journeys through its fare components than the offer lists.";
+        public const string LastTicketingDatePassed = "Order '{0}' passed its last ticketing date {1}, so a new reservation cannot start.";
+        public const string ReservationValidationTimeLimitPassed = "Reservation '{0}' passed its validation time limit {1}, so its services cannot be reserved again.";
+        public const string ReservationTaskIsNotResumable = "Unresolved reservation '{0}' has no resumable reservation task carrying its original provider request.";
+        public const string ProviderReadBackIsNotAvailable = "Provider '{0}' offers no read-back of reservation state.";
+        public const string ProviderInteractionIsNotInFlight = "Fulfillment task '{0}' has no provider interaction in flight.";
+        public const string ProviderInteractionIsAlreadyInFlight = "Fulfillment task '{0}' already has a provider interaction in flight.";
+        public const string ProviderMutationRequiresIdempotencyKey = "Provider interaction {0} changes provider state and requires an idempotency key.";
     }
 }

@@ -50,16 +50,18 @@ public sealed class AirFareValidationTests
     }
 
     [Fact]
-    public async Task Hold_duration_and_last_ticketing_date_also_constrain_the_requested_expiry()
+    public async Task Requested_expiry_is_the_validation_time_limit_unless_the_last_ticketing_date_is_earlier()
     {
         var unconstrained = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)]);
         var lastTicketingDate = _harness.Clock.Now.AddMinutes(10);
         var ticketingBound = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 102)], lastTicketingDate: lastTicketingDate);
+        var timeLimit = _harness.Clock.Now.AddHours(1);
+        _harness.AirFareValidator.Behavior = (_, _) => timeLimit;
 
         await _harness.ReserveOrderAsync(unconstrained);
         await _harness.ReserveOrderAsync(ticketingBound);
 
-        Assert.Equal(_harness.Clock.Now.AddMinutes(ReservationHarness.HoldMinutes), _harness.FlightFlow.HoldRequests[0].ExpiresAt);
+        Assert.Equal(timeLimit, _harness.FlightFlow.HoldRequests[0].ExpiresAt);
         Assert.Equal(lastTicketingDate, _harness.FlightFlow.HoldRequests[1].ExpiresAt);
     }
 

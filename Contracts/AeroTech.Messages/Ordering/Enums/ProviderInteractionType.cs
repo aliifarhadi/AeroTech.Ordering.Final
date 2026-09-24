@@ -11,6 +11,7 @@ namespace AeroTech.Messages.Ordering.Enums
         [Display(Name = "Reverse Confirmed")] ReverseConfirmed = 5,
         [Display(Name = "Extend Hold")] ExtendHold = 6,
         [Display(Name = "Issue Ticket")] IssueTicket = 7,
-        [Display(Name = "Issue Emd")] IssueEmd = 8
+        [Display(Name = "Issue Emd")] IssueEmd = 8,
+        [Display(Name = "Read Reservation")] ReadReservation = 9
     }
 }

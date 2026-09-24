@@ -28,6 +28,7 @@ namespace AeroTech.Ordering.Persistence.FulfillmentReservationAggregate
             builder.Navigation(reservation => reservation.Units).UsePropertyAccessMode(PropertyAccessMode.Field);
 
             builder.HasIndex(reservation => reservation.OrderId);
+            builder.HasIndex(reservation => reservation.Status);
             builder.HasIndex(reservation => reservation.IdempotencyKey).IsUnique();
         }
     }

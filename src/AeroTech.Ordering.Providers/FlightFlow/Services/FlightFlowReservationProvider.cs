@@ -1,5 +1,5 @@
 using System.Globalization;
-using AeroTech.Framework.Core.ServiceContracts;
+using System.Text.Json;
 using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate;
@@ -10,8 +10,8 @@ using AeroTech.Ordering.Domain.Providers.Pricing;
 using AeroTech.Ordering.Domain.Providers.Reservation;
 using AeroTech.Ordering.Domain._Shared;
 using AeroTech.Ordering.Domain._Shared.Resources;
+using AeroTech.Ordering.Providers.FlightFlow.Wire;
 using AeroTech.Ordering.Providers._Shared;
-using Microsoft.Extensions.Options;
 
 namespace AeroTech.Ordering.Providers.FlightFlow.Services
 {
@@ -26,23 +26,17 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             PostConfirmationCancelScope: ReservationActionScope.Unit,
             SupportsExtend: true,
             SupportsSplit: true,
-            ProvidesUnitReference: true);
+            ProvidesUnitReference: true,
+            SupportsReadBack: false,
+            ExpiresAutomatically: true);
 
         private readonly IFlightFlowProvider _flightFlow;
         private readonly IAirFareReservationValidator _airFareValidator;
-        private readonly IClock _clock;
-        private readonly TimeSpan _holdDuration;
 
-        public FlightFlowReservationProvider(
-            IFlightFlowProvider flightFlow,
-            IAirFareReservationValidator airFareValidator,
-            IClock clock,
-            IOptions<FlightFlowReservationOptions> options)
+        public FlightFlowReservationProvider(IFlightFlowProvider flightFlow, IAirFareReservationValidator airFareValidator)
         {
             _flightFlow = flightFlow;
             _airFareValidator = airFareValidator;
-            _clock = clock;
-            _holdDuration = TimeSpan.FromMinutes(options.Value.HoldMinutes);
         }
 
         public string ProviderKey => FulfillmentProviderKeys.FlightFlow;
@@ -73,45 +67,67 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             var timeLimit = await _airFareValidator.ValidateAsync(order, index.AirServiceIdsAmong(memberIds), cancellationToken);
 
-            return new ReservationPreparation(Earliest(_clock.GetDateTime() + _holdDuration, order.LastTicketingDate, timeLimit));
+            return new ReservationPreparation(Earliest(timeLimit, order.LastTicketingDate), timeLimit);
         }
+
+        public ProviderRequest ReserveRequestFor(Order order, ReservationIntent intent)
+            => new(
+                ProviderInteractionType.CreateHold,
+                intent.IdempotencyKey,
+                intent.CorrelationReference,
+                JsonSerializer.Serialize(HoldRequestFor(new FlightUnitIndex(order, ProviderKey), intent), FlightFlowJson.Options));
 
         public async Task<ReservationOutcome> ReserveAsync(
-            Order order,
             ReservationIntent intent,
+            ProviderRequest request,
             CancellationToken cancellationToken = default)
         {
-            var request = HoldRequestFor(new FlightUnitIndex(order, ProviderKey), intent);
-
-            FlightHeldSeatsResult result;
+            FlightFlowReply<FlightHeldSeatsResult> reply;
 
             try
             {
-                result = await _flightFlow.CreateHoldAsync(request, cancellationToken);
+                reply = await _flightFlow.CreateHoldAsync(PayloadOf<HoldSeatsRequest>(request), cancellationToken);
             }
             catch (ProviderRequestException exception)
             {
-                return new ReservationOutcome(OutcomeOf(exception), null, null, null, null, [], FailureOf(exception));
+                return new ReservationOutcome(OutcomeOf(exception), null, null, null, null, [], FailureOf(exception), ResponseOf(exception));
             }
 
-            return Normalize(intent, result);
+            return Normalize(intent, reply);
         }
 
-        public async Task<ReleaseOutcome> ReleaseAsync(ReleaseIntent intent, CancellationToken cancellationToken = default)
+        public ProviderRequest ReadRequestFor(string providerOperationRef)
+            => throw ExceptionFactory.ProviderReadBackIsNotAvailable(ProviderKey);
+
+        public Task<ReservationOutcome> ReadAsync(
+            ReservationIntent intent,
+            ProviderRequest request,
+            CancellationToken cancellationToken = default)
+            => throw ExceptionFactory.ProviderReadBackIsNotAvailable(ProviderKey);
+
+        public ProviderRequest ReleaseRequestFor(ReleaseIntent intent)
+            => new(
+                ProviderInteractionType.ReleaseHold,
+                intent.IdempotencyKey,
+                null,
+                JsonSerializer.Serialize(new ReleaseHeldSeatsRequest(intent.ProviderOperationRef), FlightFlowJson.Options));
+
+        public async Task<ReleaseOutcome> ReleaseAsync(ProviderRequest request, CancellationToken cancellationToken = default)
         {
             try
             {
-                var result = await _flightFlow.ReleaseHeldAsync(new ReleaseHeldSeatsRequest(intent.ProviderOperationRef), cancellationToken);
+                var reply = await _flightFlow.ReleaseHeldAsync(PayloadOf<ReleaseHeldSeatsRequest>(request), cancellationToken);
 
-                return result.Released
-                    ? new ReleaseOutcome(ProviderOperationOutcome.Succeeded, null)
+                return reply.Result.Released
+                    ? new ReleaseOutcome(ProviderOperationOutcome.Succeeded, null, ResponseOf(reply))
                     : new ReleaseOutcome(
                         ProviderOperationOutcome.Rejected,
-                        new ProviderFailure(FulfillmentFailureKind.Permanent, FulfillmentFailureReason.ProviderRejected, result.Reason ?? string.Empty, null));
+                        new ProviderFailure(FulfillmentFailureKind.Permanent, FulfillmentFailureReason.ProviderRejected, reply.Result.Reason ?? string.Empty, reply.StatusCode),
+                        ResponseOf(reply));
             }
             catch (ProviderRequestException exception)
             {
-                return new ReleaseOutcome(OutcomeOf(exception), FailureOf(exception));
+                return new ReleaseOutcome(OutcomeOf(exception), FailureOf(exception), ResponseOf(exception));
             }
         }
 
@@ -147,8 +163,10 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                 flights);
         }
 
-        private static ReservationOutcome Normalize(ReservationIntent intent, FlightHeldSeatsResult result)
+        private static ReservationOutcome Normalize(ReservationIntent intent, FlightFlowReply<FlightHeldSeatsResult> reply)
         {
+            var result = reply.Result;
+
             if (InconsistencyOf(intent, result) is { } inconsistency)
                 return new ReservationOutcome(
                     ProviderOperationOutcome.Unknown,
@@ -157,7 +175,8 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                     result.Reference,
                     null,
                     [],
-                    new ProviderFailure(FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome, inconsistency, null));
+                    new ProviderFailure(FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome, inconsistency, reply.StatusCode),
+                    ResponseOf(reply));
 
             var seatsByUnit = result.Seats.ToDictionary(seat => UnitKey(seat.FlightId, seat.PaxReference), StringComparer.Ordinal);
 
@@ -184,7 +203,8 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                 result.Reference,
                 result.ExpiresAt,
                 units,
-                null);
+                null,
+                ResponseOf(reply));
         }
 
         private static string? InconsistencyOf(ReservationIntent intent, FlightHeldSeatsResult result)
@@ -230,11 +250,20 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
         private static ProviderFailure FailureOf(ProviderRequestException exception)
             => new(exception.Kind, exception.Reason, exception.Message, exception.StatusCode);
 
+        private static ProviderResponse? ResponseOf(ProviderRequestException exception)
+            => exception.StatusCode is null ? null : new ProviderResponse(exception.StatusCode, exception.RawResponse);
+
+        private static ProviderResponse ResponseOf<T>(FlightFlowReply<T> reply)
+            => new(reply.StatusCode, string.IsNullOrEmpty(reply.Body) ? null : reply.Body);
+
+        private static T PayloadOf<T>(ProviderRequest request)
+            => JsonSerializer.Deserialize<T>(request.Payload, FlightFlowJson.Options)!;
+
         private static FlightReservationUnitDetails DetailsOf(ReservationUnitIntent unit)
             => (FlightReservationUnitDetails)unit.Details;
 
-        private static DateTimeOffset Earliest(DateTimeOffset holdLimit, DateTimeOffset? lastTicketingDate, DateTimeOffset timeLimit)
-            => new[] { holdLimit, lastTicketingDate ?? holdLimit, timeLimit }.Min();
+        private static DateTimeOffset Earliest(DateTimeOffset timeLimit, DateTimeOffset? lastTicketingDate)
+            => lastTicketingDate < timeLimit ? lastTicketingDate.Value : timeLimit;
 
         private static string UnitKey(string flightId, string paxReference) => $"{flightId}:{paxReference}";
 

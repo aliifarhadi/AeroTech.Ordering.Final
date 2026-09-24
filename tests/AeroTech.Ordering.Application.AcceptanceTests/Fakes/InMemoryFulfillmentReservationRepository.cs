@@ -1,3 +1,4 @@
+using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Contracts;
 
@@ -20,4 +21,16 @@ public sealed class InMemoryFulfillmentReservationRepository(InMemoryUnitOfWork 
 
     public Task<IReadOnlyList<FulfillmentReservation>> ListByOrderAsync(long orderId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<FulfillmentReservation>>(_committed.Where(reservation => reservation.OrderId == orderId).ToList());
+
+    public Task<IReadOnlyList<long>> ListOrderIdsWithDueHoldsAsync(
+        DateTimeOffset now,
+        int batchSize,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<long>>(_committed
+            .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held
+                                  && (reservation.HoldLapsedAt(now) || reservation.ValidationTimeLimitPassedAt(now)))
+            .Select(reservation => reservation.OrderId)
+            .Distinct()
+            .Take(batchSize)
+            .ToList());
 }

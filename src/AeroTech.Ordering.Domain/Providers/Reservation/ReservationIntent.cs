@@ -1,3 +1,5 @@
+using AeroTech.Messages.Ordering.Enums;
+
 namespace AeroTech.Ordering.Domain.Providers.Reservation
 {
     public sealed record ReservationIntent(
@@ -14,10 +16,18 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
 
     public abstract record ReservationUnitDetails;
 
-    public sealed record ReservationPreparation(DateTimeOffset? RequestedExpiresAt);
+    public sealed record ReservationPreparation(
+        DateTimeOffset? RequestedExpiresAt,
+        DateTimeOffset? ValidationTimeLimit);
 
     public sealed record ReleaseIntent(
         string ProviderKey,
         string ProviderOperationRef,
         string IdempotencyKey);
+
+    public sealed record ProviderRequest(
+        ProviderInteractionType InteractionType,
+        string? IdempotencyKey,
+        string? CorrelationReference,
+        string Payload);
 }

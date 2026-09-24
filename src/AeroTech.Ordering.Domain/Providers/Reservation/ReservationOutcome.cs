@@ -9,7 +9,8 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         string? EchoedCorrelationReference,
         DateTimeOffset? ExpiresAt,
         IReadOnlyList<ReservationUnitOutcome> Units,
-        ProviderFailure? Failure);
+        ProviderFailure? Failure,
+        ProviderResponse? Response);
 
     public sealed record ReservationUnitOutcome(
         string UnitCorrelationKey,
@@ -21,11 +22,16 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
 
     public sealed record ReleaseOutcome(
         ProviderOperationOutcome OperationOutcome,
-        ProviderFailure? Failure);
+        ProviderFailure? Failure,
+        ProviderResponse? Response);
 
     public sealed record ProviderFailure(
         FulfillmentFailureKind Kind,
         FulfillmentFailureReason Reason,
         string Message,
         int? ProviderStatusCode);
+
+    public sealed record ProviderResponse(
+        int? StatusCode,
+        string? Payload);
 }

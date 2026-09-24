@@ -106,7 +106,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
             return task;
         }
 
-        public void StartAttempt(ProviderInteractionType interactionType, IIdGenerator idGenerator, DateTimeOffset startedAt)
+        public void StartAttempt(IIdGenerator idGenerator, DateTimeOffset startedAt)
         {
             if (!IsResumable)
                 throw ExceptionFactory.FulfillmentTaskCannotStartAttempt(Id, Status);
@@ -119,9 +119,47 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
 
             AttemptCount++;
             _attempts.Add(new FulfillmentTaskAttempt(idGenerator.NewId(), Id, AttemptCount, startedAt));
-            _interactions.Add(new ProviderInteraction(idGenerator.NewId(), Id, AttemptCount, interactionType, startedAt));
             Status = OrderFulfillmentStatus.InProgress;
         }
+
+        public void RecordRequest(ProviderRequest request, IIdGenerator idGenerator, DateTimeOffset startedAt)
+        {
+            var attempt = CurrentAttempt();
+            var interactions = InteractionsOf(attempt).ToList();
+
+            if (interactions.Any(interaction => interaction.IsInFlight))
+                throw ExceptionFactory.ProviderInteractionIsAlreadyInFlight(Id);
+
+            _interactions.Add(new ProviderInteraction(
+                idGenerator.NewId(),
+                Id,
+                attempt,
+                interactions.Count + 1,
+                FulfillmentProviderKey,
+                request,
+                startedAt));
+        }
+
+        public void RecordResponse(
+            ProviderOperationOutcome outcome,
+            string? providerOperationRef,
+            ProviderFailure? failure,
+            ProviderResponse? response,
+            DateTimeOffset completedAt)
+        {
+            var interaction = InteractionsOf(CurrentAttempt()).SingleOrDefault(item => item.IsInFlight)
+                              ?? throw ExceptionFactory.ProviderInteractionIsNotInFlight(Id);
+
+            interaction.Complete(InteractionStatusFor(outcome, failure, response), providerOperationRef, response, Truncate(failure?.Message), completedAt);
+        }
+
+        public ProviderRequest? OriginalRequest(ProviderInteractionType interactionType)
+            => _interactions
+                .Where(interaction => interaction.InteractionType == interactionType)
+                .OrderBy(interaction => interaction.AttemptNumber)
+                .ThenBy(interaction => interaction.Sequence)
+                .FirstOrDefault()
+                ?.ToRequest();
 
         public void CompleteAttempt(FulfillmentAttemptOutcome outcome, ProviderFailure? failure, DateTimeOffset completedAt)
         {
@@ -131,14 +169,23 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
             CloseAttempt(outcome, failure, completedAt);
         }
 
+        private FulfillmentTaskAttempt CurrentAttempt()
+            => Status == OrderFulfillmentStatus.InProgress
+                ? _attempts.Single(attempt => attempt.AttemptNumber == AttemptCount)
+                : throw ExceptionFactory.FulfillmentTaskHasNoAttemptInProgress(Id);
+
+        private IEnumerable<ProviderInteraction> InteractionsOf(FulfillmentTaskAttempt attempt)
+            => _interactions.Where(interaction => interaction.FulfillmentTaskAttemptId == attempt.Id);
+
         private void CloseAttempt(FulfillmentAttemptOutcome outcome, ProviderFailure? failure, DateTimeOffset completedAt)
         {
-            var attempt = _attempts.Single(item => item.AttemptNumber == AttemptCount);
-            var interaction = _interactions.Single(item => item.AttemptNumber == AttemptCount);
+            var attempt = CurrentAttempt();
             var error = Truncate(failure?.Message);
 
+            foreach (var interrupted in InteractionsOf(attempt).Where(interaction => interaction.IsInFlight))
+                interrupted.Complete(ProviderInteractionStatus.TimedOut, null, null, error, completedAt);
+
             attempt.Complete(outcome, failure?.Kind, failure?.Reason, error, completedAt);
-            interaction.Complete(InteractionStatusFor(outcome, failure), failure?.ProviderStatusCode, error, completedAt);
 
             if (failure is not null)
             {
@@ -158,12 +205,15 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
                 CompletedAt = completedAt;
         }
 
-        private static ProviderInteractionStatus InteractionStatusFor(FulfillmentAttemptOutcome outcome, ProviderFailure? failure)
+        private static ProviderInteractionStatus InteractionStatusFor(
+            ProviderOperationOutcome outcome,
+            ProviderFailure? failure,
+            ProviderResponse? response)
         {
-            if (outcome == FulfillmentAttemptOutcome.Succeeded)
+            if (outcome is ProviderOperationOutcome.Succeeded or ProviderOperationOutcome.Partial)
                 return ProviderInteractionStatus.Succeeded;
 
-            return failure is { Kind: FulfillmentFailureKind.Indeterminate, ProviderStatusCode: null }
+            return failure is { Kind: FulfillmentFailureKind.Indeterminate } && response is null
                 ? ProviderInteractionStatus.TimedOut
                 : ProviderInteractionStatus.Failed;
         }

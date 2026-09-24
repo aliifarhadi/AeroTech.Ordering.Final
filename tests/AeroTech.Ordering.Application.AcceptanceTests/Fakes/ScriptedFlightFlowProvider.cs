@@ -1,5 +1,8 @@
+using System.Net;
+using System.Text.Json;
 using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
+using AeroTech.Ordering.Providers.FlightFlow.Wire;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 
@@ -16,22 +19,28 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
 
     public Queue<Func<ReleaseHeldSeatsRequest, ReleaseHeldSeatsResult>> ReleaseResponses { get; } = new();
 
-    public Task<FlightHeldSeatsResult> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default)
+    public Task<FlightFlowReply<FlightHeldSeatsResult>> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default)
     {
         HoldRequests.Add(request);
         SaveCountAtHold.Add(unitOfWork.SaveCount);
 
         var respond = HoldResponses.TryDequeue(out var scripted) ? scripted : Held;
-        return Task.FromResult(respond(request));
+        var result = respond(request);
+
+        return Task.FromResult(new FlightFlowReply<FlightHeldSeatsResult>(result, (int)HttpStatusCode.Created, BodyOf(result)));
     }
 
-    public Task<ReleaseHeldSeatsResult> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default)
+    public Task<FlightFlowReply<ReleaseHeldSeatsResult>> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default)
     {
         ReleaseRequests.Add(request);
 
         var respond = ReleaseResponses.TryDequeue(out var scripted) ? scripted : _ => new ReleaseHeldSeatsResult(true, null);
-        return Task.FromResult(respond(request));
+
+        return Task.FromResult(new FlightFlowReply<ReleaseHeldSeatsResult>(respond(request), (int)HttpStatusCode.NoContent, string.Empty));
     }
+
+    public static string BodyOf<T>(T data)
+        => JsonSerializer.Serialize(new FlightFlowEnvelope<T> { Data = data }, FlightFlowJson.Options);
 
     public FlightHeldSeatsResult Held(HoldSeatsRequest request)
         => WithStatus(request, FlightSeatHoldStatus.Held);

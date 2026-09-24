@@ -412,6 +412,27 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException FarePricingUnitContradictsOffer(params object?[] args) =>
             new(2760, ExceptionMessages.FarePricingUnitContradictsOffer, args) { HttpStatus = 422 };
 
+        public static BusinessException LastTicketingDatePassed(params object?[] args) =>
+            new(2761, ExceptionMessages.LastTicketingDatePassed, args) { HttpStatus = 422 };
+
+        public static BusinessException ReservationValidationTimeLimitPassed(params object?[] args) =>
+            new(2762, ExceptionMessages.ReservationValidationTimeLimitPassed, args) { HttpStatus = 422 };
+
+        public static BusinessException ReservationTaskIsNotResumable(params object?[] args) =>
+            new(2763, ExceptionMessages.ReservationTaskIsNotResumable, args) { HttpStatus = 500 };
+
+        public static BusinessException ProviderReadBackIsNotAvailable(params object?[] args) =>
+            new(2764, ExceptionMessages.ProviderReadBackIsNotAvailable, args) { HttpStatus = 501 };
+
+        public static BusinessException ProviderInteractionIsNotInFlight(params object?[] args) =>
+            new(2765, ExceptionMessages.ProviderInteractionIsNotInFlight, args) { HttpStatus = 500 };
+
+        public static BusinessException ProviderInteractionIsAlreadyInFlight(params object?[] args) =>
+            new(2766, ExceptionMessages.ProviderInteractionIsAlreadyInFlight, args) { HttpStatus = 500 };
+
+        public static BusinessException ProviderMutationRequiresIdempotencyKey(params object?[] args) =>
+            new(2767, ExceptionMessages.ProviderMutationRequiresIdempotencyKey, args) { HttpStatus = 500 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

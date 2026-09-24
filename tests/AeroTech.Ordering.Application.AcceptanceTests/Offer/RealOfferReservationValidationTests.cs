@@ -18,10 +18,9 @@ public sealed class RealOfferReservationValidationTests
     public async Task Captured_round_trip_offer_with_one_way_units_is_validated_per_bound()
     {
         var clock = new FixedClock();
-        var payload = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Offer", "Payloads", "offer-detail-round-trip-one-way-units.with-bound-identity.json"));
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            Content = new StringContent(CapturedOffers.RawWithBoundIdentity(), Encoding.UTF8, "application/json")
         });
 
         var offer = await new OfferProvider(StubHttpMessageHandler.ClientFor(handler)).GetByOfferIdAsync(OfferId);

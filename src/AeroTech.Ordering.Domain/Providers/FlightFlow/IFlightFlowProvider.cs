@@ -2,11 +2,11 @@ namespace AeroTech.Ordering.Domain.Providers.FlightFlow
 {
     public interface IFlightFlowProvider
     {
-        Task<FlightHeldSeatsResult> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default);
+        Task<FlightFlowReply<FlightHeldSeatsResult>> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default);
 
         Task ConfirmHoldAsync(ConfirmHoldRequest request, CancellationToken cancellationToken = default);
 
-        Task<ReleaseHeldSeatsResult> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default);
+        Task<FlightFlowReply<ReleaseHeldSeatsResult>> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default);
 
         Task<CancelConfirmedSeatsResult> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default);
 

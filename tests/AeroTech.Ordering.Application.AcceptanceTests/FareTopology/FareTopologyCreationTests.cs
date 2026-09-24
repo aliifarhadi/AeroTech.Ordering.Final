@@ -59,6 +59,22 @@ public sealed class FareTopologyCreationTests
     }
 
     [Fact]
+    public void Sector_sum_keeps_one_component_per_sector_in_one_pricing_unit()
+    {
+        var order = Create(
+            [new BoundSpec("OUT", 101, 102)],
+            [new PricingUnitSpec(PricingUnitKind.SectorSum, ["OUT"], new FareSpec(8001, 101), new FareSpec(8002, 102))]);
+
+        var pricingUnit = Assert.Single(order.FarePricingUnits);
+
+        Assert.Equal(PricingUnitKind.SectorSum, pricingUnit.Kind);
+        Assert.Equal([JourneyId(order, "OUT")], pricingUnit.CoveredJourneyIds);
+        Assert.Equal(
+            [(1, 8001L, AirServiceIds(order, 101)), (2, 8002L, AirServiceIds(order, 102))],
+            Components(pricingUnit));
+    }
+
+    [Fact]
     public void Source_one_way_kind_over_a_connecting_bound_is_preserved()
     {
         var order = Create(

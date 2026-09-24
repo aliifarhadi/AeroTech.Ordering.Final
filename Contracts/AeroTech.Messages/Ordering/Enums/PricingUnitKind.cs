@@ -6,6 +6,7 @@ namespace AeroTech.Messages.Ordering.Enums
     {
         [Display(Name = "One Way")] OneWay = 1,
         [Display(Name = "Round Trip Fare")] RoundTripFare = 2,
-        [Display(Name = "Through One Way")] ThroughOneWay = 3
+        [Display(Name = "Through One Way")] ThroughOneWay = 3,
+        [Display(Name = "Sector Sum")] SectorSum = 4
     }
 }

@@ -16,11 +16,22 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
             IReadOnlyList<ReservationUnitIntent> units,
             CancellationToken cancellationToken = default);
 
+        ProviderRequest ReserveRequestFor(Order order, ReservationIntent intent);
+
         Task<ReservationOutcome> ReserveAsync(
-            Order order,
             ReservationIntent intent,
+            ProviderRequest request,
             CancellationToken cancellationToken = default);
 
-        Task<ReleaseOutcome> ReleaseAsync(ReleaseIntent intent, CancellationToken cancellationToken = default);
+        ProviderRequest ReadRequestFor(string providerOperationRef);
+
+        Task<ReservationOutcome> ReadAsync(
+            ReservationIntent intent,
+            ProviderRequest request,
+            CancellationToken cancellationToken = default);
+
+        ProviderRequest ReleaseRequestFor(ReleaseIntent intent);
+
+        Task<ReleaseOutcome> ReleaseAsync(ProviderRequest request, CancellationToken cancellationToken = default);
     }
 }

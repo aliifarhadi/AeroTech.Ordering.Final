@@ -1,3 +1,4 @@
+using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,18 @@ namespace AeroTech.Ordering.Persistence.FulfillmentReservationAggregate
 
         public async Task<IReadOnlyList<FulfillmentReservation>> ListByOrderAsync(long orderId, CancellationToken cancellationToken = default)
             => await AggregateQuery().Where(reservation => reservation.OrderId == orderId).ToListAsync(cancellationToken);
+
+        public async Task<IReadOnlyList<long>> ListOrderIdsWithDueHoldsAsync(
+            DateTimeOffset now,
+            int batchSize,
+            CancellationToken cancellationToken = default)
+            => await _dbContext.FulfillmentReservations
+                .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held
+                                      && (reservation.ExpiresAt <= now || reservation.ReservationValidationTimeLimit <= now))
+                .Select(reservation => reservation.OrderId)
+                .Distinct()
+                .Take(batchSize)
+                .ToListAsync(cancellationToken);
 
         private IQueryable<FulfillmentReservation> AggregateQuery()
             => _dbContext.FulfillmentReservations.Include(reservation => reservation.Units);

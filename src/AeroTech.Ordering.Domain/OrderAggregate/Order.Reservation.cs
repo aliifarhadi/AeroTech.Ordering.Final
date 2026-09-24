@@ -7,7 +7,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 {
     public sealed partial class Order
     {
-        private static readonly OrderStatus[] ReservableStatuses =
+        public static readonly IReadOnlyCollection<OrderStatus> ReservableStatuses =
         [
             OrderStatus.Created,
             OrderStatus.Confirmed,
@@ -19,6 +19,12 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
         {
             if (!ReservableStatuses.Contains(Status))
                 throw ExceptionFactory.OrderIsNotReservable(Id, Status);
+        }
+
+        public void EnsureNewReservationAllowedAt(DateTimeOffset now)
+        {
+            if (LastTicketingDate <= now)
+                throw ExceptionFactory.LastTicketingDatePassed(Id, LastTicketingDate);
         }
 
         public void AssignRecordLocator(string recordLocator)
@@ -41,7 +47,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             IReadOnlyCollection<long> requiredServiceIds,
             IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService)
         {
-            if (requiredServiceIds.Count == 0)
+            if (requiredServiceIds.Count == 0 || !ReservableStatuses.Contains(Status))
                 return;
 
             var states = requiredServiceIds
@@ -56,6 +62,23 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 TransitionTo(OrderStatus.ReservationUnconfirmed);
             else if (states.Any(status => status?.IsTerminalNegative() == true))
                 TransitionTo(OrderStatus.ReserveFailed);
+        }
+
+        public bool IsExpirableAt(
+            DateTimeOffset now,
+            IReadOnlyCollection<long> requiredServiceIds,
+            IReadOnlyDictionary<long, DateTimeOffset?> validationTimeLimitByService)
+            => ReservableStatuses.Contains(Status)
+               && (LastTicketingDate <= now
+                   || (requiredServiceIds.Count > 0
+                       && requiredServiceIds.All(serviceId => validationTimeLimitByService.TryGetValue(serviceId, out var limit) && limit <= now)));
+
+        public void Expire()
+        {
+            if (!ReservableStatuses.Contains(Status))
+                throw ExceptionFactory.OrderCannotExpire(Id, Status);
+
+            TransitionTo(OrderStatus.Expired);
         }
     }
 }

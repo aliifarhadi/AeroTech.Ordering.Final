@@ -9,5 +9,7 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         ReservationActionScope PostConfirmationCancelScope,
         bool SupportsExtend,
         bool SupportsSplit,
-        bool ProvidesUnitReference);
+        bool ProvidesUnitReference,
+        bool SupportsReadBack,
+        bool ExpiresAutomatically);
 }

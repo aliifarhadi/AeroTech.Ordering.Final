@@ -44,10 +44,22 @@ namespace AeroTech.Ordering.Consumers
                 });
             });
 
+            var reservationDeadline = configuration.GetSection(ReservationDeadlineOptions.SectionName);
+            var reservationDeadlineOptions = reservationDeadline.Get<ReservationDeadlineOptions>();
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                reservationDeadlineOptions?.PollIntervalSeconds ?? 0,
+                $"{ReservationDeadlineOptions.SectionName}:{nameof(ReservationDeadlineOptions.PollIntervalSeconds)}");
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
+                reservationDeadlineOptions?.PollBatchSize ?? 0,
+                $"{ReservationDeadlineOptions.SectionName}:{nameof(ReservationDeadlineOptions.PollBatchSize)}");
+
             services.Configure<OutboxPublisherOptions>(configuration.GetSection("Outbox"));
             services.Configure<MessageRetentionOptions>(configuration.GetSection("MessageRetention"));
+            services.Configure<ReservationDeadlineOptions>(reservationDeadline);
             services.AddHostedService<OutboxPublisher>();
             services.AddHostedService<MessageRetentionPoller>();
+            services.AddHostedService<ReservationDeadlinePoller>();
 
             return services;
         }

@@ -81,18 +81,26 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                         traveller.Id.ToString(CultureInfo.InvariantCulture),
                         AirPricePassengerTypes.From(traveller.PassengerType, ProviderName)))
                     .ToList(),
-                pricingUnits.Select(pricingUnit => PricingUnitOf(pricingUnit, itinerary)).ToList());
+                pricingUnits.SelectMany(pricingUnit => PricingUnitsOf(pricingUnit, itinerary)).ToList());
         }
 
-        private static AirFareBoundReservationPricingUnit PricingUnitOf(ScopedPricingUnit scoped, Itinerary itinerary)
+        private static IEnumerable<AirFareBoundReservationPricingUnit> PricingUnitsOf(ScopedPricingUnit scoped, Itinerary itinerary)
+            => scoped.PricingUnit.Kind == PricingUnitKind.SectorSum
+                ? scoped.FareComponents.Select(fare => PricingUnitOf(scoped.PricingUnit, [fare], itinerary))
+                : [PricingUnitOf(scoped.PricingUnit, scoped.FareComponents, itinerary)];
+
+        private static AirFareBoundReservationPricingUnit PricingUnitOf(
+            OrderFarePricingUnit pricingUnit,
+            IReadOnlyList<ScopedFareComponent> fares,
+            Itinerary itinerary)
         {
-            var journeys = scoped.PricingUnit.CoveredJourneyIds
+            var journeys = pricingUnit.CoveredJourneyIds
                 .Select(itinerary.Journey)
                 .OrderBy(journey => journey.Sequence)
                 .ToList();
 
-            var coveredSegments = scoped.PricingUnit.FareComponents
-                .SelectMany(component => component.CoveredOrderServiceIds)
+            var coveredSegments = fares
+                .SelectMany(fare => fare.Component.CoveredOrderServiceIds)
                 .Select(itinerary.SegmentOf)
                 .DistinctBy(segment => segment.Id)
                 .OrderBy(segment => itinerary.Journey(segment.OrderJourneyId).Sequence)
@@ -104,12 +112,12 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                 .ToList();
 
             return new AirFareBoundReservationPricingUnit(
-                scoped.PricingUnit.Id.ToString(CultureInfo.InvariantCulture),
-                JourneyTypeOf(scoped.PricingUnit.Kind),
+                pricingUnit.Id.ToString(CultureInfo.InvariantCulture),
+                JourneyTypeOf(pricingUnit.Kind),
                 journeys.Select(journey => journey.BoundId).ToList(),
                 pricingSegments[0].OriginAirportId,
                 pricingSegments[^1].DestinationAirportId,
-                scoped.FareComponents
+                fares
                     .Select(fare => new AirFareBoundReservationAirFare(
                         fare.Component.AirFareId.ToString(CultureInfo.InvariantCulture),
                         fare.Services
@@ -144,6 +152,7 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
             PricingUnitKind.OneWay => AirPriceJourneyType.OneWay,
             PricingUnitKind.ThroughOneWay => AirPriceJourneyType.OneWay,
             PricingUnitKind.RoundTripFare => AirPriceJourneyType.RoundTrip,
+            PricingUnitKind.SectorSum => AirPriceJourneyType.OneWay,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
         };
 

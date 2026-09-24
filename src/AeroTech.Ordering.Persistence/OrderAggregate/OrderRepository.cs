@@ -22,6 +22,17 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
         public Task<bool> RecordLocatorExistsAsync(string recordLocator, CancellationToken cancellationToken = default)
             => _dbContext.Orders.AnyAsync(order => order.RecordLocator == recordLocator, cancellationToken);
 
+        public async Task<IReadOnlyList<long>> ListReservableIdsPastLastTicketingDateAsync(
+            DateTimeOffset now,
+            int batchSize,
+            CancellationToken cancellationToken = default)
+            => await _dbContext.Orders
+                .Where(order => order.LastTicketingDate <= now && Order.ReservableStatuses.Contains(order.Status))
+                .OrderBy(order => order.LastTicketingDate)
+                .Select(order => order.Id)
+                .Take(batchSize)
+                .ToListAsync(cancellationToken);
+
         private IQueryable<Order> AggregateQuery()
             => _dbContext.Orders
                 .Include(order => order.Items)

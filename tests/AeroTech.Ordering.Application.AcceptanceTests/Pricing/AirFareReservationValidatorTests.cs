@@ -81,6 +81,30 @@ public sealed class AirFareReservationValidatorTests
     }
 
     [Fact]
+    public async Task Sector_sum_is_validated_as_one_air_price_pricing_unit_per_sector()
+    {
+        var order = _harness.SeedOrder(
+            [TravellerSpec.Adult(1)],
+            [new BoundSpec("OUT", 101, 102)],
+            pricingUnits: [new PricingUnitSpec(PricingUnitKind.SectorSum, ["OUT"], new FareSpec(8001, 101), new FareSpec(8002, 102))]);
+
+        await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
+
+        Assert.Equal(
+            [
+                (JourneyType.OneWay, OrderFixture.AirportOf(1, 0), OrderFixture.AirportOf(1, 1), "OUT", "8001", "101"),
+                (JourneyType.OneWay, OrderFixture.AirportOf(1, 1), OrderFixture.AirportOf(1, 2), "OUT", "8002", "102")
+            ],
+            _pricing.Requests.Single().PricingUnits.Select(unit => (
+                unit.JourneyType,
+                unit.PricingOriginAirportId,
+                unit.PricingDestinationAirportId,
+                unit.BoundIds.Single(),
+                unit.AirFares.Single().AirFareId,
+                unit.AirFares.Single().Flights.Single().FlightId)));
+    }
+
+    [Fact]
     public async Task Same_air_fare_in_two_pricing_units_is_validated_in_two_scopes()
     {
         var order = _harness.SeedOrder(

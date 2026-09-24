@@ -120,13 +120,15 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
 
                 var task = await _tasks.FindLatestAsync(reservation.Id, OrderFulfillmentTaskType.ReserveInventory, cancellationToken);
 
-                if (task is not { IsResumable: true })
-                {
-                    task = NewReserveTask(reservation, _clock.GetDateTime());
-                    await _tasks.AddAsync(task, cancellationToken);
-                }
+                if (task is not { IsResumable: true } || task.OriginalRequest(ProviderInteractionType.CreateHold) is not { } request)
+                    throw ExceptionFactory.ReservationTaskIsNotResumable(reservation.Id);
 
-                operations.Add(new ReservationOperation(provider, reservation, task, IntentFor(reservation, units)));
+                var readBack = reservation.ProviderOperationRef is { } providerOperationRef
+                               && _providers.CapabilityOf(order, reservation).SupportsReadBack
+                    ? provider.ReadRequestFor(providerOperationRef)
+                    : null;
+
+                operations.Add(new ReservationOperation(provider, reservation, task, IntentFor(reservation, units), request, readBack));
             }
 
             return operations;
@@ -139,18 +141,23 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
             CancellationToken cancellationToken)
         {
             var latestUnitStatusByService = ReservationCoverage.LatestUnitStatusByService(reservations);
+            var latestReservationByService = ReservationCoverage.LatestReservationByService(reservations);
             var operations = new List<ReservationOperation>();
 
             var groups = services
                 .Where(service => IsUncovered(service.Id, latestUnitStatusByService))
-                .GroupBy(service => (service.FulfillmentProviderKey, _providers.CapabilityOf(service).Mode));
+                .GroupBy(service => (service.FulfillmentProviderKey, _providers.CapabilityOf(service).Mode))
+                .ToList();
+
+            if (groups.Count > 0)
+                order.EnsureNewReservationAllowedAt(_clock.GetDateTime());
 
             foreach (var group in groups)
             {
                 var provider = _providers.Resolve(group.Key.FulfillmentProviderKey);
                 var units = provider.PlanUnits(order, group.ToList());
 
-                EnsureUncovered(units, latestUnitStatusByService);
+                EnsureReservableAnew(units, latestUnitStatusByService, latestReservationByService, _clock.GetDateTime());
 
                 var preparation = await provider.PrepareAsync(order, units, cancellationToken);
                 var createdAt = _clock.GetDateTime();
@@ -161,11 +168,20 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                     provider.ProviderKey,
                     group.Key.Mode,
                     preparation.RequestedExpiresAt,
+                    preparation.ValidationTimeLimit,
                     units,
                     _idGenerator,
                     createdAt);
 
-                operations.Add(new ReservationOperation(provider, reservation, NewReserveTask(reservation, createdAt), IntentFor(reservation, units)));
+                var intent = IntentFor(reservation, units);
+
+                operations.Add(new ReservationOperation(
+                    provider,
+                    reservation,
+                    NewReserveTask(reservation, createdAt),
+                    intent,
+                    provider.ReserveRequestFor(order, intent),
+                    null));
             }
 
             foreach (var operation in operations)
@@ -182,7 +198,10 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
             var startedAt = _clock.GetDateTime();
 
             foreach (var operation in operations)
-                operation.Task.StartAttempt(ProviderInteractionType.CreateHold, _idGenerator, startedAt);
+            {
+                operation.Task.StartAttempt(_idGenerator, startedAt);
+                operation.Task.RecordRequest(operation.ReadBack ?? operation.Request, _idGenerator, startedAt);
+            }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
@@ -193,7 +212,21 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
             ReservationOperation operation,
             CancellationToken cancellationToken)
         {
-            var outcome = await operation.Provider.ReserveAsync(order, operation.Intent, cancellationToken);
+            var outcome = operation.ReadBack is { } readBack
+                ? await CallAsync(operation, readBack, operation.Provider.ReadAsync, cancellationToken)
+                : null;
+
+            if (outcome is null or { OperationOutcome: ProviderOperationOutcome.Unknown })
+            {
+                if (operation.ReadBack is not null)
+                {
+                    operation.Task.RecordRequest(operation.Request, _idGenerator, _clock.GetDateTime());
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }
+
+                outcome = await CallAsync(operation, operation.Request, operation.Provider.ReserveAsync, cancellationToken);
+            }
+
             var observedAt = _clock.GetDateTime();
             var reservation = operation.Reservation;
 
@@ -212,6 +245,24 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 reservation.ExpiresAt,
                 outcome.Failure?.Reason,
                 outcome.Failure?.Message);
+        }
+
+        private async Task<ReservationOutcome> CallAsync(
+            ReservationOperation operation,
+            ProviderRequest request,
+            Func<ReservationIntent, ProviderRequest, CancellationToken, Task<ReservationOutcome>> call,
+            CancellationToken cancellationToken)
+        {
+            var outcome = await call(operation.Intent, request, cancellationToken);
+
+            operation.Task.RecordResponse(
+                outcome.OperationOutcome,
+                outcome.ProviderOperationRef,
+                outcome.Failure,
+                outcome.Response,
+                _clock.GetDateTime());
+
+            return outcome;
         }
 
         private IReadOnlyList<OrderService> RequiredServices(Order order)
@@ -261,9 +312,11 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 reservation.RequestedExpiresAt,
                 units);
 
-        private static void EnsureUncovered(
+        private static void EnsureReservableAnew(
             IReadOnlyList<ReservationUnitIntent> units,
-            IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService)
+            IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService,
+            IReadOnlyDictionary<long, FulfillmentReservation> latestReservationByService,
+            DateTimeOffset now)
         {
             foreach (var unit in units)
             {
@@ -271,6 +324,9 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 {
                     if (!IsUncovered(serviceId, latestUnitStatusByService))
                         throw ExceptionFactory.ReservationUnitIncludesCoveredService(unit.UnitCorrelationKey, serviceId);
+
+                    if (latestReservationByService.TryGetValue(serviceId, out var previous))
+                        previous.EnsureReplaceableAt(now);
                 }
             }
         }
@@ -292,6 +348,8 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
             IReservationProvider Provider,
             FulfillmentReservation Reservation,
             FulfillmentTask Task,
-            ReservationIntent Intent);
+            ReservationIntent Intent,
+            ProviderRequest Request,
+            ProviderRequest? ReadBack);
     }
 }

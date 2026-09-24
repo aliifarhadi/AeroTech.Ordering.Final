@@ -10,7 +10,6 @@ using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Reservation;
-using AeroTech.Ordering.Providers.FlightFlow;
 using AeroTech.Ordering.Providers.FlightFlow.Services;
 using Microsoft.Extensions.Options;
 
@@ -18,10 +17,9 @@ namespace AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 
 public sealed class ReservationHarness
 {
-    public const int HoldMinutes = 15;
-
     private readonly IReserveService _reserve;
     private readonly IReleaseReservationService _release;
+    private readonly IReservationDeadlineService _deadlines;
 
     public ReservationHarness(params IReservationProvider[] additionalProviders)
     {
@@ -31,19 +29,18 @@ public sealed class ReservationHarness
         FlightFlow = new ScriptedFlightFlowProvider(OrderFixture.FlightIdOfCapacity, UnitOfWork);
         AirFareValidator = new StubAirFareReservationValidator(Clock);
 
-        FlightFlowReservation = new FlightFlowReservationProvider(
-            FlightFlow,
-            AirFareValidator,
-            Clock,
-            Options.Create(new FlightFlowReservationOptions { HoldMinutes = HoldMinutes }));
+        FlightFlowReservation = new FlightFlowReservationProvider(FlightFlow, AirFareValidator);
 
         var providers = new ReservationProviderResolver([FlightFlowReservation, .. additionalProviders]);
         var recordLocators = new RecordLocatorAllocator(RecordLocators, Orders, Options.Create(new RecordLocatorOptions { MaxAllocationAttempts = 3 }));
         var summarizer = new OrderReservationSummarizer(providers, recordLocators);
         var reservationLock = new ReservationLock(Lock, Options.Create(new FulfillmentOptions { LockExpirySeconds = 30 }));
 
+        var releaser = new ReservationReleaser(Tasks, providers, UnitOfWork, Ids, Clock);
+
         _reserve = new ReserveService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
-        _release = new ReleaseReservationService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
+        _release = new ReleaseReservationService(Orders, Reservations, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
+        _deadlines = new ReservationDeadlineService(Orders, Reservations, providers, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
     }
 
     public FixedClock Clock { get; } = new();
@@ -90,6 +87,12 @@ public sealed class ReservationHarness
 
     public Task<ReleaseReservationResult> ReleaseAsync(Order order, long reservationId)
         => _release.ReleaseAsync(order.Id, reservationId, UnrestrictedOrderAuthorization.Instance);
+
+    public Task<IReadOnlyList<long>> DueOrderIdsAsync()
+        => _deadlines.ListDueOrderIdsAsync(100);
+
+    public Task EnforceDeadlinesAsync(Order order)
+        => _deadlines.EnforceAsync(order.Id);
 
     public FulfillmentReservation Reservation(long reservationId)
         => Reservations.Committed.Single(reservation => reservation.Id == reservationId);

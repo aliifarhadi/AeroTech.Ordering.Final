@@ -21,6 +21,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             string fulfillmentProviderKey,
             ReservationMode mode,
             DateTimeOffset? requestedExpiresAt,
+            DateTimeOffset? reservationValidationTimeLimit,
             DateTimeOffset createdAt)
         {
             Id = id;
@@ -30,6 +31,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             IdempotencyKey = $"reserve-hold:{id}";
             CorrelationReference = $"order:{orderId}:reservation:{id}";
             RequestedExpiresAt = requestedExpiresAt;
+            ReservationValidationTimeLimit = reservationValidationTimeLimit;
             Status = FulfillmentReservationStatus.Pending;
             CreatedAt = createdAt;
             LastObservedAt = createdAt;
@@ -51,6 +53,8 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
         public DateTimeOffset? RequestedExpiresAt { get; private set; }
 
+        public DateTimeOffset? ReservationValidationTimeLimit { get; private set; }
+
         public DateTimeOffset? ExpiresAt { get; private set; }
 
         public DateTimeOffset CreatedAt { get; private set; }
@@ -61,6 +65,11 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
         public bool IsUnresolved => Status is FulfillmentReservationStatus.Pending or FulfillmentReservationStatus.Unknown;
 
+        public bool IsSettled => Status is FulfillmentReservationStatus.Rejected
+            or FulfillmentReservationStatus.Released
+            or FulfillmentReservationStatus.Expired
+            or FulfillmentReservationStatus.Cancelled;
+
         public IReadOnlyCollection<long> CoveredOrderServiceIds => _units.SelectMany(unit => unit.OrderServiceIds).ToList();
 
         public static FulfillmentReservation Create(
@@ -69,6 +78,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             string fulfillmentProviderKey,
             ReservationMode mode,
             DateTimeOffset? requestedExpiresAt,
+            DateTimeOffset? reservationValidationTimeLimit,
             IReadOnlyList<ReservationUnitIntent> units,
             IIdGenerator idGenerator,
             DateTimeOffset createdAt)
@@ -84,7 +94,14 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             if (duplicate is not null)
                 throw ExceptionFactory.ReservationUnitCoversDuplicateService(duplicate.Key);
 
-            var reservation = new FulfillmentReservation(id, orderId, fulfillmentProviderKey, mode, requestedExpiresAt, createdAt);
+            var reservation = new FulfillmentReservation(
+                id,
+                orderId,
+                fulfillmentProviderKey,
+                mode,
+                requestedExpiresAt,
+                reservationValidationTimeLimit,
+                createdAt);
 
             foreach (var unit in units)
                 reservation._units.Add(new ReservationUnit(idGenerator.NewId(), id, unit.UnitCorrelationKey, unit.OrderServiceIds));
@@ -130,6 +147,24 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             }
 
             LastObservedAt = observedAt;
+        }
+
+        public bool HoldLapsedAt(DateTimeOffset now) => ExpiresAt <= now;
+
+        public bool ValidationTimeLimitPassedAt(DateTimeOffset now) => ReservationValidationTimeLimit <= now;
+
+        public bool DeadlinePassedAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
+            => ValidationTimeLimitPassedAt(now) || lastTicketingDate <= now;
+
+        public bool IsConfirmableAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
+            => Status == FulfillmentReservationStatus.Held
+               && !HoldLapsedAt(now)
+               && !DeadlinePassedAt(now, lastTicketingDate);
+
+        public void EnsureReplaceableAt(DateTimeOffset now)
+        {
+            if (ValidationTimeLimitPassedAt(now))
+                throw ExceptionFactory.ReservationValidationTimeLimitPassed(Id, ReservationValidationTimeLimit);
         }
 
         public ReleaseIntent PrepareRelease()

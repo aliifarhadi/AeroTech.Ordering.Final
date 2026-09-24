@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using AeroTech.Ordering.Domain._Shared;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
 using AeroTech.Ordering.Providers.FlightFlow.Wire;
@@ -13,25 +12,18 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
         private const string SeatHoldsRoute = "v1/Flights/Seat-Holds";
         private const string SeatConfirmationsRoute = "v1/Flights/Seat-Confirmations";
 
-        private static readonly JsonSerializerOptions JsonOptions = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString
-        };
-
         private readonly HttpClient _httpClient;
 
         public FlightFlowProvider(HttpClient httpClient) => _httpClient = httpClient;
 
-        public async Task<FlightHeldSeatsResult> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default)
+        public async Task<FlightFlowReply<FlightHeldSeatsResult>> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default)
         {
             HttpResponseMessage response;
             string body;
 
             try
             {
-                response = await _httpClient.PostAsJsonAsync(SeatHoldsRoute, request, JsonOptions, cancellationToken);
+                response = await _httpClient.PostAsJsonAsync(SeatHoldsRoute, request, FlightFlowJson.Options, cancellationToken);
                 body = await response.Content.ReadAsStringAsync(cancellationToken);
             }
             catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -72,7 +64,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                         (int)response.StatusCode,
                         body);
 
-                return envelope.Data;
+                return new FlightFlowReply<FlightHeldSeatsResult>(envelope.Data, (int)response.StatusCode, body);
             }
         }
 
@@ -86,7 +78,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             try
             {
-                response = await _httpClient.PatchAsJsonAsync(route, payload, JsonOptions, cancellationToken);
+                response = await _httpClient.PatchAsJsonAsync(route, payload, FlightFlowJson.Options, cancellationToken);
                 body = await response.Content.ReadAsStringAsync(cancellationToken);
             }
             catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -135,7 +127,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             try
             {
-                response = await _httpClient.PostAsJsonAsync(route, payload, JsonOptions, cancellationToken);
+                response = await _httpClient.PostAsJsonAsync(route, payload, FlightFlowJson.Options, cancellationToken);
                 body = await response.Content.ReadAsStringAsync(cancellationToken);
             }
             catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -241,7 +233,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             return (FulfillmentFailureKind.Permanent, FulfillmentFailureReason.ProviderRejected);
         }
 
-        public async Task<ReleaseHeldSeatsResult> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default)
+        public async Task<FlightFlowReply<ReleaseHeldSeatsResult>> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default)
         {
             HttpResponseMessage response;
             string body;
@@ -269,7 +261,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             using (response)
             {
                 if (response.IsSuccessStatusCode)
-                    return new ReleaseHeldSeatsResult(true, null);
+                    return new FlightFlowReply<ReleaseHeldSeatsResult>(new ReleaseHeldSeatsResult(true, null), (int)response.StatusCode, body);
 
                 var (kind, reason) = Classify((int)response.StatusCode);
                 throw new ProviderRequestException(
@@ -291,7 +283,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             try
             {
-                response = await _httpClient.PostAsJsonAsync(route, payload, JsonOptions, cancellationToken);
+                response = await _httpClient.PostAsJsonAsync(route, payload, FlightFlowJson.Options, cancellationToken);
                 body = await response.Content.ReadAsStringAsync(cancellationToken);
             }
             catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -331,7 +323,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             try
             {
-                return JsonSerializer.Deserialize<FlightFlowEnvelope<T>>(body, JsonOptions);
+                return JsonSerializer.Deserialize<FlightFlowEnvelope<T>>(body, FlightFlowJson.Options);
             }
             catch (JsonException)
             {

@@ -7,5 +7,10 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Contracts
         Task<FulfillmentReservation?> GetAsync(long id, CancellationToken cancellationToken = default);
 
         Task<IReadOnlyList<FulfillmentReservation>> ListByOrderAsync(long orderId, CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<long>> ListOrderIdsWithDueHoldsAsync(
+            DateTimeOffset now,
+            int batchSize,
+            CancellationToken cancellationToken = default);
     }
 }

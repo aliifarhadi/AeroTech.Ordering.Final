@@ -103,6 +103,7 @@ stage2:
       OneWay: 1
       RoundTripFare: 2
       ThroughOneWay: 3
+      SectorSum: 4
     OrderFulfillmentTargetAction:
       Reserve: 1
       Cancel: 2

@@ -68,9 +68,6 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             var index = new FlightUnitIndex(order, ProviderKey);
             var memberIds = units.SelectMany(unit => unit.OrderServiceIds).ToHashSet();
 
-            if (index.LapInfantAmong(memberIds) is { } lapInfant)
-                throw ExceptionFactory.InfantReservationMappingIsBlocked(lapInfant.Id, ProviderKey);
-
             foreach (var paxReference in units.Select(unit => DetailsOf(unit).PaxReference).Distinct())
                 AirPricePassengerTypes.From(index.Traveller(paxReference).PassengerType, FulfillmentProviderKeys.FlightFlow);
 
@@ -267,12 +264,6 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             public Gender? GenderOf(OrderTraveller traveller)
                 => traveller.ProfileRevisions.Single(revision => revision.Id == traveller.CurrentProfileRevisionId).Gender;
-
-            public OrderTraveller? LapInfantAmong(IReadOnlySet<long> serviceIds)
-                => _airServices.Values
-                    .Where(service => serviceIds.Contains(service.Id))
-                    .Select(service => _travellers[service.TravellerId])
-                    .FirstOrDefault(traveller => traveller.InfantParentTravellerId is not null);
 
             public IReadOnlyCollection<long> AirServiceIdsAmong(IReadOnlySet<long> serviceIds)
                 => serviceIds.Where(_airServices.ContainsKey).ToList();

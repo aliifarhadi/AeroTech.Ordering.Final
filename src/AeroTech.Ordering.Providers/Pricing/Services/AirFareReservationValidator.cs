@@ -49,16 +49,19 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
 
             var pricingUnits = order.FarePricingUnits
                 .OrderBy(pricingUnit => pricingUnit.Sequence)
+                .Where(pricingUnit => pricingUnit.FareComponents.Any(component => component.CoveredOrderServiceIds.Any(scope.Contains)))
                 .Select(pricingUnit => new ScopedPricingUnit(
                     pricingUnit,
                     pricingUnit.FareComponents
                         .OrderBy(component => component.Sequence)
                         .Select(component => new ScopedFareComponent(
                             component,
-                            component.CoveredOrderServiceIds.Where(scope.Contains).Select(itinerary.Priced).ToList()))
+                            component.CoveredOrderServiceIds
+                                .Where(serviceId => IsIndivisible(pricingUnit) || scope.Contains(serviceId))
+                                .Select(itinerary.Priced)
+                                .ToList()))
                         .Where(component => component.Services.Count > 0)
                         .ToList()))
-                .Where(pricingUnit => pricingUnit.FareComponents.Count > 0)
                 .ToList();
 
             return new AirFareBoundReservationValidationRequest(
@@ -132,6 +135,9 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                 priced.RbdId,
                 flight.Count(service => service.Traveller.InfantParentTravellerId is null));
         }
+
+        private static bool IsIndivisible(OrderFarePricingUnit pricingUnit)
+            => pricingUnit.CoveredJourneyIds.Count > 1 || pricingUnit.FareComponents.Count > 1;
 
         private static AirPriceJourneyType JourneyTypeOf(PricingUnitKind kind) => kind switch
         {

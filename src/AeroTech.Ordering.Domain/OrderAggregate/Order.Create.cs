@@ -279,26 +279,29 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
         private void BuildFarePricingUnits(OfferReader reader, IIdGenerator idGenerator, long changeId)
         {
             var journeyIdByBound = _journeys.ToDictionary(journey => journey.BoundId, journey => journey.Id, StringComparer.OrdinalIgnoreCase);
+            var journeySequenceById = _journeys.ToDictionary(journey => journey.Id, journey => journey.Sequence);
+            var travellerIdByRef = _travellers.ToDictionary(traveller => traveller.SourceTravellerRef!, traveller => traveller.Id, StringComparer.OrdinalIgnoreCase);
+            var segmentIdByFlight = _segments.ToDictionary(segment => segment.FlightId, segment => segment.Id);
+            var airServiceByTravellerSegment = _services.OfType<OrderAirTransportService>().ToDictionary(service => (service.TravellerId, service.SegmentId));
             var coveredServiceIds = new HashSet<long>();
 
             foreach (var source in reader.PricingUnits)
             {
-                var journeyIds = source.CoveredBoundIds
+                var sourceJourneyIds = source.CoveredBoundIds
                     .Select(boundId => journeyIdByBound.TryGetValue(boundId, out var journeyId)
                         ? journeyId
                         : throw ExceptionFactory.FarePricingUnitBoundIsNotInOrder(source.Sequence, boundId))
-                    .ToList();
+                    .ToHashSet();
 
-                var pricingUnit = new OrderFarePricingUnit(idGenerator.NewId(), Id, changeId, source.Sequence, source.Kind, journeyIds);
+                var components = new List<(OfferFareComponent Source, List<OrderAirTransportService> Services)>();
 
                 foreach (var component in source.FareComponents)
                 {
-                    if (!journeyIdByBound.TryGetValue(component.BoundId, out var componentJourneyId) || !journeyIds.Contains(componentJourneyId))
+                    if (!journeyIdByBound.TryGetValue(component.BoundId, out var componentJourneyId) || !sourceJourneyIds.Contains(componentJourneyId))
                         throw ExceptionFactory.FareComponentBoundIsNotInPricingUnit(source.Sequence, component.Sequence, component.BoundId);
 
-                    var services = _services
-                        .OfType<OrderAirTransportService>()
-                        .Where(service => service.AirFareId == component.AirFareId && SegmentJourneyId(service.SegmentId) == componentJourneyId)
+                    var services = reader.CouponsPricedBy(component.AirFareId, component.BoundId)
+                        .Select(coupon => airServiceByTravellerSegment[(travellerIdByRef[coupon.TravellerRef], segmentIdByFlight[coupon.FlightId])])
                         .ToList();
 
                     if (services.Count == 0)
@@ -313,6 +316,22 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                             throw ExceptionFactory.FareComponentContradictsAirService(source.Sequence, component.Sequence, service.Id);
                     }
 
+                    components.Add((component, services));
+                }
+
+                var coveredJourneyIds = components
+                    .SelectMany(component => component.Services)
+                    .Select(service => SegmentJourneyId(service.SegmentId))
+                    .Distinct()
+                    .OrderBy(journeyId => journeySequenceById[journeyId])
+                    .ToList();
+
+                if (!sourceJourneyIds.SetEquals(coveredJourneyIds))
+                    throw ExceptionFactory.FarePricingUnitContradictsOffer(source.Sequence);
+
+                var pricingUnit = new OrderFarePricingUnit(idGenerator.NewId(), Id, changeId, source.Sequence, source.Kind, coveredJourneyIds);
+
+                foreach (var (component, services) in components)
                     pricingUnit.AddFareComponent(new OrderFareComponent(
                         idGenerator.NewId(),
                         pricingUnit.Id,
@@ -323,14 +342,14 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                         component.FareFamily,
                         component.FareType,
                         services.Select(service => service.Id).ToList()));
-                }
 
                 _farePricingUnits.Add(pricingUnit);
             }
         }
 
         private static bool Agrees(OrderAirTransportService service, OfferFareComponent component)
-            => service.BookingClass == component.BookingClass
+            => service.AirFareId == component.AirFareId
+               && service.BookingClass == component.BookingClass
                && service.FareBasis == component.FareBasis
                && service.FareFamily == component.FareFamily
                && service.FareType == component.FareType;

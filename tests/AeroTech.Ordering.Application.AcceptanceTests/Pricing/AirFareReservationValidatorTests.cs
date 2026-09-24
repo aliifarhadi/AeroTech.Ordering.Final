@@ -100,7 +100,7 @@ public sealed class AirFareReservationValidatorTests
     }
 
     [Fact]
-    public async Task Round_trip_pricing_unit_keeps_its_scope_when_only_one_direction_is_validated()
+    public async Task Targeted_part_of_a_round_trip_pricing_unit_is_validated_with_the_whole_pricing_unit()
     {
         var order = _harness.SeedOrder(
             [TravellerSpec.Adult(1)],
@@ -112,7 +112,19 @@ public sealed class AirFareReservationValidatorTests
         var unit = Assert.Single(_pricing.Requests.Single().PricingUnits);
         Assert.Equal(JourneyType.RoundTrip, unit.JourneyType);
         Assert.Equal(["OUT", "IN"], unit.BoundIds);
-        Assert.Equal(["101"], Assert.Single(unit.AirFares).Flights.Select(flight => flight.FlightId));
+        Assert.Equal([("9001", "101"), ("9001", "201")], unit.AirFares.Select(fare => (fare.AirFareId, fare.Flights.Single().FlightId)));
+    }
+
+    [Fact]
+    public async Task Targeted_part_of_a_one_way_pricing_unit_is_validated_alone()
+    {
+        var order = _harness.SeedOrder([TravellerSpec.Adult(1), TravellerSpec.Adult(2)], [new BoundSpec("OUT", 101)]);
+
+        await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
+
+        var request = _pricing.Requests.Single();
+        Assert.Single(request.Passengers);
+        Assert.Equal(1, request.PricingUnits.Single().AirFares.Single().Flights.Single().RequiredSeats);
     }
 
     [Fact]

@@ -59,6 +59,51 @@ public sealed class FareTopologyCreationTests
     }
 
     [Fact]
+    public void Source_one_way_kind_over_a_connecting_bound_is_preserved()
+    {
+        var order = Create(
+            [new BoundSpec("OUT", 101, 102)],
+            [new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7001, 101, 102))]);
+
+        var pricingUnit = Assert.Single(order.FarePricingUnits);
+
+        Assert.Equal(PricingUnitKind.OneWay, pricingUnit.Kind);
+        Assert.Equal(AirServiceIds(order, 101, 102), Ids(Assert.Single(pricingUnit.FareComponents).CoveredOrderServiceIds));
+    }
+
+    [Fact]
+    public void Coverage_follows_each_coupon_fare_reference()
+    {
+        var order = Create(
+            [new BoundSpec("OUT", 101)],
+            [
+                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7001, 101) { TravellerIndexes = [1] }),
+                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7101, 101) { TravellerIndexes = [2] })
+            ]);
+
+        Assert.Equal(
+            [(7001L, AirServiceOf(order, 1, 101)), (7101L, AirServiceOf(order, 2, 101))],
+            order.FarePricingUnits.Select(unit =>
+            {
+                var component = Assert.Single(unit.FareComponents);
+                return (component.AirFareId, Ids(component.CoveredOrderServiceIds));
+            }));
+    }
+
+    [Fact]
+    public void Pricing_unit_whose_components_cover_other_bounds_than_the_source_lists_is_rejected()
+    {
+        var exception = Assert.Throws<BusinessException>(() => Create(
+            [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
+            [
+                new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101)),
+                new PricingUnitSpec(PricingUnitKind.OneWay, ["IN"], new FareSpec(7002, 201))
+            ]));
+
+        Assert.Equal(2760, exception.Code);
+    }
+
+    [Fact]
     public void Same_air_fare_in_two_pricing_units_remains_two_occurrences()
     {
         var order = Create(
@@ -167,6 +212,17 @@ public sealed class FareTopologyCreationTests
         return Ids(order.Services
             .OfType<OrderAirTransportService>()
             .Where(service => segmentIds.Contains(service.SegmentId))
+            .Select(service => service.Id));
+    }
+
+    private static string AirServiceOf(Order order, int travellerIndex, long flightId)
+    {
+        var travellerId = order.Travellers.Single(traveller => traveller.Index == travellerIndex).Id;
+        var segmentId = order.Segments.Single(segment => segment.FlightId == flightId).Id;
+
+        return Ids(order.Services
+            .OfType<OrderAirTransportService>()
+            .Where(service => service.TravellerId == travellerId && service.SegmentId == segmentId)
             .Select(service => service.Id));
     }
 

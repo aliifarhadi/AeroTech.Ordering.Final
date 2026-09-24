@@ -12,6 +12,7 @@
     "airTransports": [
       {
         "boundId": "B1",
+        "boundOfferId": "1544009211417985664",
         "direction": 1,
         "sequence": 1,
         "originAirportId": "2",
@@ -55,6 +56,7 @@
       },
       {
         "boundId": "B2",
+        "boundOfferId": "1550116065948729606",
         "direction": 2,
         "sequence": 2,
         "originAirportId": "6",
@@ -106,6 +108,9 @@
         "fareComponents": [
           {
             "airFareId": "1469435125056929792",
+            "boundId": "B1",
+            "origin": "IKA",
+            "destination": "IST",
             "cabinClassId": 1,
             "rbdId": "25",
             "bookingClass": "Y",
@@ -124,6 +129,9 @@
         "fareComponents": [
           {
             "airFareId": "1469436464520495104",
+            "boundId": "B2",
+            "origin": "IST",
+            "destination": "IKA",
             "cabinClassId": 1,
             "rbdId": "25",
             "bookingClass": "Y",

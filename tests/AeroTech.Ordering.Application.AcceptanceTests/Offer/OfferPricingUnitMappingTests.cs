@@ -33,6 +33,44 @@ public sealed class OfferPricingUnitMappingTests
     }
 
     [Fact]
+    public void Offer_captured_before_bound_identity_stays_verbatim_and_is_rejected()
+    {
+        var raw = File.ReadAllText(PayloadPath("offer-detail-round-trip-one-way-units.json"));
+        var source = JsonSerializer.Deserialize<OfferEnvelope<FlightOfferDetailResponse>>(raw, WireOptions)!.Data!;
+
+        var exception = Assert.Throws<BusinessException>(() => OfferResponseMapper.ToDomain(source));
+
+        Assert.DoesNotContain("boundOfferId", raw);
+        Assert.Equal(2758, exception.Code);
+    }
+
+    [Fact]
+    public void Round_trip_fare_occurrences_keep_their_kind_and_bounds()
+    {
+        var source = CapturedOffer();
+        var outbound = source.AirTransports[0];
+        var inbound = source.AirTransports[1];
+        var fare = source.PricingUnits[0].FareComponents[0];
+        source.PricingUnits =
+        [
+            new OfferPricingUnit
+            {
+                Kind = "RoundTripFare",
+                CoveredBoundOfferIds = [outbound.BoundOfferId, inbound.BoundOfferId],
+                FareComponents = [OccurrenceOf(fare, outbound.BoundId), OccurrenceOf(fare, inbound.BoundId)]
+            }
+        ];
+
+        var unit = Assert.Single(OfferResponseMapper.ToDomain(source).PricingUnits);
+
+        Assert.Equal(PricingUnitKind.RoundTripFare, unit.Kind);
+        Assert.Equal([outbound.BoundId, inbound.BoundId], unit.CoveredBoundIds);
+        Assert.Equal(
+            [(1, outbound.BoundId, fare.AirFareId), (2, inbound.BoundId, fare.AirFareId)],
+            unit.FareComponents.Select(component => (component.Sequence, component.BoundId, component.AirFareId)));
+    }
+
+    [Fact]
     public void Covered_bounds_are_resolved_by_the_published_bound_offer_id()
     {
         var source = CapturedOffer();
@@ -95,7 +133,21 @@ public sealed class OfferPricingUnitMappingTests
 
     private static FlightOfferDetailResponse CapturedOffer()
         => JsonSerializer.Deserialize<OfferEnvelope<FlightOfferDetailResponse>>(
-                   File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Offer", "Payloads", "offer-detail-round-trip-one-way-units.json")),
+                   File.ReadAllText(PayloadPath("offer-detail-round-trip-one-way-units.with-bound-identity.json")),
                    WireOptions)!
                .Data!;
+
+    private static string PayloadPath(string fileName)
+        => Path.Combine(AppContext.BaseDirectory, "Offer", "Payloads", fileName);
+
+    private static OfferFareComponent OccurrenceOf(OfferFareComponent fare, string boundId)
+        => new()
+        {
+            AirFareId = fare.AirFareId,
+            BoundId = boundId,
+            BookingClass = fare.BookingClass,
+            FareBasis = fare.FareBasis,
+            FareFamily = fare.FareFamily,
+            FareType = fare.FareType
+        };
 }

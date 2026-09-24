@@ -23,7 +23,10 @@ public sealed record BoundSpec(string BoundId, params long[] FlightIds);
 
 public sealed record SeatSpec(int TravellerIndex, string BoundId, string SeatNumber);
 
-public sealed record FareSpec(long AirFareId, params long[] FlightIds);
+public sealed record FareSpec(long AirFareId, params long[] FlightIds)
+{
+    public int[] TravellerIndexes { get; init; } = [];
+}
 
 public sealed record PricingUnitSpec(PricingUnitKind Kind, string[] BoundIds, params FareSpec[] FareComponents);
 
@@ -179,11 +182,12 @@ public static class OrderFixture
                     false,
                     null,
                     null,
-                    [new OfferPriceLine(OfferPriceCategory.Fare, "Fare", "YOW", FareOf(fares, flight.FlightId).ToString(CultureInfo.InvariantCulture), 100m, CurrencyId, 100m, CurrencyId, null)])))
+                    [new OfferPriceLine(OfferPriceCategory.Fare, "Fare", "YOW", FareOf(fares, flight.FlightId, traveller.Index).ToString(CultureInfo.InvariantCulture), 100m, CurrencyId, 100m, CurrencyId, null)])))
                 .ToList());
 
-    private static long FareOf(IReadOnlyList<FareSpec> fares, long flightId)
-        => fares.Single(fare => fare.FlightIds.Contains(flightId)).AirFareId;
+    private static long FareOf(IReadOnlyList<FareSpec> fares, long flightId, int travellerIndex)
+        => fares.Single(fare => fare.FlightIds.Contains(flightId)
+                                && (fare.TravellerIndexes.Length == 0 || fare.TravellerIndexes.Contains(travellerIndex))).AirFareId;
 
     private static string TravellerRef(TravellerSpec traveller) => $"T{traveller.Index}";
 }

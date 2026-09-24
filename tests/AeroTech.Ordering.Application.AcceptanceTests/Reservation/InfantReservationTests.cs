@@ -1,4 +1,4 @@
-using AeroTech.Framework.Core.Domain.Exceptions;
+using System.Globalization;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 using Xunit;
@@ -8,18 +8,23 @@ namespace AeroTech.Ordering.Application.AcceptanceTests.Reservation;
 public sealed class InfantReservationTests
 {
     [Fact]
-    public async Task Lap_infant_reservation_is_blocked_until_the_FlightFlow_mapping_is_confirmed()
+    public async Task Lap_infant_is_left_out_of_the_hold_and_covered_by_the_parent_unit()
     {
         var harness = new ReservationHarness();
         var order = harness.SeedOrder([TravellerSpec.Adult(1), TravellerSpec.Infant(2, 1)], [new BoundSpec("OUT", 101)]);
+        var parent = order.Travellers.Single(traveller => traveller.Index == 1);
 
-        var exception = await Assert.ThrowsAsync<BusinessException>(() => harness.ReserveOrderAsync(order));
+        var result = await harness.ReserveOrderAsync(order);
 
-        Assert.Equal(2736, exception.Code);
-        Assert.Equal(501, exception.HttpStatus);
-        Assert.Empty(harness.FlightFlow.HoldRequests);
-        Assert.Empty(harness.AirFareValidator.Calls);
-        Assert.Empty(harness.Reservations.Committed);
-        Assert.Equal(OrderStatus.Created, order.Status);
+        var request = harness.FlightFlow.HoldRequests.Single();
+        var unit = harness.Reservation(result.Reservations.Single().ReservationId).Units.Single();
+
+        Assert.Equal([parent.Id.ToString(CultureInfo.InvariantCulture)], request.Passengers.Select(passenger => passenger.PaxReference));
+        Assert.Equal([parent.Id.ToString(CultureInfo.InvariantCulture)], request.Flights.Single().Seats.Select(seat => seat.PaxReference));
+        Assert.Equal(
+            ReservationHarness.AirServices(order).Select(service => service.Id).Order(),
+            unit.OrderServiceIds.Order());
+        Assert.Equal(ReservationMemberStatus.Held, unit.Status);
+        Assert.Equal(OrderStatus.Confirmed, order.Status);
     }
 }

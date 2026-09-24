@@ -133,7 +133,6 @@
         public const string OrderServiceIsNotActive = "Order service '{0}' is not active.";
         public const string OrderServiceDoesNotRequireReservation = "Order service '{0}' has no reservation step.";
         public const string ReservationUnitIncludesCoveredService = "Reservation unit '{0}' would add order service '{1}' to an existing provider operation; adding to an existing hold is not supported.";
-        public const string InfantReservationMappingIsBlocked = "Reserving lap infant '{0}' with {1} is blocked until the provider's infant request mapping is confirmed.";
         public const string AirServiceValidationFactsAreMissing = "Air service '{0}' lacks the accepted facts needed to validate its fare for reservation.";
         public const string ReservationNotFound = "Reservation '{0}' was not found for order '{1}'.";
         public const string ReservationIsNotReleasable = "Reservation '{0}' in status {1} cannot be released.";
@@ -157,5 +156,6 @@
         public const string FareComponentBoundIsNotInPricingUnit = "Fare component {1} of pricing unit {0} covers bound '{2}', which the pricing unit does not cover.";
         public const string OfferBoundOfferIdIsMissing = "Offer bound '{0}' carries no bound offer id.";
         public const string OfferFareComponentBoundIsMissing = "Offer fare component '{0}' carries no bound id.";
+        public const string FarePricingUnitContradictsOffer = "Fare pricing unit {0} covers different journeys through its fare components than the offer lists.";
     }
 }

@@ -47,12 +47,16 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
 
         public IReadOnlyList<OfferPriceLine> OrderChargeLines() => _offer.OrderCharges;
 
+        public IReadOnlyList<(string TravellerRef, long FlightId)> CouponsPricedBy(long airFareId, string boundId)
+            => _offer.Tickets
+                .SelectMany(ticket => ticket.Coupons
+                    .Where(coupon => SameRef(coupon.BoundId, boundId) && FareReferenceOf(coupon) == airFareId)
+                    .Select(coupon => (ticket.TravellerRef, coupon.FlightId)))
+                .ToList();
+
         public long ResolveCouponAirFareId(string travellerRef, string boundId, long flightId)
         {
-            var reference = Coupon(travellerRef, flightId).PriceLines
-                .Where(line => line.Category == OfferPriceCategory.Fare)
-                .Select(line => long.TryParse(line.Reference, out var parsed) ? parsed : 0)
-                .FirstOrDefault(id => id > 0);
+            var reference = FareReferenceOf(Coupon(travellerRef, flightId));
 
             if (reference > 0)
                 return reference;
@@ -86,6 +90,12 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
             var rate = Rate(line.RateOfExchangePeriodId);
             return rate is not null && rate.ToCurrencyId > 0 ? rate.ToCurrencyId : _offer.CurrencyId;
         }
+
+        private static long FareReferenceOf(OfferCoupon coupon)
+            => coupon.PriceLines
+                .Where(line => line.Category == OfferPriceCategory.Fare)
+                .Select(line => long.TryParse(line.Reference, out var parsed) ? parsed : 0)
+                .FirstOrDefault(id => id > 0);
 
         private IEnumerable<OfferFareComponent> BoundFareComponents(string boundId)
             => _offer.PricingUnits

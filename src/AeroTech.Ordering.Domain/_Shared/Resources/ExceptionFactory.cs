@@ -340,9 +340,6 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException ReservationUnitIncludesCoveredService(params object?[] args) =>
             new(2735, ExceptionMessages.ReservationUnitIncludesCoveredService, args) { HttpStatus = 422 };
 
-        public static BusinessException InfantReservationMappingIsBlocked(params object?[] args) =>
-            new(2736, ExceptionMessages.InfantReservationMappingIsBlocked, args) { HttpStatus = 501 };
-
         public static BusinessException AirServiceValidationFactsAreMissing(params object?[] args) =>
             new(2737, ExceptionMessages.AirServiceValidationFactsAreMissing, args) { HttpStatus = 422 };
 
@@ -411,6 +408,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
 
         public static BusinessException OfferFareComponentBoundIsMissing(params object?[] args) =>
             new(2759, ExceptionMessages.OfferFareComponentBoundIsMissing, args) { HttpStatus = 422 };
+
+        public static BusinessException FarePricingUnitContradictsOffer(params object?[] args) =>
+            new(2760, ExceptionMessages.FarePricingUnitContradictsOffer, args) { HttpStatus = 422 };
 
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;

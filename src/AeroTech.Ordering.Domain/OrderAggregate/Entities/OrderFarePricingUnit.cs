@@ -18,7 +18,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             long orderId,
             long createdByChangeId,
             int sequence,
-            PricingUnitKind kind,
+            string sourceKind,
+            FarePricingUnitType semanticType,
             IReadOnlyCollection<long> coveredJourneyIds)
         {
             if (coveredJourneyIds.Count == 0)
@@ -28,7 +29,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             OrderId = orderId;
             CreatedByChangeId = createdByChangeId;
             Sequence = sequence;
-            Kind = kind;
+            SourceKind = sourceKind;
+            SemanticType = semanticType;
             _coveredJourneyIds.AddRange(coveredJourneyIds);
         }
 
@@ -38,7 +40,9 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 
         public int Sequence { get; private set; }
 
-        public PricingUnitKind Kind { get; private set; }
+        public string SourceKind { get; private set; } = default!;
+
+        public FarePricingUnitType SemanticType { get; private set; }
 
         public IReadOnlyCollection<long> CoveredJourneyIds => _coveredJourneyIds.AsReadOnly();
 

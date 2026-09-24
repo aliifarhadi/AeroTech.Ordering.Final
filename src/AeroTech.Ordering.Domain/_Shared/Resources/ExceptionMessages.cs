@@ -146,7 +146,7 @@
         public const string FulfillmentTaskHasNoAttemptInProgress = "Fulfillment task '{0}' has no attempt in progress.";
         public const string ReservationPlanDiffersFromPersistedUnits = "Re-planned units of reservation '{0}' differ from its persisted units.";
         public const string PassengerTypeIsNotSupportedByProvider = "Passenger type {0} has no counterpart in the {1} passenger type contract.";
-        public const string OfferPricingUnitKindIsNotRecognised = "Offer pricing unit kind '{0}' is not recognised.";
+        public const string OfferPricingUnitKindIsMissing = "Offer pricing unit {0} carries no kind.";
         public const string OfferCoveredBoundIsNotRecognised = "Offer pricing unit covers bound offer '{0}', which is not one of the offer's bounds.";
         public const string FarePricingUnitBoundIsNotInOrder = "Fare pricing unit {0} covers bound '{1}', which is not a journey of this order.";
         public const string FareComponentCoverageIsAmbiguous = "Fare components of pricing unit {0} share AirFareId '{1}' on bound '{2}', so the offer contract does not identify which air services each one covers.";
@@ -158,11 +158,11 @@
         public const string OfferFareComponentBoundIsMissing = "Offer fare component '{0}' carries no bound id.";
         public const string FarePricingUnitContradictsOffer = "Fare pricing unit {0} covers different journeys through its fare components than the offer lists.";
         public const string LastTicketingDatePassed = "Order '{0}' passed its last ticketing date {1}, so a new reservation cannot start.";
-        public const string ReservationValidationTimeLimitPassed = "Reservation '{0}' passed its validation time limit {1}, so its services cannot be reserved again.";
         public const string ReservationTaskIsNotResumable = "Unresolved reservation '{0}' has no resumable reservation task carrying its original provider request.";
         public const string ProviderReadBackIsNotAvailable = "Provider '{0}' offers no read-back of reservation state.";
         public const string ProviderInteractionIsNotInFlight = "Fulfillment task '{0}' has no provider interaction in flight.";
         public const string ProviderInteractionIsAlreadyInFlight = "Fulfillment task '{0}' already has a provider interaction in flight.";
         public const string ProviderMutationRequiresIdempotencyKey = "Provider interaction {0} changes provider state and requires an idempotency key.";
+        public const string FarePricingUnitValidationIsUnsupported = "Fare pricing unit {0} of source kind '{1}' has no semantic type that maps to an AirPrice journey type, so it cannot be validated.";
     }
 }

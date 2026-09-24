@@ -71,7 +71,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
 
             var now = _clock.GetDateTime();
 
-            if (reservations.All(reservation => reservation.IsSettled) && order.IsExpirableAt(now, RequiredServiceIds(order), ValidationTimeLimitByService(reservations)))
+            if (reservations.All(reservation => reservation.IsSettled) && order.IsExpirableAt(now))
                 order.Expire();
 
             if (settled || order.Status != statusBefore)
@@ -90,22 +90,12 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
                 return true;
             }
 
-            if (!reservation.DeadlinePassedAt(now, order.LastTicketingDate) || await _releaser.ReleaseWasRejectedAsync(reservation, cancellationToken))
+            if (!order.HasPassedLastTicketingDateAt(now) || await _releaser.ReleaseWasRejectedAsync(reservation, cancellationToken))
                 return false;
 
             var outcome = await _releaser.ReleaseAsync(reservation, cancellationToken);
 
             return outcome.OperationOutcome == ProviderOperationOutcome.Succeeded;
         }
-
-        private IReadOnlyCollection<long> RequiredServiceIds(Order order)
-            => order.Services
-                .Where(_providers.RequiresReservation)
-                .Select(service => service.Id)
-                .ToList();
-
-        private static IReadOnlyDictionary<long, DateTimeOffset?> ValidationTimeLimitByService(IEnumerable<FulfillmentReservation> reservations)
-            => ReservationCoverage.LatestReservationByService(reservations)
-                .ToDictionary(coverage => coverage.Key, coverage => coverage.Value.ReservationValidationTimeLimit);
     }
 }

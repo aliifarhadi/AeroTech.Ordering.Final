@@ -14,13 +14,13 @@ public sealed class OfferPricingUnitMappingTests
 
         Assert.Equal(
             [
-                (1, PricingUnitKind.OneWay, "B1", 1, "B1", 1469435125056929792L, "Y", "YIKAIST/OW", "Flex", "Public"),
-                (2, PricingUnitKind.OneWay, "B2", 1, "B2", 1469436464520495104L, "Y", "YISTIKA/OW", "Flex", "Public")
+                (1, "OneWay", FarePricingUnitType.OneWay, "B1", 1, "B1", 1469435125056929792L, "Y", "YIKAIST/OW", "Flex", "Public"),
+                (2, "OneWay", FarePricingUnitType.OneWay, "B2", 1, "B2", 1469436464520495104L, "Y", "YISTIKA/OW", "Flex", "Public")
             ],
             offer.PricingUnits.Select(unit =>
             {
                 var component = Assert.Single(unit.FareComponents);
-                return (unit.Sequence, unit.Kind, unit.CoveredBoundIds.Single(), component.Sequence, component.BoundId, component.AirFareId, component.BookingClass, component.FareBasis, component.FareFamily, component.FareType);
+                return (unit.Sequence, unit.SourceKind, unit.SemanticType, unit.CoveredBoundIds.Single(), component.Sequence, component.BoundId, component.AirFareId, component.BookingClass, component.FareBasis, component.FareFamily, component.FareType);
             }));
     }
 

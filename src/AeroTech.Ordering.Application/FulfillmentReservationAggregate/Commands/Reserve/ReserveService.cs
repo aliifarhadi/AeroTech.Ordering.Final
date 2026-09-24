@@ -141,7 +141,6 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
             CancellationToken cancellationToken)
         {
             var latestUnitStatusByService = ReservationCoverage.LatestUnitStatusByService(reservations);
-            var latestReservationByService = ReservationCoverage.LatestReservationByService(reservations);
             var operations = new List<ReservationOperation>();
 
             var groups = services
@@ -157,7 +156,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 var provider = _providers.Resolve(group.Key.FulfillmentProviderKey);
                 var units = provider.PlanUnits(order, group.ToList());
 
-                EnsureReservableAnew(units, latestUnitStatusByService, latestReservationByService, _clock.GetDateTime());
+                EnsureUncovered(units, latestUnitStatusByService);
 
                 var preparation = await provider.PrepareAsync(order, units, cancellationToken);
                 var createdAt = _clock.GetDateTime();
@@ -312,11 +311,9 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 reservation.RequestedExpiresAt,
                 units);
 
-        private static void EnsureReservableAnew(
+        private static void EnsureUncovered(
             IReadOnlyList<ReservationUnitIntent> units,
-            IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService,
-            IReadOnlyDictionary<long, FulfillmentReservation> latestReservationByService,
-            DateTimeOffset now)
+            IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService)
         {
             foreach (var unit in units)
             {
@@ -324,9 +321,6 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 {
                     if (!IsUncovered(serviceId, latestUnitStatusByService))
                         throw ExceptionFactory.ReservationUnitIncludesCoveredService(unit.UnitCorrelationKey, serviceId);
-
-                    if (latestReservationByService.TryGetValue(serviceId, out var previous))
-                        previous.EnsureReplaceableAt(now);
                 }
             }
         }

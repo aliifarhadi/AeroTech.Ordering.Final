@@ -6,6 +6,10 @@ namespace AeroTech.Ordering.Providers.Offer.Services
 {
     public static class OfferResponseMapper
     {
+        private const string OneWayKind = "OneWay";
+        private const string ThroughOneWayKind = "ThroughOneWay";
+        private const string RoundTripFareKind = "RoundTripFare";
+
         public static OfferDetail ToDomain(Wire.FlightOfferDetailResponse source)
             => new(
                 source.OfferId,
@@ -51,7 +55,8 @@ namespace AeroTech.Ordering.Providers.Offer.Services
             return source.PricingUnits
                 .Select((unit, unitIndex) => new OfferPricingUnit(
                     unitIndex + 1,
-                    KindOf(unit.Kind),
+                    string.IsNullOrWhiteSpace(unit.Kind) ? throw ExceptionFactory.OfferPricingUnitKindIsMissing(unitIndex + 1) : unit.Kind,
+                    SemanticTypeOf(unit.Kind),
                     unit.CoveredBoundOfferIds
                         .Select(boundOfferId => boundByBoundOfferId.TryGetValue(boundOfferId, out var boundId)
                             ? boundId
@@ -72,12 +77,12 @@ namespace AeroTech.Ordering.Providers.Offer.Services
                 .ToList();
         }
 
-        private static PricingUnitKind KindOf(string kind)
+        private static FarePricingUnitType SemanticTypeOf(string kind) => kind switch
         {
-            var parsed = Enum.GetValues<PricingUnitKind>().FirstOrDefault(value => string.Equals(value.ToString(), kind, StringComparison.Ordinal));
-
-            return Enum.IsDefined(parsed) ? parsed : throw ExceptionFactory.OfferPricingUnitKindIsNotRecognised(kind);
-        }
+            OneWayKind or ThroughOneWayKind => FarePricingUnitType.OneWay,
+            RoundTripFareKind => FarePricingUnitType.RoundTrip,
+            _ => FarePricingUnitType.Unspecified
+        };
 
         private static OfferCoupon MapCoupon(Wire.OfferCoupon coupon)
             => new(

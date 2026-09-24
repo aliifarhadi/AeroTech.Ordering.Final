@@ -27,8 +27,7 @@ public sealed class InMemoryFulfillmentReservationRepository(InMemoryUnitOfWork 
         int batchSize,
         CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<long>>(_committed
-            .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held
-                                  && (reservation.HoldLapsedAt(now) || reservation.ValidationTimeLimitPassedAt(now)))
+            .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held && reservation.HoldLapsedAt(now))
             .Select(reservation => reservation.OrderId)
             .Distinct()
             .Take(batchSize)

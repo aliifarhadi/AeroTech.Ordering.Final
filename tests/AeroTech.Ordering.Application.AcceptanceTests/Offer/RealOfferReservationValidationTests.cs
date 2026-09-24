@@ -6,7 +6,7 @@ using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 using AeroTech.Ordering.Providers.Offer.Services;
 using AeroTech.Ordering.Providers.Pricing.Services;
 using Xunit;
-using PricingUnitKind = AeroTech.Messages.Ordering.Enums.PricingUnitKind;
+using FarePricingUnitType = AeroTech.Messages.Ordering.Enums.FarePricingUnitType;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Offer;
 
@@ -31,9 +31,10 @@ public sealed class RealOfferReservationValidationTests
 
         Assert.All(ReservationHarness.AirServices(order), service => Assert.Equal(25, service.RbdId));
         Assert.Equal(
-            [(PricingUnitKind.OneWay, "B1", 1469435125056929792L, 2), (PricingUnitKind.OneWay, "B2", 1469436464520495104L, 2)],
+            [("OneWay", FarePricingUnitType.OneWay, "B1", 1469435125056929792L, 2), ("OneWay", FarePricingUnitType.OneWay, "B2", 1469436464520495104L, 2)],
             order.FarePricingUnits.Select(unit => (
-                unit.Kind,
+                unit.SourceKind,
+                unit.SemanticType,
                 order.Journeys.Single(journey => journey.Id == unit.CoveredJourneyIds.Single()).BoundId,
                 unit.FareComponents.Single().AirFareId,
                 unit.FareComponents.Single().CoveredOrderServiceIds.Count)));

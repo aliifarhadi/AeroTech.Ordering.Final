@@ -1,5 +1,5 @@
 using AeroTech.Messages.AirPrice.Enums;
-using PricingUnitKind = AeroTech.Messages.Ordering.Enums.PricingUnitKind;
+using AeroTech.Messages.Ordering.Enums;
 
 namespace AeroTech.Ordering.Domain.Providers.Offer
 {
@@ -60,7 +60,8 @@ namespace AeroTech.Ordering.Domain.Providers.Offer
 
     public sealed record OfferPricingUnit(
         int Sequence,
-        PricingUnitKind Kind,
+        string SourceKind,
+        FarePricingUnitType SemanticType,
         IReadOnlyList<string> CoveredBoundIds,
         IReadOnlyList<OfferFareComponent> FareComponents);
 

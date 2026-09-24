@@ -27,15 +27,18 @@ public sealed class SyntheticOfferPricingUnitContractTests
 
         var unit = Assert.Single(OfferResponseMapper.ToDomain(source).PricingUnits);
 
-        Assert.Equal(PricingUnitKind.RoundTripFare, unit.Kind);
+        Assert.Equal(("RoundTripFare", FarePricingUnitType.RoundTrip), (unit.SourceKind, unit.SemanticType));
         Assert.Equal([outbound.BoundId, inbound.BoundId], unit.CoveredBoundIds);
         Assert.Equal(
             [(1, outbound.BoundId, fare.AirFareId), (2, inbound.BoundId, fare.AirFareId)],
             unit.FareComponents.Select(component => (component.Sequence, component.BoundId, component.AirFareId)));
     }
 
-    [Fact]
-    public void Synthetic_sector_sum_keeps_one_fare_component_per_sector_of_the_bound()
+    [Theory]
+    [InlineData("SectorSum")]
+    [InlineData("RoundTripFromOneWays")]
+    [InlineData("2")]
+    public void Synthetic_source_kind_without_a_mapped_meaning_is_preserved_as_unspecified(string kind)
     {
         var source = CapturedOffers.WithBoundIdentity();
         var outbound = source.AirTransports[0];
@@ -43,14 +46,14 @@ public sealed class SyntheticOfferPricingUnitContractTests
         const long secondSectorFareId = 9001;
         source.PricingUnits[0] = new OfferPricingUnit
         {
-            Kind = "SectorSum",
+            Kind = kind,
             CoveredBoundOfferIds = [outbound.BoundOfferId],
             FareComponents = [OccurrenceOf(fare, fare.AirFareId, outbound.BoundId), OccurrenceOf(fare, secondSectorFareId, outbound.BoundId)]
         };
 
         var unit = OfferResponseMapper.ToDomain(source).PricingUnits[0];
 
-        Assert.Equal(PricingUnitKind.SectorSum, unit.Kind);
+        Assert.Equal((kind, FarePricingUnitType.Unspecified), (unit.SourceKind, unit.SemanticType));
         Assert.Equal([outbound.BoundId], unit.CoveredBoundIds);
         Assert.Equal(
             [(1, outbound.BoundId, fare.AirFareId), (2, outbound.BoundId, secondSectorFareId)],
@@ -67,7 +70,7 @@ public sealed class SyntheticOfferPricingUnitContractTests
 
         var unit = OfferResponseMapper.ToDomain(source).PricingUnits[0];
 
-        Assert.Equal(PricingUnitKind.ThroughOneWay, unit.Kind);
+        Assert.Equal(("ThroughOneWay", FarePricingUnitType.OneWay), (unit.SourceKind, unit.SemanticType));
         Assert.Equal(["B1"], unit.CoveredBoundIds);
     }
 
@@ -94,10 +97,9 @@ public sealed class SyntheticOfferPricingUnitContractTests
     }
 
     [Theory]
-    [InlineData("RoundTripFromOneWays")]
-    [InlineData("Sector Sum")]
-    [InlineData("2")]
-    public void Synthetic_pricing_unit_kind_outside_the_source_vocabulary_is_rejected(string kind)
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Synthetic_pricing_unit_without_a_kind_is_rejected(string kind)
     {
         var source = CapturedOffers.WithBoundIdentity();
         source.PricingUnits[0].Kind = kind;

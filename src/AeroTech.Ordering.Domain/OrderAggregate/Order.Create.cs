@@ -329,7 +329,14 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 if (!sourceJourneyIds.SetEquals(coveredJourneyIds))
                     throw ExceptionFactory.FarePricingUnitContradictsOffer(source.Sequence);
 
-                var pricingUnit = new OrderFarePricingUnit(idGenerator.NewId(), Id, changeId, source.Sequence, source.Kind, coveredJourneyIds);
+                var pricingUnit = new OrderFarePricingUnit(
+                    idGenerator.NewId(),
+                    Id,
+                    changeId,
+                    source.Sequence,
+                    source.SourceKind,
+                    source.SemanticType,
+                    coveredJourneyIds);
 
                 foreach (var (component, services) in components)
                     pricingUnit.AddFareComponent(new OrderFareComponent(

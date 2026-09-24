@@ -151,21 +151,13 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
         public bool HoldLapsedAt(DateTimeOffset now) => ExpiresAt <= now;
 
-        public bool ValidationTimeLimitPassedAt(DateTimeOffset now) => ReservationValidationTimeLimit <= now;
-
-        public bool DeadlinePassedAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
-            => ValidationTimeLimitPassedAt(now) || lastTicketingDate <= now;
+        public bool ValidationIsStaleAt(DateTimeOffset now) => ReservationValidationTimeLimit <= now;
 
         public bool IsConfirmableAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
             => Status == FulfillmentReservationStatus.Held
                && !HoldLapsedAt(now)
-               && !DeadlinePassedAt(now, lastTicketingDate);
-
-        public void EnsureReplaceableAt(DateTimeOffset now)
-        {
-            if (ValidationTimeLimitPassedAt(now))
-                throw ExceptionFactory.ReservationValidationTimeLimitPassed(Id, ReservationValidationTimeLimit);
-        }
+               && !ValidationIsStaleAt(now)
+               && !(lastTicketingDate <= now);
 
         public ReleaseIntent PrepareRelease()
             => Status == FulfillmentReservationStatus.Held && ProviderOperationRef is { } providerOperationRef

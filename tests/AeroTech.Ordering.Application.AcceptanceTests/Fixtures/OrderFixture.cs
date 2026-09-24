@@ -28,7 +28,17 @@ public sealed record FareSpec(long AirFareId, params long[] FlightIds)
     public int[] TravellerIndexes { get; init; } = [];
 }
 
-public sealed record PricingUnitSpec(PricingUnitKind Kind, string[] BoundIds, params FareSpec[] FareComponents);
+public sealed record PricingUnitSpec(string SourceKind, FarePricingUnitType SemanticType, string[] BoundIds, params FareSpec[] FareComponents)
+{
+    public static PricingUnitSpec OneWay(string boundId, params FareSpec[] fareComponents)
+        => new("OneWay", FarePricingUnitType.OneWay, [boundId], fareComponents);
+
+    public static PricingUnitSpec ThroughOneWay(string boundId, params FareSpec[] fareComponents)
+        => new("ThroughOneWay", FarePricingUnitType.OneWay, [boundId], fareComponents);
+
+    public static PricingUnitSpec RoundTripFare(string[] boundIds, params FareSpec[] fareComponents)
+        => new("RoundTripFare", FarePricingUnitType.RoundTrip, boundIds, fareComponents);
+}
 
 public static class OrderFixture
 {
@@ -110,7 +120,8 @@ public static class OrderFixture
             offerPricingUnits
                 .Select((unit, unitIndex) => new OfferPricingUnit(
                     unitIndex + 1,
-                    unit.Kind,
+                    unit.SourceKind,
+                    unit.SemanticType,
                     unit.BoundIds,
                     unit.FareComponents
                         .SelectMany(fare => BoundsPricedBy(fare, unit, offerBounds).Select(boundId => (fare.AirFareId, BoundId: boundId)))
@@ -131,10 +142,13 @@ public static class OrderFixture
                 .ToList();
 
     private static PricingUnitSpec OneWayPricingUnitOf(OfferBound bound)
-        => new(
-            bound.Flights.Count > 1 ? PricingUnitKind.ThroughOneWay : PricingUnitKind.OneWay,
-            [bound.BoundId],
-            new FareSpec(7_000 + bound.Sequence, bound.Flights.Select(flight => flight.FlightId).ToArray()));
+    {
+        var fare = new FareSpec(7_000 + bound.Sequence, bound.Flights.Select(flight => flight.FlightId).ToArray());
+
+        return bound.Flights.Count > 1
+            ? PricingUnitSpec.ThroughOneWay(bound.BoundId, fare)
+            : PricingUnitSpec.OneWay(bound.BoundId, fare);
+    }
 
     public static int AirportOf(int boundSequence, int stop) => 10 * boundSequence + stop;
 

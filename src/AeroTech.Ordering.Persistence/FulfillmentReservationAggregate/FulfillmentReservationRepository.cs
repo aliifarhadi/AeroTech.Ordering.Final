@@ -25,8 +25,7 @@ namespace AeroTech.Ordering.Persistence.FulfillmentReservationAggregate
             int batchSize,
             CancellationToken cancellationToken = default)
             => await _dbContext.FulfillmentReservations
-                .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held
-                                      && (reservation.ExpiresAt <= now || reservation.ReservationValidationTimeLimit <= now))
+                .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held && reservation.ExpiresAt <= now)
                 .Select(reservation => reservation.OrderId)
                 .Distinct()
                 .Take(batchSize)

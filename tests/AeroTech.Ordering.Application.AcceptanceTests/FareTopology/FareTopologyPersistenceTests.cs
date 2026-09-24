@@ -33,7 +33,7 @@ public sealed class FareTopologyPersistenceTests : IAsyncLifetime
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201, 202)],
             pricingUnits:
             [
-                new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101), new FareSpec(9002, 201, 202))
+                PricingUnitSpec.RoundTripFare(["OUT", "IN"], new FareSpec(9001, 101), new FareSpec(9002, 201, 202))
             ]);
 
         await using (var context = _database.NewContext())
@@ -47,6 +47,35 @@ public sealed class FareTopologyPersistenceTests : IAsyncLifetime
             var reloaded = await new OrderRepository(context).GetAsync(order.Id);
 
             Assert.NotNull(reloaded);
+            Assert.Equal(Topology(order), Topology(reloaded));
+        }
+    }
+
+    [Fact]
+    public async Task Unmapped_source_kind_survives_persistence_and_reload_verbatim()
+    {
+        var order = OrderFixture.Create(
+            new SequentialIdGenerator(),
+            _clock,
+            [TravellerSpec.Adult(1)],
+            [new BoundSpec("OUT", 101, 102)],
+            pricingUnits:
+            [
+                new PricingUnitSpec("SectorSum", FarePricingUnitType.Unspecified, ["OUT"], new FareSpec(8001, 101), new FareSpec(8002, 102))
+            ]);
+
+        await using (var context = _database.NewContext())
+        {
+            await new OrderRepository(context).AddAsync(order);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = _database.NewContext())
+        {
+            var reloaded = (await new OrderRepository(context).GetAsync(order.Id))!;
+            var pricingUnit = Assert.Single(reloaded.FarePricingUnits);
+
+            Assert.Equal(("SectorSum", FarePricingUnitType.Unspecified), (pricingUnit.SourceKind, pricingUnit.SemanticType));
             Assert.Equal(Topology(order), Topology(reloaded));
         }
     }
@@ -91,7 +120,8 @@ public sealed class FareTopologyPersistenceTests : IAsyncLifetime
                     unit.OrderId,
                     unit.CreatedByChangeId,
                     unit.Sequence,
-                    unit.Kind,
+                    unit.SourceKind,
+                    unit.SemanticType,
                     string.Join(",", unit.CoveredJourneyIds),
                     component.Id,
                     component.OrderFarePricingUnitId,

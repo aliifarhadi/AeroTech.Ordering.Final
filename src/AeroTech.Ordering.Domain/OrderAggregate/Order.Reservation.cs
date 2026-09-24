@@ -23,9 +23,11 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 
         public void EnsureNewReservationAllowedAt(DateTimeOffset now)
         {
-            if (LastTicketingDate <= now)
+            if (HasPassedLastTicketingDateAt(now))
                 throw ExceptionFactory.LastTicketingDatePassed(Id, LastTicketingDate);
         }
+
+        public bool HasPassedLastTicketingDateAt(DateTimeOffset now) => LastTicketingDate <= now;
 
         public void AssignRecordLocator(string recordLocator)
         {
@@ -64,14 +66,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 TransitionTo(OrderStatus.ReserveFailed);
         }
 
-        public bool IsExpirableAt(
-            DateTimeOffset now,
-            IReadOnlyCollection<long> requiredServiceIds,
-            IReadOnlyDictionary<long, DateTimeOffset?> validationTimeLimitByService)
-            => ReservableStatuses.Contains(Status)
-               && (LastTicketingDate <= now
-                   || (requiredServiceIds.Count > 0
-                       && requiredServiceIds.All(serviceId => validationTimeLimitByService.TryGetValue(serviceId, out var limit) && limit <= now)));
+        public bool IsExpirableAt(DateTimeOffset now) => ReservableStatuses.Contains(Status) && HasPassedLastTicketingDateAt(now);
 
         public void Expire()
         {

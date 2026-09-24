@@ -12,6 +12,8 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.HasKey(pricingUnit => pricingUnit.Id);
             builder.Property(pricingUnit => pricingUnit.Id).ValueGeneratedNever();
 
+            builder.Property(pricingUnit => pricingUnit.SourceKind).HasMaxLength(64).IsRequired();
+
             builder.PrimitiveCollection(pricingUnit => pricingUnit.CoveredJourneyIds)
                 .HasField("_coveredJourneyIds")
                 .UsePropertyAccessMode(PropertyAccessMode.Field)

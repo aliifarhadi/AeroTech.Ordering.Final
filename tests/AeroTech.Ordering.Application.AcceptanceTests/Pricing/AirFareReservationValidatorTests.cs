@@ -10,7 +10,7 @@ using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Pricing;
 using AeroTech.Ordering.Providers.Pricing.Services;
 using Xunit;
-using PricingUnitKind = AeroTech.Messages.Ordering.Enums.PricingUnitKind;
+using FarePricingUnitType = AeroTech.Messages.Ordering.Enums.FarePricingUnitType;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Pricing;
 
@@ -25,7 +25,7 @@ public sealed class AirFareReservationValidatorTests
         var order = _harness.SeedOrder(
             [TravellerSpec.Adult(1)],
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
-            pricingUnits: [new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101), new FareSpec(9002, 201))]);
+            pricingUnits: [PricingUnitSpec.RoundTripFare(["OUT", "IN"], new FareSpec(9001, 101), new FareSpec(9002, 201))]);
 
         await ValidateAsync(order, ReservationHarness.AirServices(order));
 
@@ -81,12 +81,12 @@ public sealed class AirFareReservationValidatorTests
     }
 
     [Fact]
-    public async Task Sector_sum_is_validated_as_one_air_price_pricing_unit_per_sector()
+    public async Task Sector_fares_of_a_one_way_pricing_unit_are_validated_as_one_air_price_pricing_unit_each()
     {
         var order = _harness.SeedOrder(
             [TravellerSpec.Adult(1)],
             [new BoundSpec("OUT", 101, 102)],
-            pricingUnits: [new PricingUnitSpec(PricingUnitKind.SectorSum, ["OUT"], new FareSpec(8001, 101), new FareSpec(8002, 102))]);
+            pricingUnits: [PricingUnitSpec.ThroughOneWay("OUT", new FareSpec(8001, 101), new FareSpec(8002, 102))]);
 
         await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
 
@@ -105,6 +105,20 @@ public sealed class AirFareReservationValidatorTests
     }
 
     [Fact]
+    public async Task Pricing_unit_without_a_mapped_semantic_type_is_blocked_before_calling_air_price()
+    {
+        var order = _harness.SeedOrder(
+            [TravellerSpec.Adult(1)],
+            [new BoundSpec("OUT", 101, 102)],
+            pricingUnits: [new PricingUnitSpec("SectorSum", FarePricingUnitType.Unspecified, ["OUT"], new FareSpec(8001, 101), new FareSpec(8002, 102))]);
+
+        var exception = await Assert.ThrowsAsync<BusinessException>(() => ValidateAsync(order, ReservationHarness.AirServices(order)));
+
+        Assert.Equal((2768, 501), (exception.Code, exception.HttpStatus));
+        Assert.Empty(_pricing.Requests);
+    }
+
+    [Fact]
     public async Task Same_air_fare_in_two_pricing_units_is_validated_in_two_scopes()
     {
         var order = _harness.SeedOrder(
@@ -112,8 +126,8 @@ public sealed class AirFareReservationValidatorTests
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
             pricingUnits:
             [
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7000, 101)),
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["IN"], new FareSpec(7000, 201))
+                PricingUnitSpec.OneWay("OUT", new FareSpec(7000, 101)),
+                PricingUnitSpec.OneWay("IN", new FareSpec(7000, 201))
             ]);
 
         await ValidateAsync(order, ReservationHarness.AirServices(order));
@@ -129,7 +143,7 @@ public sealed class AirFareReservationValidatorTests
         var order = _harness.SeedOrder(
             [TravellerSpec.Adult(1)],
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
-            pricingUnits: [new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101, 201))]);
+            pricingUnits: [PricingUnitSpec.RoundTripFare(["OUT", "IN"], new FareSpec(9001, 101, 201))]);
 
         await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
 

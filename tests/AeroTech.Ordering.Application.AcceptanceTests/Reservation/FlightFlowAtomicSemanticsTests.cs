@@ -14,6 +14,16 @@ public sealed class FlightFlowAtomicSemanticsTests
     private readonly ReservationHarness _harness = new();
 
     [Fact]
+    public void Held_seats_lapse_automatically_at_their_expiry_and_cannot_be_read_back()
+    {
+        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)]);
+
+        var capability = _harness.FlightFlowReservation.CapabilityFor(ReservationHarness.AirService(order, 1, 101));
+
+        Assert.Equal((true, false), (capability.ExpiresAutomatically, capability.SupportsReadBack));
+    }
+
+    [Fact]
     public async Task Success_holds_every_expected_unit()
     {
         var order = _harness.SeedOrder([TravellerSpec.Adult(1), TravellerSpec.Adult(2)], [new BoundSpec("OUT", 101, 102)]);

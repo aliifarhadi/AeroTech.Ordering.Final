@@ -99,11 +99,13 @@ stage2:
       Reversed: 7
       Succeeded: 8
       Unknown: 9
-    AeroTech.Messages.Ordering.Enums.PricingUnitKind:
+    FarePricingUnitType:
+      Unspecified: 0
       OneWay: 1
-      RoundTripFare: 2
-      ThroughOneWay: 3
-      SectorSum: 4
+      RoundTrip: 2
+      OpenJaw: 3
+      CircleTrip: 4
+      Other: 5
     OrderFulfillmentTargetAction:
       Reserve: 1
       Cancel: 2

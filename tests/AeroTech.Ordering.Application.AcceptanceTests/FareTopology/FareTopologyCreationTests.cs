@@ -18,11 +18,13 @@ public sealed class FareTopologyCreationTests
     {
         var order = Create(
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
-            [new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101), new FareSpec(9002, 201))]);
+            [PricingUnitSpec.RoundTripFare(["OUT", "IN"], new FareSpec(9001, 101), new FareSpec(9002, 201))]);
 
         var pricingUnit = Assert.Single(order.FarePricingUnits);
 
-        Assert.Equal((1, PricingUnitKind.RoundTripFare, order.Changes.Single().Id), (pricingUnit.Sequence, pricingUnit.Kind, pricingUnit.CreatedByChangeId));
+        Assert.Equal(
+            (1, "RoundTripFare", FarePricingUnitType.RoundTrip, order.Changes.Single().Id),
+            (pricingUnit.Sequence, pricingUnit.SourceKind, pricingUnit.SemanticType, pricingUnit.CreatedByChangeId));
         Assert.Equal([JourneyId(order, "OUT"), JourneyId(order, "IN")], pricingUnit.CoveredJourneyIds);
         Assert.Equal(
             [(1, 9001L, AirServiceIds(order, 101)), (2, 9002L, AirServiceIds(order, 201))],
@@ -36,13 +38,13 @@ public sealed class FareTopologyCreationTests
 
         Assert.Equal(
             [
-                (1, PricingUnitKind.OneWay, JourneyId(order, "OUT"), 7001L, AirServiceIds(order, 101)),
-                (2, PricingUnitKind.OneWay, JourneyId(order, "IN"), 7002L, AirServiceIds(order, 201))
+                (1, "OneWay", FarePricingUnitType.OneWay, JourneyId(order, "OUT"), 7001L, AirServiceIds(order, 101)),
+                (2, "OneWay", FarePricingUnitType.OneWay, JourneyId(order, "IN"), 7002L, AirServiceIds(order, 201))
             ],
             order.FarePricingUnits.Select(unit =>
             {
                 var component = Assert.Single(unit.FareComponents);
-                return (unit.Sequence, unit.Kind, unit.CoveredJourneyIds.Single(), component.AirFareId, Ids(component.CoveredOrderServiceIds));
+                return (unit.Sequence, unit.SourceKind, unit.SemanticType, unit.CoveredJourneyIds.Single(), component.AirFareId, Ids(component.CoveredOrderServiceIds));
             }));
     }
 
@@ -54,20 +56,20 @@ public sealed class FareTopologyCreationTests
         var pricingUnit = Assert.Single(order.FarePricingUnits);
         var component = Assert.Single(pricingUnit.FareComponents);
 
-        Assert.Equal(PricingUnitKind.ThroughOneWay, pricingUnit.Kind);
+        Assert.Equal(("ThroughOneWay", FarePricingUnitType.OneWay), (pricingUnit.SourceKind, pricingUnit.SemanticType));
         Assert.Equal(AirServiceIds(order, 101, 102), Ids(component.CoveredOrderServiceIds));
     }
 
     [Fact]
-    public void Sector_sum_keeps_one_component_per_sector_in_one_pricing_unit()
+    public void Source_kind_without_a_mapped_meaning_is_preserved_verbatim_with_its_topology()
     {
         var order = Create(
             [new BoundSpec("OUT", 101, 102)],
-            [new PricingUnitSpec(PricingUnitKind.SectorSum, ["OUT"], new FareSpec(8001, 101), new FareSpec(8002, 102))]);
+            [new PricingUnitSpec("SectorSum", FarePricingUnitType.Unspecified, ["OUT"], new FareSpec(8001, 101), new FareSpec(8002, 102))]);
 
         var pricingUnit = Assert.Single(order.FarePricingUnits);
 
-        Assert.Equal(PricingUnitKind.SectorSum, pricingUnit.Kind);
+        Assert.Equal(("SectorSum", FarePricingUnitType.Unspecified), (pricingUnit.SourceKind, pricingUnit.SemanticType));
         Assert.Equal([JourneyId(order, "OUT")], pricingUnit.CoveredJourneyIds);
         Assert.Equal(
             [(1, 8001L, AirServiceIds(order, 101)), (2, 8002L, AirServiceIds(order, 102))],
@@ -79,11 +81,11 @@ public sealed class FareTopologyCreationTests
     {
         var order = Create(
             [new BoundSpec("OUT", 101, 102)],
-            [new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7001, 101, 102))]);
+            [PricingUnitSpec.OneWay("OUT", new FareSpec(7001, 101, 102))]);
 
         var pricingUnit = Assert.Single(order.FarePricingUnits);
 
-        Assert.Equal(PricingUnitKind.OneWay, pricingUnit.Kind);
+        Assert.Equal(("OneWay", FarePricingUnitType.OneWay), (pricingUnit.SourceKind, pricingUnit.SemanticType));
         Assert.Equal(AirServiceIds(order, 101, 102), Ids(Assert.Single(pricingUnit.FareComponents).CoveredOrderServiceIds));
     }
 
@@ -93,8 +95,8 @@ public sealed class FareTopologyCreationTests
         var order = Create(
             [new BoundSpec("OUT", 101)],
             [
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7001, 101) { TravellerIndexes = [1] }),
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7101, 101) { TravellerIndexes = [2] })
+                PricingUnitSpec.OneWay("OUT", new FareSpec(7001, 101) { TravellerIndexes = [1] }),
+                PricingUnitSpec.OneWay("OUT", new FareSpec(7101, 101) { TravellerIndexes = [2] })
             ]);
 
         Assert.Equal(
@@ -112,8 +114,8 @@ public sealed class FareTopologyCreationTests
         var exception = Assert.Throws<BusinessException>(() => Create(
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
             [
-                new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101)),
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["IN"], new FareSpec(7002, 201))
+                PricingUnitSpec.RoundTripFare(["OUT", "IN"], new FareSpec(9001, 101)),
+                PricingUnitSpec.OneWay("IN", new FareSpec(7002, 201))
             ]));
 
         Assert.Equal(2760, exception.Code);
@@ -125,8 +127,8 @@ public sealed class FareTopologyCreationTests
         var order = Create(
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
             [
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7000, 101)),
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["IN"], new FareSpec(7000, 201))
+                PricingUnitSpec.OneWay("OUT", new FareSpec(7000, 101)),
+                PricingUnitSpec.OneWay("IN", new FareSpec(7000, 201))
             ]);
 
         var components = order.FarePricingUnits.SelectMany(unit => unit.FareComponents).ToList();
@@ -143,7 +145,7 @@ public sealed class FareTopologyCreationTests
     {
         var order = Create(
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
-            [new PricingUnitSpec(PricingUnitKind.RoundTripFare, ["OUT", "IN"], new FareSpec(9001, 101, 201))]);
+            [PricingUnitSpec.RoundTripFare(["OUT", "IN"], new FareSpec(9001, 101, 201))]);
 
         var pricingUnit = Assert.Single(order.FarePricingUnits);
 
@@ -157,7 +159,7 @@ public sealed class FareTopologyCreationTests
     {
         var exception = Assert.Throws<BusinessException>(() => Create(
             [new BoundSpec("OUT", 101, 102)],
-            [new PricingUnitSpec(PricingUnitKind.ThroughOneWay, ["OUT"], new FareSpec(9001, 101), new FareSpec(9001, 102))]));
+            [PricingUnitSpec.ThroughOneWay("OUT", new FareSpec(9001, 101), new FareSpec(9001, 102))]));
 
         Assert.Equal(2753, exception.Code);
         Assert.Equal(501, exception.HttpStatus);
@@ -168,7 +170,7 @@ public sealed class FareTopologyCreationTests
     {
         var exception = Assert.Throws<BusinessException>(() => Create(
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
-            [new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7001, 101), new FareSpec(7002, 201))]));
+            [PricingUnitSpec.OneWay("OUT", new FareSpec(7001, 101), new FareSpec(7002, 201))]));
 
         Assert.Equal(2757, exception.Code);
     }
@@ -178,7 +180,7 @@ public sealed class FareTopologyCreationTests
     {
         var exception = Assert.Throws<BusinessException>(() => Create(
             [new BoundSpec("OUT", 101)],
-            [new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7001, 101), new FareSpec(7099))]));
+            [PricingUnitSpec.OneWay("OUT", new FareSpec(7001, 101), new FareSpec(7099))]));
 
         Assert.Equal(2754, exception.Code);
     }
@@ -188,7 +190,7 @@ public sealed class FareTopologyCreationTests
     {
         var exception = Assert.Throws<BusinessException>(() => Create(
             [new BoundSpec("OUT", 101)],
-            [new PricingUnitSpec(PricingUnitKind.OneWay, ["ELSEWHERE"], new FareSpec(7001, 101))]));
+            [PricingUnitSpec.OneWay("ELSEWHERE", new FareSpec(7001, 101))]));
 
         Assert.Equal(2752, exception.Code);
     }
@@ -199,8 +201,8 @@ public sealed class FareTopologyCreationTests
         var order = Create(
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201, 202)],
             [
-                new PricingUnitSpec(PricingUnitKind.OneWay, ["OUT"], new FareSpec(7001, 101)),
-                new PricingUnitSpec(PricingUnitKind.ThroughOneWay, ["IN"], new FareSpec(7002, 201, 202))
+                PricingUnitSpec.OneWay("OUT", new FareSpec(7001, 101)),
+                PricingUnitSpec.ThroughOneWay("IN", new FareSpec(7002, 201, 202))
             ]);
 
         Assert.Equal(600m, order.CustomerTotal);

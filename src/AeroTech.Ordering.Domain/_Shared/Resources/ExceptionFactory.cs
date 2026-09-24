@@ -379,8 +379,8 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException PassengerTypeIsNotSupportedByProvider(params object?[] args) =>
             new(2749, ExceptionMessages.PassengerTypeIsNotSupportedByProvider, args) { HttpStatus = 422 };
 
-        public static BusinessException OfferPricingUnitKindIsNotRecognised(params object?[] args) =>
-            new(2750, ExceptionMessages.OfferPricingUnitKindIsNotRecognised, args) { HttpStatus = 422 };
+        public static BusinessException OfferPricingUnitKindIsMissing(params object?[] args) =>
+            new(2750, ExceptionMessages.OfferPricingUnitKindIsMissing, args) { HttpStatus = 422 };
 
         public static BusinessException OfferCoveredBoundIsNotRecognised(params object?[] args) =>
             new(2751, ExceptionMessages.OfferCoveredBoundIsNotRecognised, args) { HttpStatus = 422 };
@@ -415,9 +415,6 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException LastTicketingDatePassed(params object?[] args) =>
             new(2761, ExceptionMessages.LastTicketingDatePassed, args) { HttpStatus = 422 };
 
-        public static BusinessException ReservationValidationTimeLimitPassed(params object?[] args) =>
-            new(2762, ExceptionMessages.ReservationValidationTimeLimitPassed, args) { HttpStatus = 422 };
-
         public static BusinessException ReservationTaskIsNotResumable(params object?[] args) =>
             new(2763, ExceptionMessages.ReservationTaskIsNotResumable, args) { HttpStatus = 500 };
 
@@ -432,6 +429,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
 
         public static BusinessException ProviderMutationRequiresIdempotencyKey(params object?[] args) =>
             new(2767, ExceptionMessages.ProviderMutationRequiresIdempotencyKey, args) { HttpStatus = 500 };
+
+        public static BusinessException FarePricingUnitValidationIsUnsupported(params object?[] args) =>
+            new(2768, ExceptionMessages.FarePricingUnitValidationIsUnsupported, args) { HttpStatus = 501 };
 
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;

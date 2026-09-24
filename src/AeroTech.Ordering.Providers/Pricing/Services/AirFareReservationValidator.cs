@@ -85,12 +85,17 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
         }
 
         private static IEnumerable<AirFareBoundReservationPricingUnit> PricingUnitsOf(ScopedPricingUnit scoped, Itinerary itinerary)
-            => scoped.PricingUnit.Kind == PricingUnitKind.SectorSum
-                ? scoped.FareComponents.Select(fare => PricingUnitOf(scoped.PricingUnit, [fare], itinerary))
-                : [PricingUnitOf(scoped.PricingUnit, scoped.FareComponents, itinerary)];
+        {
+            var journeyType = JourneyTypeOf(scoped.PricingUnit);
+
+            return journeyType == AirPriceJourneyType.OneWay
+                ? scoped.FareComponents.Select(fare => PricingUnitOf(scoped.PricingUnit, journeyType, [fare], itinerary))
+                : [PricingUnitOf(scoped.PricingUnit, journeyType, scoped.FareComponents, itinerary)];
+        }
 
         private static AirFareBoundReservationPricingUnit PricingUnitOf(
             OrderFarePricingUnit pricingUnit,
+            AirPriceJourneyType journeyType,
             IReadOnlyList<ScopedFareComponent> fares,
             Itinerary itinerary)
         {
@@ -113,7 +118,7 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
 
             return new AirFareBoundReservationPricingUnit(
                 pricingUnit.Id.ToString(CultureInfo.InvariantCulture),
-                JourneyTypeOf(pricingUnit.Kind),
+                journeyType,
                 journeys.Select(journey => journey.BoundId).ToList(),
                 pricingSegments[0].OriginAirportId,
                 pricingSegments[^1].DestinationAirportId,
@@ -147,13 +152,11 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
         private static bool IsIndivisible(OrderFarePricingUnit pricingUnit)
             => pricingUnit.CoveredJourneyIds.Count > 1 || pricingUnit.FareComponents.Count > 1;
 
-        private static AirPriceJourneyType JourneyTypeOf(PricingUnitKind kind) => kind switch
+        private static AirPriceJourneyType JourneyTypeOf(OrderFarePricingUnit pricingUnit) => pricingUnit.SemanticType switch
         {
-            PricingUnitKind.OneWay => AirPriceJourneyType.OneWay,
-            PricingUnitKind.ThroughOneWay => AirPriceJourneyType.OneWay,
-            PricingUnitKind.RoundTripFare => AirPriceJourneyType.RoundTrip,
-            PricingUnitKind.SectorSum => AirPriceJourneyType.OneWay,
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+            FarePricingUnitType.OneWay => AirPriceJourneyType.OneWay,
+            FarePricingUnitType.RoundTrip => AirPriceJourneyType.RoundTrip,
+            _ => throw ExceptionFactory.FarePricingUnitValidationIsUnsupported(pricingUnit.Id, pricingUnit.SourceKind)
         };
 
         private sealed class Itinerary

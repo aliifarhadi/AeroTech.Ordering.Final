@@ -6,22 +6,12 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
     {
         public static IReadOnlyDictionary<long, ReservationMemberStatus> LatestUnitStatusByService(
             IEnumerable<FulfillmentReservation> reservations)
-            => InCreationOrder(reservations)
+            => reservations
+                .OrderBy(reservation => reservation.CreatedAt)
+                .ThenBy(reservation => reservation.Id)
                 .SelectMany(reservation => reservation.Units)
                 .SelectMany(unit => unit.OrderServiceIds.Select(serviceId => (ServiceId: serviceId, unit.Status)))
                 .GroupBy(coverage => coverage.ServiceId)
                 .ToDictionary(group => group.Key, group => group.Last().Status);
-
-        public static IReadOnlyDictionary<long, FulfillmentReservation> LatestReservationByService(
-            IEnumerable<FulfillmentReservation> reservations)
-            => InCreationOrder(reservations)
-                .SelectMany(reservation => reservation.CoveredOrderServiceIds.Select(serviceId => (ServiceId: serviceId, Reservation: reservation)))
-                .GroupBy(coverage => coverage.ServiceId)
-                .ToDictionary(group => group.Key, group => group.Last().Reservation);
-
-        private static IEnumerable<FulfillmentReservation> InCreationOrder(IEnumerable<FulfillmentReservation> reservations)
-            => reservations
-                .OrderBy(reservation => reservation.CreatedAt)
-                .ThenBy(reservation => reservation.Id);
     }
 }

@@ -170,6 +170,14 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             ReservationValidationTimeLimit = validationTimeLimit;
         }
 
+        public void RenewIssueValidation(DateTimeOffset? validationTimeLimit)
+        {
+            if (Status != FulfillmentReservationStatus.Confirmed)
+                throw ExceptionFactory.ReservationOutcomeCannotBeRecorded(Id, Status);
+
+            ReservationValidationTimeLimit = validationTimeLimit;
+        }
+
         public void RecordConfirmation(ConfirmationOutcome outcome, DateTimeOffset observedAt)
         {
             if (!AwaitsConfirmation)

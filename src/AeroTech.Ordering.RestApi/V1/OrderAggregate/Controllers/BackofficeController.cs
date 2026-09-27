@@ -1,6 +1,7 @@
 ﻿using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer.Backoffice;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder.Backoffice;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById.Backoffice;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrdersPaginated.Backoffice;
 using AeroTech.Ordering.RestApi.V1.OrderAggregate.Requests;
@@ -64,5 +65,12 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate
 
             return Ok(await _mediator.Send(command, cancellationToken));
         }
+
+        [HttpPost("{orderId:long}/Issuance")]
+        public async Task<IActionResult> Issue(
+            long orderId,
+            [FromBody] IssueOrderRequest request,
+            CancellationToken cancellationToken)
+            => Ok(await _mediator.Send(new BackofficeIssueOrderCommand(orderId, request.TicketDocumentStockId), cancellationToken));
     }
 }

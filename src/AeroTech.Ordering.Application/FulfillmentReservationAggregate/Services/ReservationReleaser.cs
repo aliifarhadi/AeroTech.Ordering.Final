@@ -74,6 +74,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
                 reservation.FulfillmentProviderKey,
                 intent.IdempotencyKey,
                 reservation.CorrelationReference,
+                FulfillmentTargetKind.ReservationUnit,
                 reservation.Units.Select(unit => unit.Id).ToList(),
                 OrderFulfillmentTargetAction.Release,
                 _idGenerator,

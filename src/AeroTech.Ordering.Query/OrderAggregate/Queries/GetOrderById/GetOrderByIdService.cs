@@ -1,4 +1,5 @@
 using AeroTech.Messages.AirPrice.Enums;
+using AeroTech.Ordering.Query.ElectronicTicketAggregate.Models;
 using AeroTech.Ordering.Query.OrderAggregate.Dto;
 using AeroTech.Ordering.Query.OrderAggregate.Models;
 using AeroTech.Ordering.Query._Shared.Authorization;
@@ -39,12 +40,15 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
             var contacts = await OwnedBy(_dbContext.OrderContacts, orderId, cancellationToken);
             var contactPoints = await OwnedBy(_dbContext.OrderContactPoints, orderId, cancellationToken);
             var remarks = await OwnedBy(_dbContext.OrderRemarks, orderId, cancellationToken);
+            var tickets = await OwnedBy(_dbContext.ElectronicTickets, orderId, cancellationToken);
+            var coupons = await OwnedBy(_dbContext.TicketCoupons, orderId, cancellationToken);
 
             var documentsByTraveller = documents.ToLookup(document => document.TravellerId);
             var segmentsByJourney = segments.ToLookup(segment => segment.OrderJourneyId);
             var servicesByItem = services.ToLookup(service => service.OrderItemId);
             var allocationsByLine = allocations.ToLookup(allocation => allocation.PricingLineId);
             var pointsByContact = contactPoints.ToLookup(point => point.OrderContactId);
+            var couponsByTicket = coupons.ToLookup(coupon => coupon.ElectronicTicketId);
 
             return new OrderDetailDto(
                 order.Id,
@@ -66,7 +70,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 items.Select(item => ToDto(item, servicesByItem[item.Id])).ToList(),
                 pricingLines.Select(line => ToDto(line, allocationsByLine[line.Id])).ToList(),
                 contacts.OrderBy(contact => contact.Sequence).Select(contact => ToDto(contact, pointsByContact[contact.Id])).ToList(),
-                remarks.OrderBy(remark => remark.CreatedAt).Select(ToDto).ToList());
+                remarks.OrderBy(remark => remark.CreatedAt).Select(ToDto).ToList(),
+                tickets.OrderBy(ticket => ticket.IssuedAt).ThenBy(ticket => ticket.Id).Select(ticket => ToDto(ticket, couponsByTicket[ticket.Id])).ToList());
         }
 
         private static Task<List<TReadModel>> OwnedBy<TReadModel>(
@@ -188,6 +193,35 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 allocation.CurrencyId,
                 allocation.EquivalentAmount,
                 allocation.EquivalentCurrencyId);
+
+        private static OrderElectronicTicketDto ToDto(ElectronicTicketReadModel ticket, IEnumerable<TicketCouponReadModel> coupons)
+            => new(
+                ticket.Id,
+                ticket.TravellerId,
+                ticket.DocumentNumber,
+                ticket.Authority,
+                ticket.IssuedAt,
+                ticket.IssuedTotal,
+                ticket.CurrencyId,
+                ticket.StatusSummary,
+                ticket.DocumentVersion,
+                coupons.OrderBy(coupon => coupon.CouponNumber).Select(ToDto).ToList());
+
+        private static OrderTicketCouponDto ToDto(TicketCouponReadModel coupon)
+            => new(
+                coupon.Id,
+                coupon.CouponNumber,
+                coupon.OriginalOrderServiceId,
+                coupon.CurrentOrderServiceId,
+                coupon.OrderSegmentId,
+                coupon.FareBasisSnapshot,
+                coupon.BookingClassSnapshot,
+                coupon.RbdIdSnapshot,
+                coupon.CabinClassIdSnapshot,
+                coupon.IssuanceValue,
+                coupon.CurrencyId,
+                coupon.FinancialStatus,
+                coupon.ControlStatus);
 
         private static OrderContactDto ToDto(OrderContactReadModel contact, IEnumerable<OrderContactPointReadModel> contactPoints)
             => new(

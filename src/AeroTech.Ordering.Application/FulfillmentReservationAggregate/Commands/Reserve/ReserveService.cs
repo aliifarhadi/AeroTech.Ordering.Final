@@ -298,6 +298,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 reservation.FulfillmentProviderKey,
                 reservation.IdempotencyKey,
                 reservation.CorrelationReference,
+                FulfillmentTargetKind.ReservationUnit,
                 reservation.Units.Select(unit => unit.Id).ToList(),
                 OrderFulfillmentTargetAction.Reserve,
                 _idGenerator,

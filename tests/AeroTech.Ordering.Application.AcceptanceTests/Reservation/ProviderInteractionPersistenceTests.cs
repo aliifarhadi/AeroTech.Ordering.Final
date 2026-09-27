@@ -40,6 +40,7 @@ public sealed class ProviderInteractionPersistenceTests : IAsyncLifetime
             FulfillmentProviderKeys.FlightFlow,
             "reserve-hold:2",
             "order:1:reservation:2",
+            FulfillmentTargetKind.ReservationUnit,
             [3],
             OrderFulfillmentTargetAction.Reserve,
             _ids,

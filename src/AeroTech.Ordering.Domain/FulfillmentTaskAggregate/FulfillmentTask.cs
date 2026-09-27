@@ -23,7 +23,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
         private FulfillmentTask(
             long id,
             long orderId,
-            long fulfillmentReservationId,
+            long? fulfillmentReservationId,
             OrderFulfillmentTaskType taskType,
             string fulfillmentProviderKey,
             string idempotencyKey,
@@ -43,7 +43,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
 
         public long OrderId { get; private set; }
 
-        public long FulfillmentReservationId { get; private set; }
+        public long? FulfillmentReservationId { get; private set; }
 
         public OrderFulfillmentTaskType TaskType { get; private set; }
 
@@ -80,12 +80,13 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
         public static FulfillmentTask Create(
             long id,
             long orderId,
-            long fulfillmentReservationId,
+            long? fulfillmentReservationId,
             OrderFulfillmentTaskType taskType,
             string fulfillmentProviderKey,
             string idempotencyKey,
             string correlationReference,
-            IReadOnlyCollection<long> targetReservationUnitIds,
+            FulfillmentTargetKind targetKind,
+            IReadOnlyCollection<long> targetIds,
             OrderFulfillmentTargetAction action,
             IIdGenerator idGenerator,
             DateTimeOffset createdAt)
@@ -100,10 +101,24 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate
                 correlationReference,
                 createdAt);
 
-            foreach (var reservationUnitId in targetReservationUnitIds)
-                task._targets.Add(new FulfillmentTaskTarget(idGenerator.NewId(), id, reservationUnitId, action));
+            task.AddTargets(targetKind, targetIds, action, idGenerator);
 
             return task;
+        }
+
+        public void AddTargets(
+            FulfillmentTargetKind targetKind,
+            IReadOnlyCollection<long> targetIds,
+            OrderFulfillmentTargetAction action,
+            IIdGenerator idGenerator)
+        {
+            foreach (var targetId in targetIds)
+            {
+                if (_targets.Any(target => target.TargetKind == targetKind && target.TargetId == targetId && target.Action == action))
+                    throw ExceptionFactory.FulfillmentTaskTargetIsDuplicated(Id, targetKind, targetId, action);
+
+                _targets.Add(new FulfillmentTaskTarget(idGenerator.NewId(), Id, targetKind, targetId, action));
+            }
         }
 
         public void StartAttempt(IIdGenerator idGenerator, DateTimeOffset startedAt)

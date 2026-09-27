@@ -22,6 +22,17 @@ public sealed class InMemoryFulfillmentTaskRepository(InMemoryUnitOfWork unitOfW
         CancellationToken cancellationToken = default)
         => Task.FromResult(Latest(fulfillmentReservationId, taskType));
 
+    public Task<bool> AnyUnresolvedAsync(
+        long orderId,
+        IReadOnlyCollection<long> fulfillmentReservationIds,
+        IReadOnlyCollection<OrderFulfillmentTaskType> taskTypes,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult(_committed.Any(task => task.OrderId == orderId
+                                                  && taskTypes.Contains(task.TaskType)
+                                                  && task.IsResumable
+                                                  && (task.FulfillmentReservationId is not { } reservationId
+                                                      || fulfillmentReservationIds.Contains(reservationId))));
+
     public FulfillmentTask? Latest(long fulfillmentReservationId, OrderFulfillmentTaskType taskType)
         => _committed
             .Where(task => task.FulfillmentReservationId == fulfillmentReservationId && task.TaskType == taskType)

@@ -106,6 +106,7 @@ public sealed class DueHoldSelectionPersistenceTests : IAsyncLifetime
             reservation.FulfillmentProviderKey,
             intent.IdempotencyKey,
             reservation.CorrelationReference,
+            FulfillmentTargetKind.ReservationUnit,
             reservation.Units.Select(unit => unit.Id).ToList(),
             OrderFulfillmentTargetAction.Release,
             _ids,

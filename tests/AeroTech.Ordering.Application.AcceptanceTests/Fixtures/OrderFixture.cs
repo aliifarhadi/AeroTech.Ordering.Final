@@ -101,12 +101,12 @@ public static class OrderFixture
             traveller.InfantParentIndex,
             []);
 
-    private static OfferDetail Offer(
+    public static OfferDetail Offer(
         IClock clock,
         IReadOnlyList<TravellerSpec> travellers,
         IReadOnlyList<BoundSpec> bounds,
-        IReadOnlyList<PricingUnitSpec>? pricingUnits,
-        DateTimeOffset? lastTicketingDate)
+        IReadOnlyList<PricingUnitSpec>? pricingUnits = null,
+        DateTimeOffset? lastTicketingDate = null)
     {
         var offerBounds = bounds.Select((bound, index) => OfferBound(clock, bound, index + 1)).ToList();
         var offerPricingUnits = pricingUnits ?? offerBounds.Select(OneWayPricingUnitOf).ToList();

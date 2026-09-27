@@ -26,7 +26,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 order.Items.Select(ToDto).ToList(),
                 order.PricingLines.Select(ToDto).ToList(),
                 order.Contacts.Select(ToDto).ToList(),
-                order.Remarks.Select(ToDto).ToList());
+                order.Remarks.Select(ToDto).ToList(),
+                order.Tickets.Select(ToDto).ToList());
 
         private static SellingOfficeDto? ToSellingOffice(OrderDetailDto order, ReferenceCodes codes)
         {
@@ -37,6 +38,35 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
 
             return new SellingOfficeDto(EnumValueDto.Of(kind), officeId, office?.Code, office?.Name);
         }
+
+        private static BackofficeElectronicTicketDto ToDto(OrderElectronicTicketDto ticket)
+            => new(
+                ticket.Id,
+                ticket.TravellerId,
+                ticket.DocumentNumber,
+                EnumValueDto.Of(ticket.Authority),
+                ticket.IssuedAt,
+                ticket.IssuedTotal,
+                ticket.CurrencyId,
+                EnumValueDto.Of(ticket.StatusSummary),
+                ticket.DocumentVersion,
+                ticket.Coupons.Select(ToDto).ToList());
+
+        private static BackofficeTicketCouponDto ToDto(OrderTicketCouponDto coupon)
+            => new(
+                coupon.Id,
+                coupon.CouponNumber,
+                coupon.OriginalOrderServiceId,
+                coupon.CurrentOrderServiceId,
+                coupon.OrderSegmentId,
+                coupon.FareBasisSnapshot,
+                coupon.BookingClassSnapshot,
+                coupon.RbdIdSnapshot,
+                coupon.CabinClassIdSnapshot,
+                coupon.IssuanceValue,
+                coupon.CurrencyId,
+                EnumValueDto.Of(coupon.FinancialStatus),
+                EnumValueDto.Of(coupon.ControlStatus));
 
         private static BackofficeOrderTravellerDto ToDto(OrderTravellerDto traveller)
             => new(

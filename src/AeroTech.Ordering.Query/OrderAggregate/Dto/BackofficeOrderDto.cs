@@ -21,7 +21,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         IReadOnlyList<BackofficeOrderItemDto> Items,
         IReadOnlyList<BackofficeOrderPricingLineDto> PricingLines,
         IReadOnlyList<BackofficeOrderContactDto> Contacts,
-        IReadOnlyList<BackofficeOrderRemarkDto> Remarks);
+        IReadOnlyList<BackofficeOrderRemarkDto> Remarks,
+        IReadOnlyList<BackofficeElectronicTicketDto> Tickets);
 
     public sealed record SellingOfficeDto(EnumValueDto Kind, long Id, string? Code, string? Name);
 
@@ -122,4 +123,31 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         EnumValueDto Status,
         long? SupersedesRemarkId,
         DateTimeOffset CreatedAt);
+
+    public sealed record BackofficeElectronicTicketDto(
+        long Id,
+        long TravellerId,
+        string DocumentNumber,
+        EnumValueDto Authority,
+        DateTimeOffset IssuedAt,
+        decimal IssuedTotal,
+        int CurrencyId,
+        EnumValueDto StatusSummary,
+        int DocumentVersion,
+        IReadOnlyList<BackofficeTicketCouponDto> Coupons);
+
+    public sealed record BackofficeTicketCouponDto(
+        long Id,
+        int CouponNumber,
+        long OriginalOrderServiceId,
+        long CurrentOrderServiceId,
+        long OrderSegmentId,
+        string? FareBasisSnapshot,
+        string? BookingClassSnapshot,
+        long? RbdIdSnapshot,
+        long? CabinClassIdSnapshot,
+        decimal IssuanceValue,
+        int CurrencyId,
+        EnumValueDto FinancialStatus,
+        EnumValueDto ControlStatus);
 }

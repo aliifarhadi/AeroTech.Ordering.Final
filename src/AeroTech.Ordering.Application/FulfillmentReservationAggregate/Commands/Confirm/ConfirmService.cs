@@ -225,6 +225,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                 reservation.FulfillmentProviderKey,
                 $"confirm-hold:{taskId}",
                 reservation.CorrelationReference,
+                FulfillmentTargetKind.ReservationUnit,
                 reservation.Units.Select(unit => unit.Id).ToList(),
                 OrderFulfillmentTargetAction.Confirm,
                 _idGenerator,

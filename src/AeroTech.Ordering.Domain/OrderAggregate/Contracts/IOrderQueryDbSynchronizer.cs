@@ -9,5 +9,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         Task ProjectRemarkedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default);
 
         Task ProjectReservationChangedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default);
+
+        Task ProjectIssuedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default);
     }
 }

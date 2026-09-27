@@ -25,7 +25,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         IReadOnlyList<OrderItemDto> Items,
         IReadOnlyList<OrderPricingLineDto> PricingLines,
         IReadOnlyList<OrderContactDto> Contacts,
-        IReadOnlyList<OrderRemarkDto> Remarks);
+        IReadOnlyList<OrderRemarkDto> Remarks,
+        IReadOnlyList<OrderElectronicTicketDto> Tickets);
 
     public sealed record OrderTravellerDto(
         long Id,
@@ -157,4 +158,31 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         OrderRemarkStatus Status,
         long? SupersedesRemarkId,
         DateTimeOffset CreatedAt);
+
+    public sealed record OrderElectronicTicketDto(
+        long Id,
+        long TravellerId,
+        string DocumentNumber,
+        DocumentAuthority Authority,
+        DateTimeOffset IssuedAt,
+        decimal IssuedTotal,
+        int CurrencyId,
+        ElectronicTicketStatus StatusSummary,
+        int DocumentVersion,
+        IReadOnlyList<OrderTicketCouponDto> Coupons);
+
+    public sealed record OrderTicketCouponDto(
+        long Id,
+        int CouponNumber,
+        long OriginalOrderServiceId,
+        long CurrentOrderServiceId,
+        long OrderSegmentId,
+        string? FareBasisSnapshot,
+        string? BookingClassSnapshot,
+        long? RbdIdSnapshot,
+        long? CabinClassIdSnapshot,
+        decimal IssuanceValue,
+        int CurrencyId,
+        TicketCouponFinancialStatus FinancialStatus,
+        TicketCouponControlStatus ControlStatus);
 }

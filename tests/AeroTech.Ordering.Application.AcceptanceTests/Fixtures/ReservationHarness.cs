@@ -1,15 +1,21 @@
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
+using AeroTech.Ordering.Application.DocumentStockAggregate.Commands.DefineDocumentStock;
+using AeroTech.Ordering.Application.DocumentStockAggregate.Commands.DefineDocumentStock.Backoffice;
+using AeroTech.Ordering.Application.DocumentStockAggregate.Services;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Confirm;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Services.Issuance;
 using AeroTech.Ordering.Application._Shared.Authorization;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
+using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain.Providers.Reservation;
 using AeroTech.Ordering.Providers.FlightFlow.Services;
 using Microsoft.Extensions.Options;
@@ -22,12 +28,18 @@ public sealed class ReservationHarness
     private readonly IReleaseReservationService _release;
     private readonly IConfirmService _confirm;
     private readonly IReservationDeadlineService _deadlines;
+    private readonly IIssueOrderService _issue;
+    private readonly IDefineDocumentStockService _stocks;
+
+    public const long IssueActorId = 77;
 
     public ReservationHarness(params IReservationProvider[] additionalProviders)
     {
         UnitOfWork = new InMemoryUnitOfWork();
         Tasks = new InMemoryFulfillmentTaskRepository(UnitOfWork);
         Reservations = new InMemoryFulfillmentReservationRepository(UnitOfWork, Orders, Tasks);
+        Tickets = new InMemoryElectronicTicketRepository(UnitOfWork);
+        Stocks = new InMemoryDocumentStockRepository(UnitOfWork);
         FlightFlow = new ScriptedFlightFlowProvider(OrderFixture.FlightIdOfCapacity, UnitOfWork);
         AirFareValidator = new StubAirFareReservationValidator(Clock);
 
@@ -44,6 +56,26 @@ public sealed class ReservationHarness
         _release = new ReleaseReservationService(Orders, Reservations, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
         _confirm = new ConfirmService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
         _deadlines = new ReservationDeadlineService(Orders, Reservations, providers, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
+
+        var stockLock = new DocumentStockLock(Lock, Options.Create(new FulfillmentOptions { LockExpirySeconds = 30 }));
+
+        _stocks = new DefineDocumentStockService(Stocks, stockLock, Synchronizer, UnitOfWork, Ids);
+        _issue = new IssueOrderService(
+            Orders,
+            Reservations,
+            Tasks,
+            Tickets,
+            Stocks,
+            providers,
+            new IssuancePlanner(providers),
+            reservationLock,
+            stockLock,
+            Synchronizer,
+            Synchronizer,
+            Synchronizer,
+            UnitOfWork,
+            Ids,
+            Clock);
     }
 
     public FixedClock Clock { get; } = new();
@@ -57,6 +89,10 @@ public sealed class ReservationHarness
     public InMemoryFulfillmentReservationRepository Reservations { get; }
 
     public InMemoryFulfillmentTaskRepository Tasks { get; }
+
+    public InMemoryElectronicTicketRepository Tickets { get; }
+
+    public InMemoryDocumentStockRepository Stocks { get; }
 
     public InMemoryDistributedLock Lock { get; } = new();
 
@@ -81,6 +117,35 @@ public sealed class ReservationHarness
         Orders.Seed(order);
         return order;
     }
+
+    public Order SeedOrder(OfferDetail offer, IReadOnlyList<TravellerSpec> travellers)
+    {
+        var order = OrderFixture.CreateFrom(offer, Ids, Clock, travellers);
+        Orders.Seed(order);
+        return order;
+    }
+
+    public Task<DocumentStockResult> DefineStockAsync(
+        long rangeFrom = 1,
+        long rangeTo = 999,
+        string prefix = "0991",
+        AccountableDocumentKind documentKind = AccountableDocumentKind.ElectronicTicket,
+        string checkDigitProfile = "None",
+        int serialWidth = 10,
+        int ownerAirlineId = 10,
+        long? officeId = 5)
+        => _stocks.DefineAsync(new BackofficeDefineDocumentStockCommand(
+            ownerAirlineId,
+            officeId,
+            documentKind,
+            prefix,
+            serialWidth,
+            checkDigitProfile,
+            rangeFrom,
+            rangeTo));
+
+    public Task<IssueOrderResult> IssueAsync(Order order, long ticketDocumentStockId)
+        => _issue.IssueAsync(order.Id, ticketDocumentStockId, UnrestrictedOrderAuthorization.Instance, IssueActorId);
 
     public Task<ReserveResult> ReserveOrderAsync(Order order)
         => _reserve.ReserveOrderAsync(order.Id, UnrestrictedOrderAuthorization.Instance);

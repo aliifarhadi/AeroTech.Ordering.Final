@@ -10,5 +10,11 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Contracts
             long fulfillmentReservationId,
             OrderFulfillmentTaskType taskType,
             CancellationToken cancellationToken = default);
+
+        Task<bool> AnyUnresolvedAsync(
+            long orderId,
+            IReadOnlyCollection<long> fulfillmentReservationIds,
+            IReadOnlyCollection<OrderFulfillmentTaskType> taskTypes,
+            CancellationToken cancellationToken = default);
     }
 }

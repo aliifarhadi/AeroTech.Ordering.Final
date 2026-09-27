@@ -14,14 +14,14 @@ public sealed class TestDatabase(IClock clock) : IAsyncDisposable
         InitialCatalog = $"DotAirOrdering_Tests_{Guid.NewGuid():N}"
     }.ConnectionString;
 
-    public OrderingDbContext NewContext()
+    public OrderingDbContext NewContext(IDomainEventDispatcher? domainEventDispatcher = null)
         => new(
             new DbContextOptionsBuilder<OrderingDbContext>()
                 .UseSqlServer(_connectionString, sql => sql.MigrationsHistoryTable(OrderingDbContext.MigrationsHistoryTable, OrderingDbContext.MigrationsHistorySchema))
                 .Options,
             new AnonymousActorResolver(),
             clock,
-            new IgnoringDomainEventDispatcher());
+            domainEventDispatcher ?? new IgnoringDomainEventDispatcher());
 
     public async ValueTask DisposeAsync()
     {
@@ -46,7 +46,7 @@ public sealed class TestDatabase(IClock clock) : IAsyncDisposable
         return directory?.FullName ?? throw new InvalidOperationException("AeroTech.Ordering.sln was not found above the test output.");
     }
 
-    private sealed class AnonymousActorResolver : IActorResolver
+    public sealed class AnonymousActorResolver : IActorResolver
     {
         public Actor Resolve() => Actor.Anonymous;
     }

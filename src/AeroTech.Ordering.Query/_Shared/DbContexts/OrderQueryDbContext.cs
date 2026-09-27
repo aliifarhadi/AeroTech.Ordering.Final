@@ -1,3 +1,5 @@
+using AeroTech.Ordering.Query.DocumentStockAggregate.Models;
+using AeroTech.Ordering.Query.ElectronicTicketAggregate.Models;
 using AeroTech.Ordering.Query.OrderAggregate.Models;
 using AeroTech.Ordering.ReferenceData.Persistence;
 using AeroTech.Ordering.ReferenceData.ReadModels;
@@ -38,6 +40,12 @@ namespace AeroTech.Ordering.Query._Shared.DbContexts
         public DbSet<OrderContactPointReadModel> OrderContactPoints => Set<OrderContactPointReadModel>();
 
         public DbSet<OrderRemarkReadModel> OrderRemarks => Set<OrderRemarkReadModel>();
+
+        public DbSet<ElectronicTicketReadModel> ElectronicTickets => Set<ElectronicTicketReadModel>();
+
+        public DbSet<TicketCouponReadModel> TicketCoupons => Set<TicketCouponReadModel>();
+
+        public DbSet<DocumentStockReadModel> DocumentStocks => Set<DocumentStockReadModel>();
 
         public DbSet<CustomerReadModel> Customers => Set<CustomerReadModel>();
 

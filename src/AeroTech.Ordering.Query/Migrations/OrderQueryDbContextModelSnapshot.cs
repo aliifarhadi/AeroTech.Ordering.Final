@@ -23,6 +23,156 @@ namespace AeroTech.Ordering.Query.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AeroTech.Ordering.Query.DocumentStockAggregate.Models.DocumentStockReadModel", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CheckDigitProfile")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("DocumentKind")
+                        .HasColumnType("int");
+
+                    b.Property<long>("NextNumber")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("OfficeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("OwnerAirlineId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<long>("RangeFrom")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("RangeTo")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SerialWidth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerAirlineId", "DocumentKind");
+
+                    b.ToTable("DocumentStocks", "ReadModel");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Query.ElectronicTicketAggregate.Models.ElectronicTicketReadModel", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Authority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrencyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("DocumentVersion")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("IssuedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("IssuedTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("StatusSummary")
+                        .HasColumnType("int");
+
+                    b.Property<long>("TravellerId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentNumber")
+                        .IsUnique();
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("ElectronicTickets", "ReadModel");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Query.ElectronicTicketAggregate.Models.TicketCouponReadModel", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("BookingClassSnapshot")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<long?>("CabinClassIdSnapshot")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ControlStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CouponNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrencyId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("CurrentOrderServiceId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ElectronicTicketId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FareBasisSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("FinancialStatus")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("IssuanceValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("OrderSegmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("OriginalOrderServiceId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("RbdIdSnapshot")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ElectronicTicketId");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("TicketCoupons", "ReadModel");
+                });
+
             modelBuilder.Entity("AeroTech.Ordering.Query.OrderAggregate.Models.OrderContactPointReadModel", b =>
                 {
                     b.Property<long>("Id")

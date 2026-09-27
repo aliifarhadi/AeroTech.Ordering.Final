@@ -13,7 +13,7 @@ namespace AeroTech.Ordering.Persistence.FulfillmentTaskAggregate
             builder.Property(target => target.Id).ValueGeneratedNever();
 
             builder.HasIndex(target => target.FulfillmentTaskId);
-            builder.HasIndex(target => target.ReservationUnitId);
+            builder.HasIndex(target => new { target.TargetKind, target.TargetId });
         }
     }
 }

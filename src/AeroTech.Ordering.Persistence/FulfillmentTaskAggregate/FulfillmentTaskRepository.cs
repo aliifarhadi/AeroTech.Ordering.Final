@@ -27,5 +27,19 @@ namespace AeroTech.Ordering.Persistence.FulfillmentTaskAggregate
                 .OrderByDescending(task => task.CreatedAt)
                 .ThenByDescending(task => task.Id)
                 .FirstOrDefaultAsync(cancellationToken);
+
+        public Task<bool> AnyUnresolvedAsync(
+            long orderId,
+            IReadOnlyCollection<long> fulfillmentReservationIds,
+            IReadOnlyCollection<OrderFulfillmentTaskType> taskTypes,
+            CancellationToken cancellationToken = default)
+            => _dbContext.FulfillmentTasks
+                .Where(task => task.OrderId == orderId && taskTypes.Contains(task.TaskType))
+                .Where(task => task.Status == OrderFulfillmentStatus.Pending
+                               || task.Status == OrderFulfillmentStatus.InProgress
+                               || task.Status == OrderFulfillmentStatus.Unknown)
+                .Where(task => task.FulfillmentReservationId == null
+                               || fulfillmentReservationIds.Contains(task.FulfillmentReservationId.Value))
+                .AnyAsync(cancellationToken);
     }
 }

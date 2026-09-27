@@ -20,6 +20,9 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         public Task ProjectReservationChangedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
             => UpsertAsync(snapshot, cancellationToken);
 
+        public Task ProjectIssuedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
+            => UpsertAsync(snapshot, cancellationToken);
+
         private async Task UpsertAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken)
         {
             var order = await _dbContext.Orders

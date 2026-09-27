@@ -1,11 +1,15 @@
 using AeroTech.Framework.Core.ServiceContracts;
+using AeroTech.Ordering.Application.DocumentStockAggregate.Commands.DefineDocumentStock;
+using AeroTech.Ordering.Application.DocumentStockAggregate.Services;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Confirm;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Services.Issuance;
 using AeroTech.Ordering.Application._Shared.Authorization;
 using AeroTech.Ordering.Application._Shared.Behaviors;
 using AeroTech.Ordering.Application._Shared.Caller;
@@ -60,6 +64,10 @@ namespace AeroTech.Ordering.Application
             services.AddScoped<IReserveService, ReserveService>();
             services.AddScoped<IReleaseReservationService, ReleaseReservationService>();
             services.AddScoped<IConfirmService, ConfirmService>();
+            services.AddScoped<IDocumentStockLock, DocumentStockLock>();
+            services.AddScoped<IDefineDocumentStockService, DefineDocumentStockService>();
+            services.AddScoped<IIssuancePlanner, IssuancePlanner>();
+            services.AddScoped<IIssueOrderService, IssueOrderService>();
 
             return services;
         }

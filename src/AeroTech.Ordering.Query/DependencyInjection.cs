@@ -1,4 +1,5 @@
 ﻿using AeroTech.Framework.Infrastructure.HealthChecks;
+using AeroTech.Ordering.Query.DocumentStockAggregate.Queries.GetDocumentStockById;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrdersPaginated;
 using AeroTech.Ordering.Query._Shared.DbContexts;
@@ -28,6 +29,7 @@ namespace AeroTech.Ordering.Query
             services.AddScoped<IGetBackofficeOrderByIdService, GetBackofficeOrderByIdService>();
             services.AddScoped<IGetOrdersPaginatedService, GetOrdersPaginatedService>();
             services.AddScoped<IGetFlightOrderByIdService, GetFlightOrderByIdService>();
+            services.AddScoped<IGetDocumentStockByIdService, GetDocumentStockByIdService>();
 
             services.AddHealthChecks().AddDbContextReadinessCheck<OrderQueryDbContext>("sql-server-query");
 

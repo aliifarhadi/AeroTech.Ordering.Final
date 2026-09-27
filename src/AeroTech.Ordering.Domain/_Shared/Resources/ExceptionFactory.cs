@@ -442,6 +442,90 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException ConfirmationRecoveryRequestIsMissing(params object?[] args) =>
             new(2773, ExceptionMessages.ConfirmationRecoveryRequestIsMissing, args) { HttpStatus = 500 };
 
+        public static BusinessException FulfillmentTaskTargetIsDuplicated(params object?[] args) =>
+            new(2774, ExceptionMessages.FulfillmentTaskTargetIsDuplicated, args) { HttpStatus = 500 };
+
+        public static BusinessException OrderCannotBeIssuedAfterLastTicketingDate(params object?[] args) =>
+            new(2775, ExceptionMessages.OrderCannotBeIssuedAfterLastTicketingDate, args) { HttpStatus = 422 };
+
+        public static BusinessException OrderHasNoTicketableServices(params object?[] args) =>
+            new(2776, ExceptionMessages.OrderHasNoTicketableServices, args) { HttpStatus = 422 };
+
+        public static BusinessException AirServiceCapacityIsNotConfirmed(params object?[] args) =>
+            new(2777, ExceptionMessages.AirServiceCapacityIsNotConfirmed, args) { HttpStatus = 409 };
+
+        public static BusinessException OrderHasUnresolvedFulfillmentEffect(params object?[] args) =>
+            new(2778, ExceptionMessages.OrderHasUnresolvedFulfillmentEffect, args) { HttpStatus = 409 };
+
+        public static BusinessException AirServiceFareComponentIsMissing(params object?[] args) =>
+            new(2779, ExceptionMessages.AirServiceFareComponentIsMissing, args) { HttpStatus = 422 };
+
+        public static BusinessException AirServiceFareComponentIsAmbiguous(params object?[] args) =>
+            new(2780, ExceptionMessages.AirServiceFareComponentIsAmbiguous, args) { HttpStatus = 422 };
+
+        public static BusinessException AirServiceTicketPricingIsMissing(params object?[] args) =>
+            new(2781, ExceptionMessages.AirServiceTicketPricingIsMissing, args) { HttpStatus = 422 };
+
+        public static BusinessException AirServiceTicketPricingIsAmbiguous(params object?[] args) =>
+            new(2782, ExceptionMessages.AirServiceTicketPricingIsAmbiguous, args) { HttpStatus = 422 };
+
+        public static BusinessException TicketPricingCurrencyMismatch(params object?[] args) =>
+            new(2783, ExceptionMessages.TicketPricingCurrencyMismatch, args) { HttpStatus = 422 };
+
+        public static BusinessException TicketCouponIssuanceValueIsNegative(params object?[] args) =>
+            new(2784, ExceptionMessages.TicketCouponIssuanceValueIsNegative, args) { HttpStatus = 422 };
+
+        public static BusinessException DocumentStockNotFound(params object?[] args) =>
+            new(2785, ExceptionMessages.DocumentStockNotFound, args) { HttpStatus = 404 };
+
+        public static BusinessException DocumentStockKindMismatch(params object?[] args) =>
+            new(2786, ExceptionMessages.DocumentStockKindMismatch, args) { HttpStatus = 422 };
+
+        public static BusinessException DocumentStockIsNotActive(params object?[] args) =>
+            new(2787, ExceptionMessages.DocumentStockIsNotActive, args) { HttpStatus = 409 };
+
+        public static BusinessException DocumentStockIsExhausted(params object?[] args) =>
+            new(2788, ExceptionMessages.DocumentStockIsExhausted, args) { HttpStatus = 409 };
+
+        public static BusinessException DocumentStockHasInsufficientNumbers(params object?[] args) =>
+            new(2789, ExceptionMessages.DocumentStockHasInsufficientNumbers, args) { HttpStatus = 409 };
+
+        public static BusinessException DocumentStockCheckDigitProfileIsUnsupported(params object?[] args) =>
+            new(2790, ExceptionMessages.DocumentStockCheckDigitProfileIsUnsupported, args) { HttpStatus = 422 };
+
+        public static BusinessException DocumentStockRangeIsInvalid(params object?[] args) =>
+            new(2791, ExceptionMessages.DocumentStockRangeIsInvalid, args) { HttpStatus = 422 };
+
+        public static BusinessException DocumentStockRangeOverlaps(params object?[] args) =>
+            new(2792, ExceptionMessages.DocumentStockRangeOverlaps, args) { HttpStatus = 409 };
+
+        public static BusinessException DocumentNumberIsAlreadyIssued(params object?[] args) =>
+            new(2793, ExceptionMessages.DocumentNumberIsAlreadyIssued, args) { HttpStatus = 409 };
+
+        public static BusinessException DocumentStockOperationInProgress(params object?[] args) =>
+            new(2794, ExceptionMessages.DocumentStockOperationInProgress, args) { HttpStatus = 409 };
+
+        public static BusinessException ElectronicTicketRequiresCoupons(params object?[] args) =>
+            new(2795, ExceptionMessages.ElectronicTicketRequiresCoupons, args) { HttpStatus = 500 };
+
+        public static BusinessException TicketCouponBelongsToAnotherTraveller(params object?[] args) =>
+            new(2796, ExceptionMessages.TicketCouponBelongsToAnotherTraveller, args) { HttpStatus = 500 };
+
+        public static BusinessException ElectronicTicketCurrencyIsInconsistent(params object?[] args) =>
+            new(2797, ExceptionMessages.ElectronicTicketCurrencyIsInconsistent, args) { HttpStatus = 500 };
+
+        public static BusinessException DocumentNumberIsRequired(params object?[] args) =>
+            new(2798, ExceptionMessages.DocumentNumberIsRequired, args) { HttpStatus = 500 };
+
+        public static BusinessException OrderIsNotFullyTicketed(params object?[] args) =>
+            new(2799, ExceptionMessages.OrderIsNotFullyTicketed, args) { HttpStatus = 500 };
+
+        public static BusinessException AirServiceIsNotReserved(params object?[] args) =>
+            new(2800, ExceptionMessages.AirServiceIsNotReserved, args) { HttpStatus = 409 };
+
+        public static BusinessException ReservationValidationIsStaleForIssue(params object?[] args) =>
+            new(2801, ExceptionMessages.ReservationValidationIsStaleForIssue, args) { HttpStatus = 409 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

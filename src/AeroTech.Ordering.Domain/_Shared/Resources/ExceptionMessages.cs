@@ -167,5 +167,33 @@
         public const string ReservationHoldHasLapsed = "The provider hold of reservation '{0}' lapsed at {1}, so it cannot be confirmed.";
         public const string ReservationValidationIsStale = "The fare validation of reservation '{0}' is not current (valid until {1}), so it cannot be confirmed.";
         public const string ConfirmationRecoveryRequestIsMissing = "Fulfillment task '{0}' of reservation '{1}' has no persisted confirmation request, so its unresolved confirmation cannot be replayed.";
+        public const string FulfillmentTaskTargetIsDuplicated = "Fulfillment task '{0}' already targets {1} '{2}' for {3}.";
+        public const string OrderCannotBeIssuedAfterLastTicketingDate = "Order '{0}' passed its last ticketing date {1}, so it cannot be issued.";
+        public const string OrderHasNoTicketableServices = "Order '{0}' has no active air service to ticket.";
+        public const string AirServiceCapacityIsNotConfirmed = "Air service '{0}' cannot be ticketed because its reserved capacity is {1}, not Confirmed.";
+        public const string OrderHasUnresolvedFulfillmentEffect = "Order '{0}' has a fulfillment effect whose outcome is not resolved, so it cannot be issued.";
+        public const string AirServiceFareComponentIsMissing = "Air service '{0}' is not covered by any accepted fare component.";
+        public const string AirServiceFareComponentIsAmbiguous = "Air service '{0}' is covered by {1} accepted fare components.";
+        public const string AirServiceTicketPricingIsMissing = "Air service '{0}' has no accepted customer price allocation to attribute to its ticket coupon.";
+        public const string AirServiceTicketPricingIsAmbiguous = "Price allocation '{1}' of air service '{0}' names another traveller or segment.";
+        public const string TicketPricingCurrencyMismatch = "Air service '{0}' is priced in currency {1}, not in the order currency {2}.";
+        public const string TicketCouponIssuanceValueIsNegative = "Air service '{0}' attributes {1} to its ticket coupon, which cannot be negative.";
+        public const string DocumentStockNotFound = "Document stock '{0}' was not found.";
+        public const string DocumentStockKindMismatch = "Document stock '{0}' holds {1} numbers, not {2}.";
+        public const string DocumentStockIsNotActive = "Document stock '{0}' is {1}, not Active.";
+        public const string DocumentStockIsExhausted = "Document stock '{0}' has no number left.";
+        public const string DocumentStockHasInsufficientNumbers = "Document stock '{0}' has {1} numbers left but {2} are needed.";
+        public const string DocumentStockCheckDigitProfileIsUnsupported = "Check-digit profile '{0}' is not supported; only 'None' is.";
+        public const string DocumentStockRangeIsInvalid = "Document stock range {0}-{1} with serial width {2} and prefix '{3}' is invalid.";
+        public const string DocumentStockRangeOverlaps = "The range overlaps document stock '{0}' of the same owner, document kind and prefix.";
+        public const string DocumentNumberIsAlreadyIssued = "Document number '{0}' is already issued.";
+        public const string DocumentStockOperationInProgress = "Another operation holds document stock '{0}'. Retry shortly.";
+        public const string ElectronicTicketRequiresCoupons = "The electronic ticket of traveller '{0}' requires at least one coupon.";
+        public const string TicketCouponBelongsToAnotherTraveller = "Air service '{0}' belongs to traveller '{1}', not to the ticket traveller.";
+        public const string ElectronicTicketCurrencyIsInconsistent = "Ticket value in currency {0} differs from the ticket currency {1}.";
+        public const string DocumentNumberIsRequired = "An accountable document requires a document number.";
+        public const string OrderIsNotFullyTicketed = "Order '{0}' cannot be Ticketed while air service '{1}' has no ticket coupon.";
+        public const string AirServiceIsNotReserved = "Air service '{0}' requires reserved capacity but has none, so it cannot be ticketed.";
+        public const string ReservationValidationIsStaleForIssue = "The fare validation of reservation '{0}' is not current (valid until {1}), so its services cannot be ticketed.";
     }
 }

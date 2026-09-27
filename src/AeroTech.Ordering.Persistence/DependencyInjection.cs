@@ -1,9 +1,13 @@
 using AeroTech.Framework.Core.Domain.Repository;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Framework.Infrastructure.HealthChecks;
+using AeroTech.Ordering.Domain.DocumentStockAggregate.Contracts;
+using AeroTech.Ordering.Domain.ElectronicTicketAggregate.Contracts;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Contracts;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Contracts;
 using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
+using AeroTech.Ordering.Persistence.DocumentStockAggregate;
+using AeroTech.Ordering.Persistence.ElectronicTicketAggregate;
 using AeroTech.Ordering.Persistence.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Persistence.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Persistence.Inbox;
@@ -29,6 +33,8 @@ namespace AeroTech.Ordering.Persistence
             services.AddScoped<IOrderRepository, OrderRepository>();
             services.AddScoped<IFulfillmentReservationRepository, FulfillmentReservationRepository>();
             services.AddScoped<IFulfillmentTaskRepository, FulfillmentTaskRepository>();
+            services.AddScoped<IElectronicTicketRepository, ElectronicTicketRepository>();
+            services.AddScoped<IDocumentStockRepository, DocumentStockRepository>();
             services.AddSingleton<IRecordLocatorGenerator, RecordLocatorGenerator>();
             services.Configure<IntegrationEventOptions>(configuration.GetSection("IntegrationEvents"));
             services.AddScoped<IOutboxWriter, OutboxWriter>();

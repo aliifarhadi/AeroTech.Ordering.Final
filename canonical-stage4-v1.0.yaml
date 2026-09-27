@@ -1,0 +1,64 @@
+version: '1.0'
+authority: docs/CODING-AGENT-PROMPT-Ordering-Stage4-Issue-v1.0-FINAL.md
+note: >-
+  Thin guardrail. This file lists ONLY the Stage-4 type set, value-object set and the
+  numeric values of the enums Stage 4 introduces. It deliberately does not describe
+  properties, SQL types, lengths, indexes, namespaces, assemblies, table names or
+  mapping strategy. Whether Stage 4 is finished is decided by the authority's
+  acceptance, concurrency, persistence and sabotage scenarios.
+
+stage_file: .canonical-stage
+
+stage4:
+  types:
+    - Order
+    - OrderItem
+    - OrderService
+    - OrderAirTransportService
+    - OrderSeatService
+    - OrderTraveller
+    - TravellerProfileRevision
+    - OrderTravellerDocument
+    - OrderContact
+    - OrderContactPoint
+    - OrderJourney
+    - OrderSegment
+    - OrderSegmentLeg
+    - OrderChange
+    - PricingLine
+    - PricingAllocation
+    - OrderRemark
+    - OrderFarePricingUnit
+    - OrderFareComponent
+    - FulfillmentReservation
+    - ReservationUnit
+    - FulfillmentTask
+    - FulfillmentTaskTarget
+    - FulfillmentTaskAttempt
+    - ProviderInteraction
+    - ElectronicTicket
+    - TicketCoupon
+    - TicketPriceLink
+    - DocumentStock
+    - DocumentStockAllocation
+
+  abstract_types:
+    - OrderService
+
+  value_objects:
+    - SalesContext
+    - BaggageAllowance
+    - ExchangeRateSnapshot
+    - IssuedSegmentSnapshot
+    - DocumentIssuanceContext
+
+  enums:
+    FulfillmentTargetKind:
+      ReservationUnit: 1
+      OrderService: 2
+      ElectronicTicket: 3
+      TicketCoupon: 4
+      ElectronicMiscDocument: 5
+      EmdCoupon: 6
+      DocumentStockAllocation: 7
+      ReservationGroupSpace: 8

@@ -1,6 +1,8 @@
 using AeroTech.Framework.Core.Domain.Repository;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Framework.Infrastructure.Persistence;
+using AeroTech.Ordering.Domain.DocumentStockAggregate;
+using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
@@ -29,6 +31,10 @@ namespace AeroTech.Ordering.Persistence
         public DbSet<FulfillmentReservation> FulfillmentReservations => Set<FulfillmentReservation>();
 
         public DbSet<FulfillmentTask> FulfillmentTasks => Set<FulfillmentTask>();
+
+        public DbSet<ElectronicTicket> ElectronicTickets => Set<ElectronicTicket>();
+
+        public DbSet<DocumentStock> DocumentStocks => Set<DocumentStock>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

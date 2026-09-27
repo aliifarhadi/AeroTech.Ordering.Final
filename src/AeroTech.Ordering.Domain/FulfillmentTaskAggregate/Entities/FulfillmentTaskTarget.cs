@@ -12,18 +12,22 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities
         internal FulfillmentTaskTarget(
             long id,
             long fulfillmentTaskId,
-            long reservationUnitId,
+            FulfillmentTargetKind targetKind,
+            long targetId,
             OrderFulfillmentTargetAction action)
         {
             Id = id;
             FulfillmentTaskId = fulfillmentTaskId;
-            ReservationUnitId = reservationUnitId;
+            TargetKind = targetKind;
+            TargetId = targetId;
             Action = action;
         }
 
         public long FulfillmentTaskId { get; private set; }
 
-        public long ReservationUnitId { get; private set; }
+        public FulfillmentTargetKind TargetKind { get; private set; }
+
+        public long TargetId { get; private set; }
 
         public OrderFulfillmentTargetAction Action { get; private set; }
     }

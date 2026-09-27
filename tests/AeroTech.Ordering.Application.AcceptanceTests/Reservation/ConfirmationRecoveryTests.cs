@@ -136,6 +136,7 @@ public sealed class ConfirmationRecoveryTests
             reservation.FulfillmentProviderKey,
             "confirm-hold:unrecorded",
             reservation.CorrelationReference,
+            FulfillmentTargetKind.ReservationUnit,
             reservation.Units.Select(unit => unit.Id).ToList(),
             OrderFulfillmentTargetAction.Confirm,
             _harness.Ids,

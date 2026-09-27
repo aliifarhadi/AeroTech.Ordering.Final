@@ -22,12 +22,13 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
 
     public sealed record ReleaseOutcome(
         ProviderOperationOutcome OperationOutcome,
+        FulfillmentReservationStatus? ObservedStatus,
         ProviderFailure? Failure,
         ProviderResponse? Response);
 
     public sealed record ConfirmationOutcome(
         ProviderOperationOutcome OperationOutcome,
-        ReservationMemberStatus? ObservedStatus,
+        FulfillmentReservationStatus? ObservedStatus,
         ProviderFailure? Failure,
         ProviderResponse? Response);
 

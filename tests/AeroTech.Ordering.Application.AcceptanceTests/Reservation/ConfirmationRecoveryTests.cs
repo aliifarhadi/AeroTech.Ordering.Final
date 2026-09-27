@@ -1,6 +1,5 @@
 using System.Net;
 using AeroTech.Framework.Core.Domain.Exceptions;
-using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
@@ -98,7 +97,7 @@ public sealed class ConfirmationRecoveryTests
         var (order, reservation) = await ReserveAsync(holdExpiry: _harness.Clock.Now.AddMinutes(30));
         LoseNextConfirmationResponse();
         await _harness.ConfirmReservedCapacityAsync(order);
-        _harness.FlightFlow.ConfirmResponses.Enqueue(_ => new ConfirmHoldResult(FlightSeatHoldStatus.Expired, "Cannot confirm an expired seat hold."));
+        _harness.FlightFlow.ConfirmResponses.Enqueue(_ => new ConfirmHoldResult(FulfillmentReservationStatus.Expired, "Cannot confirm an expired seat hold."));
 
         _harness.Clock.Now = reservation.ExpiresAt!.Value;
         await _harness.ConfirmReservedCapacityAsync(order);

@@ -143,18 +143,24 @@ write code in another service's repo.
 
 ## Canonical domain contract (Ordering redesign)
 
-**Authority split — read this before anything else in this file.**
+**Authority — read this before anything else in this file.**
 
-- `ORDERING-IMPLEMENTATION-PACK-v4.6-FINAL.md` is the authority for **domain shape and domain behavior**. For those it **overrides the legacy "Domain model essentials" section of this file**: the aggregate list above (Order / TrafficDocument / Payment / FulfillmentTask / ProviderInteraction) is superseded.
-- This file continues to win for **framework, layering, project / namespace / folder placement, DI, messaging, repository patterns, table and column naming, EF mapping strategy, and coding conventions**. The Pack does not govern any of those.
-- The Pack authorizes the conformance and acceptance tests required by this redesign, despite any older "tests paused" note.
+1. `docs/AeroTech-Ordering-Master-Domain-ADR-PRD-v2.0-FINAL-PROJECT-AUTHORITY.md` (**Master v2.0**) is the full-horizon domain and roadmap authority. For domain shape and domain behavior it **overrides the legacy "Domain model essentials" section of this file**: the aggregate list above (Order / TrafficDocument / Payment / FulfillmentTask / ProviderInteraction) is superseded.
+2. The current approved Stage PRD/prompt governs what is materialized now, wherever it is consistent with the Master. Stage 3 is governed by `docs/CODING-AGENT-PROMPT-Ordering-Stage3-Confirm-Reserved-Capacity-v2.1-FINAL.md`, refined in order by `docs/CODING-AGENT-PROMPT-Ordering-Stage3-v2.1-FlightFlow-Correction.md`, `docs/CODING-AGENT-PROMPT-Ordering-Stage3-v2.1-R1-FINAL-DECISIONS.md` and `docs/CODING-AGENT-PROMPT-Ordering-Stage3-v2.2-FINAL-CLOSURE.md`; a later document wins only where it is explicitly different.
+3. Everything under `docs/superseded/` — Pack v4.6, Master v1.0, the Stage-1 and Stage-2 specs and prompts, earlier Stage-3 prompts — is historical evidence and traceability only, as is donor code.
+4. No historical file can override Master v2.0.
+5. Payment/JetPay is not an intrinsic Order or Reservation prerequisite; the Payment stage (Stage P) is additive, as Master v2.0 defines it.
+6. Stage 4 is Issue, not Payment.
 
-`canonical-stage1-v4.6.yaml` is a thin CI guardrail: it pins the Stage-1 type set, value-object set and frozen enum values, and nothing else. It is not a design authority and does not describe properties, lengths, indexes or mapping.
+- This file continues to win for **framework, layering, project / namespace / folder placement, DI, messaging, repository patterns, table and column naming, EF mapping strategy, and coding conventions**. The domain authorities above do not govern any of those.
+- The conformance and acceptance tests required by Master v2.0 and the active Stage authority are authorized, despite any older "tests paused" note.
+
+`canonical-stage1-v4.6.yaml` and `canonical-stage2-v1.1.yaml` are thin CI guardrails: they pin type sets, value-object sets and frozen enum values, and nothing else. Their `authority:` field records provenance only; they are not design authorities and do not describe properties, lengths, indexes or mapping.
 
 Rules:
-- Implement a concept in a slice only when that slice's scenario, a real contract, a slice invariant or a known later servicing need requires it (Pack section 1).
-- Do not add a domain type, value object or frozen enum member absent from the Pack and the guardrail.
+- Implement a concept in a slice only when that slice's scenario, a real contract, a slice invariant or a known later servicing need requires it.
+- Do not add a domain type, value object or frozen enum member absent from Master v2.0, the active Stage authority and the guardrails.
 - Commercial occurrences are closed, never deleted or mutated. Lineage columns arrive with their slice, but read models and queries must not assume every row is current.
 - Donor repositories are read-only implementation evidence, never design authority.
 - On missing or contradictory contract evidence, report `BLOCKED`; never infer — and never infer from V2/V3 or from Amadeus/Sabre behaviour.
-- Do not create `docs/` or `reports/` architecture artifacts. Completion reporting belongs in the PR description.
+- Authority documents live in `docs/` (active) or `docs/superseded/` (historical). Do not create other `docs/` or `reports/` architecture artifacts. Completion reporting belongs in the PR description.

@@ -118,17 +118,15 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             try
             {
                 var reply = await _flightFlow.ReleaseHeldAsync(PayloadOf<ReleaseHeldSeatsRequest>(request), cancellationToken);
+                var holdStatus = reply.Result.HoldStatus;
 
-                return reply.Result.Released
-                    ? new ReleaseOutcome(ProviderOperationOutcome.Succeeded, null, ResponseOf(reply))
-                    : new ReleaseOutcome(
-                        ProviderOperationOutcome.Rejected,
-                        new ProviderFailure(FulfillmentFailureKind.Permanent, FulfillmentFailureReason.ProviderRejected, reply.Result.Reason ?? string.Empty, reply.StatusCode),
-                        ResponseOf(reply));
+                return holdStatus == FulfillmentReservationStatus.Released
+                    ? new ReleaseOutcome(ProviderOperationOutcome.Succeeded, holdStatus, null, ResponseOf(reply))
+                    : new ReleaseOutcome(ProviderOperationOutcome.Rejected, holdStatus, RefusalOf(holdStatus, reply.Result.Reason, reply.StatusCode), ResponseOf(reply));
             }
             catch (ProviderRequestException exception)
             {
-                return new ReleaseOutcome(OutcomeOf(exception), FailureOf(exception), ResponseOf(exception));
+                return new ReleaseOutcome(OutcomeOf(exception), null, FailureOf(exception), ResponseOf(exception));
             }
         }
 
@@ -144,15 +142,11 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             try
             {
                 var reply = await _flightFlow.ConfirmHoldAsync(PayloadOf<ConfirmHoldRequest>(request), cancellationToken);
-                var holdStatus = ToUnitStatus(reply.Result.HoldStatus);
+                var holdStatus = reply.Result.HoldStatus;
 
-                return holdStatus == ReservationMemberStatus.Confirmed
+                return holdStatus == FulfillmentReservationStatus.Confirmed
                     ? new ConfirmationOutcome(ProviderOperationOutcome.Succeeded, holdStatus, null, ResponseOf(reply))
-                    : new ConfirmationOutcome(
-                        ProviderOperationOutcome.Rejected,
-                        holdStatus,
-                        new ProviderFailure(FulfillmentFailureKind.Permanent, RejectionReasonOf(holdStatus), reply.Result.Reason ?? string.Empty, reply.StatusCode),
-                        ResponseOf(reply));
+                    : new ConfirmationOutcome(ProviderOperationOutcome.Rejected, holdStatus, RefusalOf(holdStatus, reply.Result.Reason, reply.StatusCode), ResponseOf(reply));
             }
             catch (ProviderRequestException exception)
             {
@@ -261,7 +255,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             return null;
         }
 
-        private static ReservationMemberStatus ToUnitStatus(FlightSeatHoldStatus? status) => status switch
+        private static ReservationMemberStatus ToUnitStatus(FlightSeatHoldStatus status) => status switch
         {
             FlightSeatHoldStatus.Held => ReservationMemberStatus.Held,
             FlightSeatHoldStatus.Confirmed => ReservationMemberStatus.Confirmed,
@@ -271,10 +265,12 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             _ => ReservationMemberStatus.Unknown
         };
 
-        private static FulfillmentFailureReason RejectionReasonOf(ReservationMemberStatus holdStatus)
-            => holdStatus == ReservationMemberStatus.Expired
-                ? FulfillmentFailureReason.HoldExpired
-                : FulfillmentFailureReason.ProviderRejected;
+        private static ProviderFailure RefusalOf(FulfillmentReservationStatus holdStatus, string? reason, int statusCode)
+            => new(
+                FulfillmentFailureKind.Permanent,
+                holdStatus == FulfillmentReservationStatus.Expired ? FulfillmentFailureReason.HoldExpired : FulfillmentFailureReason.ProviderRejected,
+                reason ?? string.Empty,
+                statusCode);
 
         private static ProviderOperationOutcome OutcomeOf(ProviderRequestException exception)
             => exception.Kind == FulfillmentFailureKind.Permanent

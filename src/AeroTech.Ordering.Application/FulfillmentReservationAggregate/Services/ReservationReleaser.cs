@@ -47,9 +47,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
 
             task.RecordResponse(outcome.OperationOutcome, intent.ProviderOperationRef, outcome.Failure, outcome.Response, observedAt);
             task.CompleteAttempt(AttemptOutcomeOf(outcome), outcome.Failure, observedAt);
-
-            if (outcome.OperationOutcome == ProviderOperationOutcome.Succeeded)
-                reservation.RecordReleased(observedAt);
+            reservation.RecordRelease(outcome, observedAt);
 
             return outcome;
         }

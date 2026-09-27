@@ -1,6 +1,6 @@
-using AeroTech.Messages.FlightFlow.Enums;
+using AeroTech.Messages.Ordering.Enums;
 
 namespace AeroTech.Ordering.Domain.Providers.FlightFlow
 {
-    public sealed record ConfirmHoldResult(FlightSeatHoldStatus? HoldStatus, string? Reason);
+    public sealed record ConfirmHoldResult(FulfillmentReservationStatus HoldStatus, string? Reason);
 }

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using AeroTech.Messages.FlightFlow.Enums;
+using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
 using AeroTech.Ordering.Providers.FlightFlow.Services;
 using AeroTech.Ordering.Providers.FlightFlow.Wire;
@@ -19,6 +20,8 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
     public Queue<Func<HoldSeatsRequest, FlightHeldSeatsResult>> HoldResponses { get; } = new();
 
     public Queue<Func<ReleaseHeldSeatsRequest, ReleaseHeldSeatsResult>> ReleaseResponses { get; } = new();
+
+    public Queue<HttpResponseMessage> ReleaseWireResponses { get; } = new();
 
     public List<ConfirmHoldRequest> ConfirmRequests { get; } = [];
 
@@ -41,9 +44,15 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
     {
         ReleaseRequests.Add(request);
 
-        var respond = ReleaseResponses.TryDequeue(out var scripted) ? scripted : _ => new ReleaseHeldSeatsResult(true, null);
+        if (ReleaseWireResponses.TryDequeue(out var wireResponse))
+            return new FlightFlowProvider(StubHttpMessageHandler.ClientFor(new StubHttpMessageHandler(_ => wireResponse)))
+                .ReleaseHeldAsync(request, cancellationToken);
 
-        return Task.FromResult(new FlightFlowReply<ReleaseHeldSeatsResult>(respond(request), (int)HttpStatusCode.NoContent, string.Empty));
+        var respond = ReleaseResponses.TryDequeue(out var scripted) ? scripted : Released;
+        var result = respond(request);
+        var statusCode = result.HoldStatus == FulfillmentReservationStatus.Released ? HttpStatusCode.NoContent : HttpStatusCode.BadRequest;
+
+        return Task.FromResult(new FlightFlowReply<ReleaseHeldSeatsResult>(result, (int)statusCode, string.Empty));
     }
 
     public static string BodyOf<T>(T data)
@@ -77,12 +86,14 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
 
         var respond = ConfirmResponses.TryDequeue(out var scripted) ? scripted : Confirmed;
         var result = respond(request);
-        var statusCode = result.HoldStatus == FlightSeatHoldStatus.Confirmed ? HttpStatusCode.NoContent : HttpStatusCode.BadRequest;
+        var statusCode = result.HoldStatus == FulfillmentReservationStatus.Confirmed ? HttpStatusCode.NoContent : HttpStatusCode.BadRequest;
 
         return Task.FromResult(new FlightFlowReply<ConfirmHoldResult>(result, (int)statusCode, string.Empty));
     }
 
-    public static ConfirmHoldResult Confirmed(ConfirmHoldRequest request) => new(FlightSeatHoldStatus.Confirmed, null);
+    public static ConfirmHoldResult Confirmed(ConfirmHoldRequest request) => new(FulfillmentReservationStatus.Confirmed, null);
+
+    public static ReleaseHeldSeatsResult Released(ReleaseHeldSeatsRequest request) => new(FulfillmentReservationStatus.Released, null);
 
     public Task<CancelConfirmedSeatsResult> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();

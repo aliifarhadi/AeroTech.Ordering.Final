@@ -93,9 +93,9 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
             if (!order.HasPassedLastTicketingDateAt(now) || await _releaser.ReleaseWasRejectedAsync(reservation, cancellationToken))
                 return false;
 
-            var outcome = await _releaser.ReleaseAsync(reservation, cancellationToken);
+            await _releaser.ReleaseAsync(reservation, cancellationToken);
 
-            return outcome.OperationOutcome == ProviderOperationOutcome.Succeeded;
+            return reservation.Status != FulfillmentReservationStatus.Held;
         }
     }
 }

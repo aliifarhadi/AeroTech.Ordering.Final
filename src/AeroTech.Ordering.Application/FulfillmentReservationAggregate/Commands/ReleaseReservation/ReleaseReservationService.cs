@@ -60,7 +60,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
 
             var outcome = await _releaser.ReleaseAsync(reservation, cancellationToken);
 
-            if (outcome.OperationOutcome == ProviderOperationOutcome.Succeeded)
+            if (reservation.Status != FulfillmentReservationStatus.Held)
             {
                 await _summarizer.SummarizeAsync(order, reservations, cancellationToken);
                 await _synchronizer.ProjectReservationChangedAsync(order.ToReadModelSnapshot(_clock.GetDateTime()), cancellationToken);

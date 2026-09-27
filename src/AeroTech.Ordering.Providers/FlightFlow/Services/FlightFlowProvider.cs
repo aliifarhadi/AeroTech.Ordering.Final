@@ -5,7 +5,6 @@ using AeroTech.Ordering.Domain._Shared;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
 using AeroTech.Ordering.Providers.FlightFlow.Wire;
 using AeroTech.Messages.Ordering.Enums;
-using FlightSeatHoldStatus = AeroTech.Messages.FlightFlow.Enums.FlightSeatHoldStatus;
 
 namespace AeroTech.Ordering.Providers.FlightFlow.Services
 {
@@ -13,11 +12,16 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
     {
         private const string SeatHoldsRoute = "v1/Flights/Seat-Holds";
         private const string SeatConfirmationsRoute = "v1/Flights/Seat-Confirmations";
-        private const int ExpiredSeatHoldErrorCode = 1176;
-        private const int ReleasedSeatHoldErrorCode = 1177;
-        private const int CancelledSeatHoldErrorCode = 1178;
-        private const int InconsistentSeatHoldErrorCode = 1179;
-        private const int SeatHoldNotFoundErrorCode = 1180;
+        private const int CannotConfirmExpiredSeatHoldErrorCode = 1176;
+        private const int CannotConfirmReleasedSeatHoldErrorCode = 1177;
+        private const int CannotConfirmCancelledSeatHoldErrorCode = 1178;
+        private const int CannotConfirmInconsistentSeatHoldErrorCode = 1179;
+        private const int SeatHoldNotFoundForConfirmationErrorCode = 1180;
+        private const int SeatHoldNotFoundForReleaseErrorCode = 1181;
+        private const int CannotReleaseConfirmedSeatHoldErrorCode = 1182;
+        private const int CannotReleaseExpiredSeatHoldErrorCode = 1183;
+        private const int CannotReleaseCancelledSeatHoldErrorCode = 1184;
+        private const int CannotReleaseInconsistentSeatHoldErrorCode = 1185;
 
         private readonly HttpClient _httpClient;
 
@@ -211,13 +215,16 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             using (response)
             {
+                if (response.StatusCode == HttpStatusCode.NoContent)
+                    return new FlightFlowReply<ConfirmHoldResult>(new ConfirmHoldResult(FulfillmentReservationStatus.Confirmed, null), (int)response.StatusCode, body);
+
                 if (response.IsSuccessStatusCode)
-                    return new FlightFlowReply<ConfirmHoldResult>(new ConfirmHoldResult(FlightSeatHoldStatus.Confirmed, null), (int)response.StatusCode, body);
+                    throw UndocumentedSuccess("seat-hold confirmation", response, body);
 
                 var envelope = Deserialize<object>(body);
 
-                if (RefusedConfirmationOf(envelope) is { } refused)
-                    return new FlightFlowReply<ConfirmHoldResult>(refused, (int)response.StatusCode, body);
+                if (ConfirmationRefusalOf(ErrorCodeOf(envelope)) is { } holdStatus)
+                    return new FlightFlowReply<ConfirmHoldResult>(new ConfirmHoldResult(holdStatus, FirstError(envelope)), (int)response.StatusCode, body);
 
                 var (kind, reason) = response.StatusCode == HttpStatusCode.NotFound
                     ? (FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome)
@@ -231,15 +238,33 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             }
         }
 
-        private static ConfirmHoldResult? RefusedConfirmationOf<T>(FlightFlowEnvelope<T>? envelope)
-            => envelope?.Errors?.FirstOrDefault()?.Code switch
-            {
-                ExpiredSeatHoldErrorCode => new ConfirmHoldResult(FlightSeatHoldStatus.Expired, FirstError(envelope)),
-                ReleasedSeatHoldErrorCode => new ConfirmHoldResult(FlightSeatHoldStatus.Released, FirstError(envelope)),
-                CancelledSeatHoldErrorCode => new ConfirmHoldResult(FlightSeatHoldStatus.Cancelled, FirstError(envelope)),
-                InconsistentSeatHoldErrorCode or SeatHoldNotFoundErrorCode => new ConfirmHoldResult(null, FirstError(envelope)),
-                _ => null
-            };
+        private static FulfillmentReservationStatus? ConfirmationRefusalOf(int? errorCode) => errorCode switch
+        {
+            CannotConfirmExpiredSeatHoldErrorCode => FulfillmentReservationStatus.Expired,
+            CannotConfirmReleasedSeatHoldErrorCode => FulfillmentReservationStatus.Released,
+            CannotConfirmCancelledSeatHoldErrorCode => FulfillmentReservationStatus.Cancelled,
+            CannotConfirmInconsistentSeatHoldErrorCode => FulfillmentReservationStatus.Mixed,
+            SeatHoldNotFoundForConfirmationErrorCode => FulfillmentReservationStatus.Unknown,
+            _ => null
+        };
+
+        private static FulfillmentReservationStatus? ReleaseRefusalOf(int? errorCode) => errorCode switch
+        {
+            SeatHoldNotFoundForReleaseErrorCode => FulfillmentReservationStatus.Unknown,
+            CannotReleaseConfirmedSeatHoldErrorCode => FulfillmentReservationStatus.Confirmed,
+            CannotReleaseExpiredSeatHoldErrorCode => FulfillmentReservationStatus.Expired,
+            CannotReleaseCancelledSeatHoldErrorCode => FulfillmentReservationStatus.Cancelled,
+            CannotReleaseInconsistentSeatHoldErrorCode => FulfillmentReservationStatus.Mixed,
+            _ => null
+        };
+
+        private static ProviderRequestException UndocumentedSuccess(string operation, HttpResponseMessage response, string body)
+            => new(
+                FulfillmentFailureKind.Indeterminate,
+                FulfillmentFailureReason.UnknownOutcome,
+                $"The {operation} answered HTTP {(int)response.StatusCode}, which its contract does not define as success.",
+                (int)response.StatusCode,
+                body);
 
         private static FlightSeatHoldCancellationReason MapCancellationReason(VoidReason reason) => reason switch
         {
@@ -284,14 +309,22 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
             using (response)
             {
+                if (response.StatusCode == HttpStatusCode.NoContent)
+                    return new FlightFlowReply<ReleaseHeldSeatsResult>(new ReleaseHeldSeatsResult(FulfillmentReservationStatus.Released, null), (int)response.StatusCode, body);
+
                 if (response.IsSuccessStatusCode)
-                    return new FlightFlowReply<ReleaseHeldSeatsResult>(new ReleaseHeldSeatsResult(true, null), (int)response.StatusCode, body);
+                    throw UndocumentedSuccess("seat-hold release", response, body);
+
+                var envelope = Deserialize<object>(body);
+
+                if (ReleaseRefusalOf(ErrorCodeOf(envelope)) is { } holdStatus)
+                    return new FlightFlowReply<ReleaseHeldSeatsResult>(new ReleaseHeldSeatsResult(holdStatus, FirstError(envelope)), (int)response.StatusCode, body);
 
                 var (kind, reason) = Classify((int)response.StatusCode);
                 throw new ProviderRequestException(
                     kind,
                     reason,
-                    FirstError(Deserialize<object>(body)) ?? $"The seat hold '{request.HoldId}' could not be released (HTTP {(int)response.StatusCode}): {Truncate(body)}",
+                    FirstError(envelope) ?? $"The seat hold '{request.HoldId}' could not be released (HTTP {(int)response.StatusCode}): {Truncate(body)}",
                     (int)response.StatusCode,
                     body);
             }
@@ -354,6 +387,8 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                 return null;
             }
         }
+
+        private static int? ErrorCodeOf<T>(FlightFlowEnvelope<T>? envelope) => envelope?.Errors?.FirstOrDefault()?.Code;
 
         private static string? FirstError<T>(FlightFlowEnvelope<T>? envelope)
         {

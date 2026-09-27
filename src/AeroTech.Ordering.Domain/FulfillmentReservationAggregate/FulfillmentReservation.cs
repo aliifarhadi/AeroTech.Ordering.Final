@@ -183,7 +183,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
                 case ProviderOperationOutcome.Rejected:
                     if (outcome.ObservedStatus is { } observedStatus)
-                        MarkAll(ToReservationStatus(observedStatus), observedStatus);
+                        Observe(observedStatus);
                     break;
 
                 default:
@@ -199,12 +199,25 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
                 ? new ReleaseIntent(FulfillmentProviderKey, providerOperationRef, $"release-hold:{Id}")
                 : throw ExceptionFactory.ReservationIsNotReleasable(Id, Status);
 
-        public void RecordReleased(DateTimeOffset observedAt)
+        public void RecordRelease(ReleaseOutcome outcome, DateTimeOffset observedAt)
         {
             if (Status != FulfillmentReservationStatus.Held)
                 throw ExceptionFactory.ReservationIsNotReleasable(Id, Status);
 
-            MarkAll(FulfillmentReservationStatus.Released, ReservationMemberStatus.Released);
+            switch (outcome.OperationOutcome)
+            {
+                case ProviderOperationOutcome.Succeeded:
+                    MarkAll(FulfillmentReservationStatus.Released, ReservationMemberStatus.Released);
+                    break;
+
+                case ProviderOperationOutcome.Rejected when outcome.ObservedStatus is { } observedStatus:
+                    Observe(observedStatus);
+                    break;
+
+                default:
+                    return;
+            }
+
             LastObservedAt = observedAt;
         }
 
@@ -249,6 +262,9 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             return statuses.Count == 1 ? ToReservationStatus(statuses[0]) : FulfillmentReservationStatus.Mixed;
         }
 
+        private void Observe(FulfillmentReservationStatus observedStatus)
+            => MarkAll(observedStatus, ToUnitStatus(observedStatus));
+
         private void MarkAll(FulfillmentReservationStatus reservationStatus, ReservationMemberStatus unitStatus)
         {
             Status = reservationStatus;
@@ -268,6 +284,19 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             ReservationMemberStatus.Expired => FulfillmentReservationStatus.Expired,
             ReservationMemberStatus.Cancelled => FulfillmentReservationStatus.Cancelled,
             _ => FulfillmentReservationStatus.Unknown
+        };
+
+        private static ReservationMemberStatus ToUnitStatus(FulfillmentReservationStatus status) => status switch
+        {
+            FulfillmentReservationStatus.Pending => ReservationMemberStatus.Pending,
+            FulfillmentReservationStatus.Waitlisted => ReservationMemberStatus.Waitlisted,
+            FulfillmentReservationStatus.Held => ReservationMemberStatus.Held,
+            FulfillmentReservationStatus.Confirmed => ReservationMemberStatus.Confirmed,
+            FulfillmentReservationStatus.Rejected => ReservationMemberStatus.Rejected,
+            FulfillmentReservationStatus.Released => ReservationMemberStatus.Released,
+            FulfillmentReservationStatus.Expired => ReservationMemberStatus.Expired,
+            FulfillmentReservationStatus.Cancelled => ReservationMemberStatus.Cancelled,
+            _ => ReservationMemberStatus.Unknown
         };
     }
 }

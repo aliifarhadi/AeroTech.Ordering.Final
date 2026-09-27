@@ -1,6 +1,5 @@
 using System.Net;
 using AeroTech.Framework.Core.Domain.Exceptions;
-using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
@@ -215,9 +214,9 @@ public sealed class ConfirmationTests
     }
 
     [Theory]
-    [InlineData(1179)]
-    [InlineData(1180)]
-    public async Task Refusal_without_a_single_hold_state_fails_closed(int errorCode)
+    [InlineData(1179, FulfillmentReservationStatus.Mixed)]
+    [InlineData(1180, FulfillmentReservationStatus.Unknown)]
+    public async Task Refusal_without_a_uniform_hold_state_fails_closed(int errorCode, FulfillmentReservationStatus reservationStatus)
     {
         var order = SeedOrder();
         var reservation = await ReserveAsync(order);
@@ -226,7 +225,7 @@ public sealed class ConfirmationTests
         var result = await _harness.ConfirmReservedCapacityAsync(order);
 
         var task = _harness.TaskOf(reservation.Id, OrderFulfillmentTaskType.ConfirmInventory);
-        Assert.Equal(FulfillmentReservationStatus.Unknown, reservation.Status);
+        Assert.Equal(reservationStatus, reservation.Status);
         Assert.All(reservation.Units, unit => Assert.Equal(ReservationMemberStatus.Unknown, unit.Status));
         Assert.Equal((OrderFulfillmentStatus.Failed, false), (task.Status, task.IsResumable));
         Assert.Equal(FulfillmentFailureReason.ProviderRejected, result.Reservations.Single().FailureReason);
@@ -234,25 +233,33 @@ public sealed class ConfirmationTests
         Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
-    [Fact]
-    public async Task Fail_closed_confirmation_is_neither_replayed_nor_reconciled()
+    [Theory]
+    [InlineData(1179, FulfillmentReservationStatus.Mixed)]
+    [InlineData(1180, FulfillmentReservationStatus.Unknown)]
+    public async Task Fail_closed_confirmation_is_neither_replayed_nor_reserved_again_nor_compensated(
+        int errorCode,
+        FulfillmentReservationStatus reservationStatus)
     {
         var lastTicketingDate = _harness.Clock.Now.AddHours(2);
         var order = SeedOrder(lastTicketingDate);
         var reservation = await ReserveAsync(order, _harness.Clock.Now.AddHours(1), holdExpiry: _harness.Clock.Now.AddHours(1));
-        _harness.FlightFlow.ConfirmWireResponses.Enqueue(FlightFlowWire.Response(HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1179)));
+        _harness.FlightFlow.ConfirmWireResponses.Enqueue(FlightFlowWire.Response(HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(errorCode)));
         await _harness.ConfirmReservedCapacityAsync(order);
 
-        var repeated = await _harness.ConfirmReservedCapacityAsync(order);
+        await _harness.ConfirmReservedCapacityAsync(order);
+        var reserved = await _harness.ReserveOrderAsync(order);
         _harness.Clock.Now = lastTicketingDate;
         var due = await _harness.DueOrderIdsAsync();
         await _harness.EnforceDeadlinesAsync(order);
 
         Assert.Single(_harness.FlightFlow.ConfirmRequests);
+        Assert.Single(_harness.FlightFlow.HoldRequests);
+        Assert.Empty(reserved.Reservations);
         Assert.Empty(_harness.FlightFlow.ReleaseRequests);
+        Assert.Single(_harness.Reservations.Committed);
         Assert.Equal(OrderFulfillmentStatus.Failed, _harness.TaskOf(reservation.Id, OrderFulfillmentTaskType.ConfirmInventory).Status);
-        Assert.Equal(FulfillmentReservationStatus.Unknown, repeated.Reservations.Single().Status);
-        Assert.Equal(FulfillmentReservationStatus.Unknown, reservation.Status);
+        Assert.Equal(reservationStatus, reservation.Status);
+        Assert.All(reservation.Units, unit => Assert.Equal(ReservationMemberStatus.Unknown, unit.Status));
         Assert.Equal([order.Id], due);
     }
 
@@ -273,12 +280,11 @@ public sealed class ConfirmationTests
     }
 
     [Theory]
-    [InlineData(FlightSeatHoldStatus.Expired, FulfillmentReservationStatus.Expired, ReservationMemberStatus.Expired, FulfillmentFailureReason.HoldExpired)]
-    [InlineData(FlightSeatHoldStatus.Released, FulfillmentReservationStatus.Released, ReservationMemberStatus.Released, FulfillmentFailureReason.ProviderRejected)]
-    [InlineData(FlightSeatHoldStatus.Cancelled, FulfillmentReservationStatus.Cancelled, ReservationMemberStatus.Cancelled, FulfillmentFailureReason.ProviderRejected)]
+    [InlineData(FulfillmentReservationStatus.Expired, ReservationMemberStatus.Expired, FulfillmentFailureReason.HoldExpired)]
+    [InlineData(FulfillmentReservationStatus.Released, ReservationMemberStatus.Released, FulfillmentFailureReason.ProviderRejected)]
+    [InlineData(FulfillmentReservationStatus.Cancelled, ReservationMemberStatus.Cancelled, FulfillmentFailureReason.ProviderRejected)]
     public async Task Provider_reported_hold_state_is_applied_when_the_confirmation_is_refused(
-        FlightSeatHoldStatus reported,
-        FulfillmentReservationStatus reservationStatus,
+        FulfillmentReservationStatus reported,
         ReservationMemberStatus unitStatus,
         FulfillmentFailureReason failureReason)
     {
@@ -288,7 +294,7 @@ public sealed class ConfirmationTests
 
         var result = await _harness.ConfirmReservedCapacityAsync(order);
 
-        Assert.Equal(reservationStatus, reservation.Status);
+        Assert.Equal(reported, reservation.Status);
         Assert.All(reservation.Units, unit => Assert.Equal(unitStatus, unit.Status));
         Assert.Equal(OrderFulfillmentStatus.Failed, _harness.TaskOf(reservation.Id, OrderFulfillmentTaskType.ConfirmInventory).Status);
         Assert.Equal(failureReason, result.Reservations.Single().FailureReason);

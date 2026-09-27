@@ -80,7 +80,7 @@ public sealed class StubReservationProvider(
     public Task<ReleaseOutcome> ReleaseAsync(ProviderRequest request, CancellationToken cancellationToken = default)
     {
         ReleaseCalls.Add(new ReleaseIntent(providerKey, request.Payload, request.IdempotencyKey!));
-        return Task.FromResult(new ReleaseOutcome(ProviderOperationOutcome.Succeeded, null, null));
+        return Task.FromResult(new ReleaseOutcome(ProviderOperationOutcome.Succeeded, FulfillmentReservationStatus.Released, null, null));
     }
 
     public ProviderRequest ConfirmRequestFor(ConfirmationIntent intent)
@@ -121,7 +121,7 @@ public sealed class StubReservationProvider(
             null);
 
     public static ConfirmationOutcome Confirmed(ProviderRequest request)
-        => new(ProviderOperationOutcome.Succeeded, ReservationMemberStatus.Confirmed, null, null);
+        => new(ProviderOperationOutcome.Succeeded, FulfillmentReservationStatus.Confirmed, null, null);
 
     public static ConfirmationOutcome RejectedConfirmation(ProviderRequest request)
         => new(

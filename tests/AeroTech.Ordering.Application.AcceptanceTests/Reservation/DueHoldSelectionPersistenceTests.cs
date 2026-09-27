@@ -50,7 +50,7 @@ public sealed class DueHoldSelectionPersistenceTests : IAsyncLifetime
             await SeedHeldAsync(context, openDeadline, valid);
             var confirmed = await SeedHeldAsync(context, passedDeadline, valid);
 
-            confirmed.RecordConfirmation(new ConfirmationOutcome(ProviderOperationOutcome.Succeeded, ReservationMemberStatus.Confirmed, null, null), start);
+            confirmed.RecordConfirmation(new ConfirmationOutcome(ProviderOperationOutcome.Succeeded, FulfillmentReservationStatus.Confirmed, null, null), start);
             await new FulfillmentTaskRepository(context).AddAsync(RejectedRelease(releaseRejected));
             await context.SaveChangesAsync();
 

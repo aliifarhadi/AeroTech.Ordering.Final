@@ -13,15 +13,18 @@ public sealed class FlightFlowConfirmationContractTests
 {
     private const string HoldId = "HOLD-1";
 
-    public static TheoryData<HttpStatusCode, string, ProviderOperationOutcome, ReservationMemberStatus?> Responses => new()
+    public static TheoryData<HttpStatusCode, string, ProviderOperationOutcome, FulfillmentReservationStatus?> Responses => new()
     {
-        { HttpStatusCode.NoContent, string.Empty, ProviderOperationOutcome.Succeeded, ReservationMemberStatus.Confirmed },
-        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1176), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Expired },
-        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1177), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Released },
-        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1178), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Cancelled },
-        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1179), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Unknown },
-        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1180), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Unknown },
-        { HttpStatusCode.NotFound, FlightFlowWire.ErrorBody(1180), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Unknown },
+        { HttpStatusCode.NoContent, string.Empty, ProviderOperationOutcome.Succeeded, FulfillmentReservationStatus.Confirmed },
+        { HttpStatusCode.OK, string.Empty, ProviderOperationOutcome.Unknown, null },
+        { HttpStatusCode.Created, string.Empty, ProviderOperationOutcome.Unknown, null },
+        { HttpStatusCode.Accepted, string.Empty, ProviderOperationOutcome.Unknown, null },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1176), ProviderOperationOutcome.Rejected, FulfillmentReservationStatus.Expired },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1177), ProviderOperationOutcome.Rejected, FulfillmentReservationStatus.Released },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1178), ProviderOperationOutcome.Rejected, FulfillmentReservationStatus.Cancelled },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1179), ProviderOperationOutcome.Rejected, FulfillmentReservationStatus.Mixed },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1180), ProviderOperationOutcome.Rejected, FulfillmentReservationStatus.Unknown },
+        { HttpStatusCode.NotFound, FlightFlowWire.ErrorBody(1180), ProviderOperationOutcome.Rejected, FulfillmentReservationStatus.Unknown },
         { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1166), ProviderOperationOutcome.Rejected, null },
         { HttpStatusCode.BadRequest, string.Empty, ProviderOperationOutcome.Rejected, null },
         { HttpStatusCode.Unauthorized, string.Empty, ProviderOperationOutcome.Rejected, null },
@@ -63,7 +66,7 @@ public sealed class FlightFlowConfirmationContractTests
         HttpStatusCode status,
         string body,
         ProviderOperationOutcome expectedOutcome,
-        ReservationMemberStatus? expectedStatus)
+        FulfillmentReservationStatus? expectedStatus)
     {
         var handler = new StubHttpMessageHandler(_ => FlightFlowWire.Response(status, body));
 
@@ -81,7 +84,7 @@ public sealed class FlightFlowConfirmationContractTests
         var outcome = await ConfirmAsync(handler);
 
         Assert.Equal(
-            (ProviderOperationOutcome.Unknown, (ReservationMemberStatus?)null, FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome),
+            (ProviderOperationOutcome.Unknown, (FulfillmentReservationStatus?)null, FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome),
             (outcome.OperationOutcome, outcome.ObservedStatus, outcome.Failure!.Kind, outcome.Failure.Reason));
     }
 

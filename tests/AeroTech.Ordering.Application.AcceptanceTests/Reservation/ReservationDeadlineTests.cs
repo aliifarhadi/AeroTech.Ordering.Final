@@ -1,5 +1,7 @@
+using System.Net;
 using AeroTech.Framework.Core.Domain.Exceptions;
 using AeroTech.Messages.Ordering.Enums;
+using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
@@ -151,6 +153,24 @@ public sealed class ReservationDeadlineTests
         Assert.Equal(2, _harness.FlightFlow.ReleaseRequests.Count);
         Assert.Single(releaseInteractions.Select(interaction => (interaction.RequestPayload, interaction.IdempotencyKey)).Distinct());
         Assert.Equal((FulfillmentReservationStatus.Released, OrderStatus.Expired), (reservation.Status, order.Status));
+    }
+
+    [Fact]
+    public async Task Release_at_the_last_ticketing_date_refused_as_confirmed_records_the_confirmation_instead()
+    {
+        var lastTicketingDate = _harness.Clock.Now.AddMinutes(30);
+        var order = SeedOrder(lastTicketingDate);
+        var reservation = await ReserveAsync(order, _harness.Clock.Now.AddHours(1), holdExpiry: _harness.Clock.Now.AddMinutes(90));
+        _harness.Clock.Now = lastTicketingDate;
+        _harness.FlightFlow.ReleaseWireResponses.Enqueue(FlightFlowWire.Response(HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1182)));
+
+        await _harness.EnforceDeadlinesAsync(order);
+
+        Assert.Equal((FulfillmentReservationStatus.Confirmed, OrderStatus.Expired), (reservation.Status, order.Status));
+        Assert.All(reservation.Units, unit => Assert.Equal(ReservationMemberStatus.Confirmed, unit.Status));
+        Assert.Equal(OrderFulfillmentStatus.Failed, _harness.TaskOf(reservation.Id, OrderFulfillmentTaskType.ReleaseReserved).Status);
+        Assert.DoesNotContain(order.Id, await _harness.DueOrderIdsAsync());
+        Assert.Equal(OrderStatus.Expired, _harness.Synchronizer.ReservationProjections.Last().Status);
     }
 
     [Fact]

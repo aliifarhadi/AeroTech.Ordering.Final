@@ -190,6 +190,26 @@ public sealed class IssueAfterPartialCancellationTests
     }
 
     [Fact]
+    public async Task Issue_refresh_does_not_need_the_active_plan_to_match_the_historical_reservation()
+    {
+        var order = _harness.SeedOrder(
+            [TravellerSpec.Adult(1)],
+            [new BoundSpec("OUT", 101), new BoundSpec("RET", 201)],
+            [new SeatSpec(1, "RET", "12A")]);
+        await _harness.ReserveOrderAsync(order);
+        await _harness.ConfirmReservedCapacityAsync(order);
+        var outbound = ReservationHarness.AirService(order, 1, 101);
+        await _harness.CancelAsync(order, ReservationHarness.AirService(order, 1, 201).Id);
+        var stock = await _harness.DefineStockAsync();
+
+        await _harness.IssueAsync(order, stock.DocumentStockId);
+
+        Assert.Equal([outbound.Id], Assert.Single(_harness.Tickets.Committed).Coupons.Select(coupon => coupon.CurrentOrderServiceId));
+        Assert.Equal(3, Reservation.CoveredOrderServiceIds.Count);
+        Assert.Equal(OrderStatus.Ticketed, order.Status);
+    }
+
+    [Fact]
     public async Task Legacy_timestamp_without_canonical_evidence_is_revalidated_before_issue()
     {
         var order = await ConfirmedAsync([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)]);

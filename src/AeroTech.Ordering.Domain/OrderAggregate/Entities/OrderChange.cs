@@ -1,11 +1,14 @@
 using AeroTech.Framework.Core.Domain.Entities;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
+using AeroTech.Ordering.Domain._Shared.Resources;
 
 namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 {
     public sealed class OrderChange : Entity<long>
     {
+        private const int ReasonTextMaxLength = 500;
+
         private OrderChange()
         {
         }
@@ -19,6 +22,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             string? sourceReference,
             string? sourceSystem,
             string? reasonCode,
+            string? reasonText,
             bool isInvoluntary,
             string? waiverCode,
             DateTimeOffset committedAt)
@@ -31,6 +35,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             SourceReference = sourceReference;
             SourceSystem = sourceSystem;
             ReasonCode = reasonCode;
+            ReasonText = NormalizedReasonText(orderId, reasonText);
             IsInvoluntary = isInvoluntary;
             WaiverCode = waiverCode;
             CommittedAt = committedAt;
@@ -50,10 +55,24 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 
         public string? ReasonCode { get; private set; }
 
+        public string? ReasonText { get; private set; }
+
         public bool IsInvoluntary { get; private set; }
 
         public string? WaiverCode { get; private set; }
 
         public DateTimeOffset CommittedAt { get; private set; }
+
+        private static string? NormalizedReasonText(long orderId, string? reasonText)
+        {
+            if (string.IsNullOrWhiteSpace(reasonText))
+                return null;
+
+            var trimmed = reasonText.Trim();
+
+            return trimmed.Length <= ReasonTextMaxLength
+                ? trimmed
+                : throw ExceptionFactory.OrderChangeReasonTextIsTooLong(orderId, trimmed.Length, ReasonTextMaxLength);
+        }
     }
 }

@@ -282,6 +282,7 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             target.SourceReference = source.SourceReference;
             target.SourceSystem = source.SourceSystem;
             target.ReasonCode = source.ReasonCode;
+            target.ReasonText = source.ReasonText;
             target.IsInvoluntary = source.IsInvoluntary;
             target.WaiverCode = source.WaiverCode;
             target.CommittedAt = source.CommittedAt;

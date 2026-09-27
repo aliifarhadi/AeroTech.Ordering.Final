@@ -580,6 +580,15 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException ConfirmedCancellationTaskTargetsAreInvalid(params object?[] args) =>
             new(2819, ExceptionMessages.ConfirmedCancellationTaskTargetsAreInvalid, args) { HttpStatus = 500 };
 
+        public static BusinessException RepricingRequiredAfterPartialCancellation(params object?[] args) =>
+            new(2820, ExceptionMessages.RepricingRequiredAfterPartialCancellation, args) { HttpStatus = 409 };
+
+        public static BusinessException OrderChangeReasonTextIsTooLong(params object?[] args) =>
+            new(2821, ExceptionMessages.OrderChangeReasonTextIsTooLong, args) { HttpStatus = 422 };
+
+        public static BusinessException ReservationValidationEvidenceIsInvalid(params object?[] args) =>
+            new(2822, ExceptionMessages.ReservationValidationEvidenceIsInvalid, args) { HttpStatus = 500 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

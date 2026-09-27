@@ -10,6 +10,7 @@
     <ProjectReference Include="../../src/AeroTech.Ordering.Application/AeroTech.Ordering.Application.csproj" />
     <ProjectReference Include="../../src/AeroTech.Ordering.Providers/AeroTech.Ordering.Providers.csproj" />
     <ProjectReference Include="../../src/AeroTech.Ordering.Persistence/AeroTech.Ordering.Persistence.csproj" />
+    <ProjectReference Include="../../src/AeroTech.Ordering.Synchronizer/AeroTech.Ordering.Synchronizer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -77,6 +77,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder
             long orderId,
             IReadOnlyCollection<long> serviceIds,
             VoidReason reason,
+            string? reasonText,
             IOrderAuthorization authorization,
             SalesContext actorContext,
             CancellationToken cancellationToken = default)
@@ -116,7 +117,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder
 
             var committedAt = _clock.GetDateTime();
             var change = failures.Values.All(failure => failure is null) && _planner.IsSettled(order, endingServices, overlapping)
-                ? order.Cancel(endingServices.Select(service => service.Id).ToList(), actorContext, reasonCode, _idGenerator, committedAt)
+                ? order.Cancel(endingServices.Select(service => service.Id).ToList(), actorContext, reasonCode, reasonText, _idGenerator, committedAt)
                 : null;
 
             _summarizer.SummarizeServicing(order, reservations, tickets);

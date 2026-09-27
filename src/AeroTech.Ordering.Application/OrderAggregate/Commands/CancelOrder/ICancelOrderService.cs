@@ -10,6 +10,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder
             long orderId,
             IReadOnlyCollection<long> serviceIds,
             VoidReason reason,
+            string? reasonText,
             IOrderAuthorization authorization,
             SalesContext actorContext,
             CancellationToken cancellationToken = default);

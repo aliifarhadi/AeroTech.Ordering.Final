@@ -101,6 +101,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 reader.OfferId,
                 null,
                 null,
+                null,
                 false,
                 null,
                 createdAt);

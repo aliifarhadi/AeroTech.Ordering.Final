@@ -11,6 +11,7 @@ using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Contracts;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
+using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Reservation;
 using AeroTech.Ordering.Domain._Shared.Resources;
 
@@ -207,7 +208,8 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
 
             var preparation = await provider.PrepareAsync(order, units, cancellationToken);
 
-            reservation.RenewValidation(preparation.ValidationTimeLimit);
+            if (preparation.ValidationEvidence is { } evidence)
+                reservation.RecordValidation(evidence);
         }
 
         private async Task<FulfillmentTask> NewConfirmTaskAsync(
@@ -276,11 +278,22 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                     FulfillmentFailureReason.HoldExpired,
                     ExceptionFactory.ReservationHoldHasLapsed(reservation.Id, reservation.ExpiresAt));
 
-            return reservation.ValidationIsStaleAt(now)
-                ? new DispatchRejection(
+            return reservation.HasCurrentValidationFor(ValidationScopeOf(order, reservation), order.CommercialVersion, now)
+                ? null
+                : new DispatchRejection(
                     FulfillmentFailureReason.ValidationFailed,
-                    ExceptionFactory.ReservationValidationIsStale(reservation.Id, reservation.ReservationValidationTimeLimit))
-                : null;
+                    ExceptionFactory.ReservationValidationIsStale(reservation.Id, reservation.ValidationEvidence?.ValidUntil));
+        }
+
+        private static IReadOnlyList<long> ValidationScopeOf(Order order, FulfillmentReservation reservation)
+        {
+            var coveredServiceIds = reservation.CoveredOrderServiceIds.ToHashSet();
+
+            return order.Services
+                .OfType<OrderAirTransportService>()
+                .Select(service => service.Id)
+                .Where(coveredServiceIds.Contains)
+                .ToList();
         }
 
         private static ConfirmationOutcome ReplayOutcomeOf(ConfirmationOutcome outcome)

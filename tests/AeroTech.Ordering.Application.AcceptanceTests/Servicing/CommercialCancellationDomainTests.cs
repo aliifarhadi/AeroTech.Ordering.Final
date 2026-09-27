@@ -89,8 +89,8 @@ public sealed class CommercialCancellationDomainTests
         var service = ReservationHarness.AirService(order, 1, 101);
         Cancel(order, [service]);
 
-        var empty = Assert.Throws<BusinessException>(() => order.Cancel([], ReservationHarness.CancellingActor, "CustomerRequest", _ids, _clock.Now));
-        var ended = Assert.Throws<BusinessException>(() => order.Cancel([service.Id], ReservationHarness.CancellingActor, "CustomerRequest", _ids, _clock.Now));
+        var empty = Assert.Throws<BusinessException>(() => order.Cancel([], ReservationHarness.CancellingActor, "CustomerRequest", null, _ids, _clock.Now));
+        var ended = Assert.Throws<BusinessException>(() => order.Cancel([service.Id], ReservationHarness.CancellingActor, "CustomerRequest", null, _ids, _clock.Now));
 
         Assert.Equal((2818, 2733), (empty.Code, ended.Code));
         Assert.Equal(2, order.CommercialVersion);
@@ -166,5 +166,5 @@ public sealed class CommercialCancellationDomainTests
         => OrderFixture.Create(_ids, _clock, travellers, bounds, seats);
 
     private OrderChange Cancel(Order order, IReadOnlyList<OrderService> scope)
-        => order.Cancel(scope.Select(service => service.Id).ToList(), ReservationHarness.CancellingActor, nameof(VoidReason.CustomerRequest), _ids, _clock.Now);
+        => order.Cancel(scope.Select(service => service.Id).ToList(), ReservationHarness.CancellingActor, nameof(VoidReason.CustomerRequest), null, _ids, _clock.Now);
 }

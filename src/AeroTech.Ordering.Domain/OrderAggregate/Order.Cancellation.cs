@@ -36,6 +36,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             IReadOnlyCollection<long> serviceIds,
             SalesContext actorContext,
             string reasonCode,
+            string? reasonText,
             IIdGenerator idGenerator,
             DateTimeOffset committedAt)
         {
@@ -47,21 +48,21 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             if (services.FirstOrDefault(service => !service.IsActive) is { } inactive)
                 throw ExceptionFactory.OrderServiceIsNotActive(inactive.Id, inactive.CommercialStatus);
 
-            CommercialVersion++;
-
             var change = new OrderChange(
                 idGenerator.NewId(),
                 Id,
                 OrderChangeType.Cancel,
-                CommercialVersion,
+                CommercialVersion + 1,
                 actorContext,
                 null,
                 null,
                 reasonCode,
+                reasonText,
                 false,
                 null,
                 committedAt);
 
+            CommercialVersion = change.CommercialVersion;
             _changes.Add(change);
 
             foreach (var service in services)

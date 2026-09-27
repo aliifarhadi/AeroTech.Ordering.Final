@@ -2,6 +2,7 @@ using AeroTech.Framework.Core.Domain.Aggregates;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Entities;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.Providers.Reservation;
 using AeroTech.Ordering.Domain._Shared.Resources;
 
@@ -21,7 +22,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             string fulfillmentProviderKey,
             ReservationMode mode,
             DateTimeOffset? requestedExpiresAt,
-            DateTimeOffset? reservationValidationTimeLimit,
+            ReservationValidationEvidence? validationEvidence,
             DateTimeOffset createdAt)
         {
             Id = id;
@@ -31,7 +32,8 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             IdempotencyKey = $"reserve-hold:{id}";
             CorrelationReference = $"order:{orderId}:reservation:{id}";
             RequestedExpiresAt = requestedExpiresAt;
-            ReservationValidationTimeLimit = reservationValidationTimeLimit;
+            ValidationEvidence = validationEvidence;
+            ReservationValidationTimeLimit = validationEvidence?.ValidUntil;
             Status = FulfillmentReservationStatus.Pending;
             CreatedAt = createdAt;
             LastObservedAt = createdAt;
@@ -52,6 +54,8 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
         public FulfillmentReservationStatus Status { get; private set; }
 
         public DateTimeOffset? RequestedExpiresAt { get; private set; }
+
+        public ReservationValidationEvidence? ValidationEvidence { get; private set; }
 
         public DateTimeOffset? ReservationValidationTimeLimit { get; private set; }
 
@@ -76,7 +80,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             string fulfillmentProviderKey,
             ReservationMode mode,
             DateTimeOffset? requestedExpiresAt,
-            DateTimeOffset? reservationValidationTimeLimit,
+            ReservationValidationEvidence? validationEvidence,
             IReadOnlyList<ReservationUnitIntent> units,
             IIdGenerator idGenerator,
             DateTimeOffset createdAt)
@@ -98,7 +102,7 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
                 fulfillmentProviderKey,
                 mode,
                 requestedExpiresAt,
-                reservationValidationTimeLimit,
+                validationEvidence,
                 createdAt);
 
             foreach (var unit in units)
@@ -149,12 +153,17 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
         public bool HoldLapsedAt(DateTimeOffset now) => ExpiresAt <= now;
 
-        public bool ValidationIsStaleAt(DateTimeOffset now) => ReservationValidationTimeLimit is not { } timeLimit || timeLimit <= now;
+        public bool HasCurrentValidationFor(IEnumerable<long> orderServiceIds, int commercialVersion, DateTimeOffset now)
+            => ValidationEvidence?.Covers(orderServiceIds, commercialVersion, now) == true;
 
-        public bool IsConfirmableAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
+        public bool IsConfirmableAt(
+            DateTimeOffset now,
+            DateTimeOffset? lastTicketingDate,
+            IEnumerable<long> validationScope,
+            int commercialVersion)
             => Status == FulfillmentReservationStatus.Held
                && !HoldLapsedAt(now)
-               && !ValidationIsStaleAt(now)
+               && HasCurrentValidationFor(validationScope, commercialVersion, now)
                && !(lastTicketingDate <= now);
 
         public ConfirmationIntent PrepareConfirmation()
@@ -162,20 +171,13 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
                 ? new ConfirmationIntent(FulfillmentProviderKey, providerOperationRef)
                 : throw ExceptionFactory.ReservationIsNotConfirmable(Id, Status);
 
-        public void RenewValidation(DateTimeOffset? validationTimeLimit)
+        public void RecordValidation(ReservationValidationEvidence evidence)
         {
-            if (!AwaitsConfirmation)
-                throw ExceptionFactory.ReservationIsNotConfirmable(Id, Status);
-
-            ReservationValidationTimeLimit = validationTimeLimit;
-        }
-
-        public void RenewIssueValidation(DateTimeOffset? validationTimeLimit)
-        {
-            if (Status != FulfillmentReservationStatus.Confirmed)
+            if (!_units.Any(unit => unit.Status is ReservationMemberStatus.Held or ReservationMemberStatus.Confirmed))
                 throw ExceptionFactory.ReservationOutcomeCannotBeRecorded(Id, Status);
 
-            ReservationValidationTimeLimit = validationTimeLimit;
+            ValidationEvidence = evidence;
+            ReservationValidationTimeLimit = evidence.ValidUntil;
         }
 
         public void RecordConfirmation(ConfirmationOutcome outcome, DateTimeOffset observedAt)

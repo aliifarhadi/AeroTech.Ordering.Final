@@ -4,6 +4,7 @@ using System.Text.Json;
 using AeroTech.Framework.Core.Domain.Exceptions;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Providers.Pricing.Services;
 using Xunit;
 
@@ -18,13 +19,13 @@ public sealed class PricingProviderTests
     {
         var handler = new StubHttpMessageHandler(_ => Json(HttpStatusCode.OK, """{"data":{"timeLimit":"2026-10-02T10:00:00+00:00"},"errors":null}"""));
 
-        var timeLimit = await ValidateAsync(handler);
+        var evidence = await ValidateAsync(handler);
 
         var (request, body) = handler.Requests.Single();
         using var json = JsonDocument.Parse(body);
         var unit = json.RootElement.GetProperty("pricingUnits")[0];
 
-        Assert.Equal(new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.Zero), timeLimit);
+        Assert.Equal(new DateTimeOffset(2026, 10, 2, 10, 0, 0, TimeSpan.Zero), evidence.ValidUntil);
         Assert.Equal("https://provider.test/service/v1/BoundReservationValidation", request.RequestUri!.ToString());
         Assert.Equal(1, json.RootElement.GetProperty("salesContext").GetProperty("channel").GetInt32());
         Assert.Equal(1, unit.GetProperty("journeyType").GetInt32());
@@ -76,7 +77,7 @@ public sealed class PricingProviderTests
         Assert.Equal(502, exception.HttpStatus);
     }
 
-    private Task<DateTimeOffset> ValidateAsync(StubHttpMessageHandler handler)
+    private Task<ReservationValidationEvidence> ValidateAsync(StubHttpMessageHandler handler)
     {
         var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)]);
         var validator = new AirFareReservationValidator(new PricingProvider(StubHttpMessageHandler.ClientFor(handler)), _harness.Clock);

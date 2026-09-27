@@ -105,7 +105,7 @@ public sealed class ServicingPersistenceTests : IAsyncLifetime
         await SaveInScopeAsync(services, async context =>
         {
             var current = (await new OrderRepository(context).GetAsync(order.Id))!;
-            changeId = current.Cancel([firstLeg.Id], ReservationHarness.CancellingActor, nameof(VoidReason.CustomerRequest), _ids, _clock.Now).Id;
+            changeId = current.Cancel([firstLeg.Id], ReservationHarness.CancellingActor, nameof(VoidReason.CustomerRequest), null, _ids, _clock.Now).Id;
         });
 
         await using var reader = _database.NewContext();

@@ -52,6 +52,7 @@ stage5:
     - IssuedSegmentSnapshot
     - DocumentIssuanceContext
     - DocumentVoidRecord
+    - ReservationValidationEvidence
 
   enums:
     OrderFulfillmentTaskType:

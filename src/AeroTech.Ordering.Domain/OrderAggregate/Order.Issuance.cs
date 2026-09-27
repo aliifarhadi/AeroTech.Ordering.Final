@@ -18,6 +18,14 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 throw ExceptionFactory.OrderCannotBeIssuedAfterLastTicketingDate(Id, LastTicketingDate);
         }
 
+        public void EnsureAcceptedPricingIsIntactFor(IReadOnlyCollection<long> airServiceIds)
+        {
+            var activeAirServiceIds = TicketableAirServices().Select(service => service.Id).ToHashSet();
+
+            if (FarePricingAtomsCovering(airServiceIds).FirstOrDefault(atom => atom.IsFracturedAmong(activeAirServiceIds)) is { } fractured)
+                throw ExceptionFactory.RepricingRequiredAfterPartialCancellation(Id, fractured.OrderFarePricingUnitId);
+        }
+
         public void MarkTicketed(IReadOnlySet<long> documentedServiceIds)
         {
             if (TicketableAirServices().FirstOrDefault(service => !documentedServiceIds.Contains(service.Id)) is { } undocumented)

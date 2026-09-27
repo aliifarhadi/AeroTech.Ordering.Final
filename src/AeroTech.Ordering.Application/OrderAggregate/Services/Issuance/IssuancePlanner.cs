@@ -4,6 +4,7 @@ using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.Arguments;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
@@ -29,24 +30,28 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Issuance
             IReadOnlyCollection<FulfillmentReservation> reservations)
         {
             var coverageByService = LatestCoverageByService(reservations);
-            var coveringReservations = new List<FulfillmentReservation>();
+            var targets = new List<IssueTarget>();
 
             foreach (var service in services.Where(_providers.RequiresReservation))
             {
                 if (!coverageByService.TryGetValue(service.Id, out var coverage))
                     throw ExceptionFactory.AirServiceIsNotReserved(service.Id);
 
-                if (coverage.Reservation.Status != FulfillmentReservationStatus.Confirmed)
-                    throw ExceptionFactory.AirServiceCapacityIsNotConfirmed(service.Id, coverage.Reservation.Status);
+                if (coverage.Unit.Status != ReservationMemberStatus.Confirmed)
+                    throw ExceptionFactory.AirServiceCapacityIsNotConfirmed(service.Id, coverage.Unit.Status);
 
-                if (coverage.UnitStatus != ReservationMemberStatus.Confirmed)
-                    throw ExceptionFactory.AirServiceCapacityIsNotConfirmed(service.Id, coverage.UnitStatus);
-
-                if (!coveringReservations.Contains(coverage.Reservation))
-                    coveringReservations.Add(coverage.Reservation);
+                targets.Add(new IssueTarget(service.Id, coverage));
             }
 
-            return new IssuanceScope(services, coveringReservations);
+            return new IssuanceScope(
+                services,
+                targets
+                    .GroupBy(target => target.Coverage.Reservation)
+                    .Select(group => new ReservationIssueScope(
+                        group.Key,
+                        group.Select(target => target.Coverage.Unit.Id).Distinct().ToList(),
+                        group.Select(target => target.OrderServiceId).ToList()))
+                    .ToList());
         }
 
         public IReadOnlyList<TicketPlan> PlanTickets(Order order, IssuanceScope scope)
@@ -82,7 +87,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Issuance
                 .OrderBy(reservation => reservation.CreatedAt)
                 .ThenBy(reservation => reservation.Id)
                 .SelectMany(reservation => reservation.Units.SelectMany(unit => unit.OrderServiceIds
-                    .Select(serviceId => (ServiceId: serviceId, Coverage: new Coverage(reservation, unit.Status)))))
+                    .Select(serviceId => (ServiceId: serviceId, Coverage: new Coverage(reservation, unit)))))
                 .GroupBy(coverage => coverage.ServiceId)
                 .ToDictionary(group => group.Key, group => group.Last().Coverage);
 
@@ -162,7 +167,9 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Issuance
             return new IssueTicketPriceLinkArgs(attributed.Line.Id, allocation.Id, attributedValue, allocation.EquivalentCurrencyId);
         }
 
-        private sealed record Coverage(FulfillmentReservation Reservation, ReservationMemberStatus UnitStatus);
+        private sealed record Coverage(FulfillmentReservation Reservation, ReservationUnit Unit);
+
+        private sealed record IssueTarget(long OrderServiceId, Coverage Coverage);
 
         private sealed record AttributedAllocation(PricingLine Line, PricingAllocation Allocation);
     }

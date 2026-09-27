@@ -14,7 +14,6 @@ using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.Arguments;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.Contracts;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.ValueObjects;
-using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Contracts;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Contracts;
@@ -117,8 +116,10 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
             var reservations = await _reservations.ListByOrderAsync(orderId, cancellationToken);
             var scope = _planner.ScopeOf(services, reservations);
 
-            if (await _tasks.AnyUnresolvedAsync(order.Id, scope.Reservations.Select(reservation => reservation.Id).ToList(), ConflictingTaskTypes, cancellationToken))
+            if (await _tasks.AnyUnresolvedAsync(order.Id, scope.ReservationScopes.Select(reservationScope => reservationScope.Reservation.Id).ToList(), ConflictingTaskTypes, cancellationToken))
                 throw ExceptionFactory.OrderHasUnresolvedFulfillmentEffect(order.Id);
+
+            order.EnsureAcceptedPricingIsIntactFor(scope.Services.Select(service => service.Id).ToList());
 
             var plans = _planner.PlanTickets(order, scope);
             var stock = await _stocks.GetAsync(ticketDocumentStockId, cancellationToken)
@@ -126,7 +127,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
 
             stock.EnsureCanIssue(AccountableDocumentKind.ElectronicTicket, plans.Count);
 
-            await RenewStaleValidationAsync(order, scope.Reservations, cancellationToken);
+            await RefreshStaleValidationAsync(order, scope.ReservationScopes, cancellationToken);
 
             await using var stockLock = await _stockLock.AcquireAsync(stock.Id, cancellationToken);
             await _stocks.ReloadAsync(stock, cancellationToken);
@@ -134,7 +135,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
             var issuedAt = _clock.GetDateTime();
 
             order.EnsureIssuableAt(issuedAt);
-            EnsureValidationCurrentAt(scope.Reservations, issuedAt);
+            EnsureValidationCurrentAt(order, scope.ReservationScopes, issuedAt);
             stock.EnsureCanIssue(AccountableDocumentKind.ElectronicTicket, plans.Count);
 
             var task = NewIssueTask(order, scope, issuedAt);
@@ -185,32 +186,30 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
             return ResultOf(order, orderTickets, task.Id);
         }
 
-        private async Task RenewStaleValidationAsync(
+        private async Task RefreshStaleValidationAsync(
             Order order,
-            IEnumerable<FulfillmentReservation> reservations,
+            IEnumerable<ReservationIssueScope> reservationScopes,
             CancellationToken cancellationToken)
         {
             var now = _clock.GetDateTime();
 
-            foreach (var reservation in reservations.Where(reservation => reservation.ValidationIsStaleAt(now)))
+            foreach (var reservationScope in reservationScopes.Where(reservationScope => !IsValidationCurrentAt(order, reservationScope, now)))
             {
-                var provider = _providers.Resolve(reservation.FulfillmentProviderKey);
-                var coveredServiceIds = reservation.CoveredOrderServiceIds.ToHashSet();
-                var units = provider.PlanUnits(order, order.Services.Where(service => coveredServiceIds.Contains(service.Id)).ToList());
+                var provider = _providers.Resolve(reservationScope.Reservation.FulfillmentProviderKey);
 
-                reservation.EnsurePlannedAs(units);
-
-                var preparation = await provider.PrepareAsync(order, units, cancellationToken);
-
-                reservation.RenewIssueValidation(preparation.ValidationTimeLimit);
+                if (await provider.ValidateAsync(order, reservationScope.OrderServiceIds, cancellationToken) is { } evidence)
+                    reservationScope.Reservation.RecordValidation(evidence);
             }
         }
 
-        private static void EnsureValidationCurrentAt(IEnumerable<FulfillmentReservation> reservations, DateTimeOffset now)
+        private static void EnsureValidationCurrentAt(Order order, IEnumerable<ReservationIssueScope> reservationScopes, DateTimeOffset now)
         {
-            if (reservations.FirstOrDefault(reservation => reservation.ValidationIsStaleAt(now)) is { } stale)
-                throw ExceptionFactory.ReservationValidationIsStaleForIssue(stale.Id, stale.ReservationValidationTimeLimit);
+            if (reservationScopes.FirstOrDefault(reservationScope => !IsValidationCurrentAt(order, reservationScope, now)) is { Reservation: var stale })
+                throw ExceptionFactory.ReservationValidationIsStaleForIssue(stale.Id, stale.ValidationEvidence?.ValidUntil);
         }
+
+        private static bool IsValidationCurrentAt(Order order, ReservationIssueScope reservationScope, DateTimeOffset now)
+            => reservationScope.Reservation.HasCurrentValidationFor(reservationScope.OrderServiceIds, order.CommercialVersion, now);
 
         private FulfillmentTask NewIssueTask(Order order, IssuanceScope scope, DateTimeOffset createdAt)
         {

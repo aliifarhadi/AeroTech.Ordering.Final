@@ -15,6 +15,7 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.Property(change => change.SourceReference).HasMaxLength(512);
             builder.Property(change => change.SourceSystem).HasMaxLength(64);
             builder.Property(change => change.ReasonCode).HasMaxLength(64);
+            builder.Property(change => change.ReasonText).HasMaxLength(500);
             builder.Property(change => change.WaiverCode).HasMaxLength(64);
 
             builder.OwnsOne(change => change.ActorContext, actorContext =>

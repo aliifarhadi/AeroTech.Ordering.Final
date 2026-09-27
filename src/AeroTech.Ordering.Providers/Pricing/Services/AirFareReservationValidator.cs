@@ -2,6 +2,7 @@ using System.Globalization;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Messages.Ordering.Enums;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Pricing;
@@ -24,32 +25,35 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
             _clock = clock;
         }
 
-        public async Task<DateTimeOffset> ValidateAsync(
+        public async Task<ReservationValidationEvidence> ValidateAsync(
             Order order,
             IReadOnlyCollection<long> airServiceIds,
             CancellationToken cancellationToken = default)
         {
-            var result = await _pricing.ReservationValidationAsync(RequestFor(order, airServiceIds), cancellationToken);
+            var validatedServiceIds = ValidationScopeOf(order, airServiceIds);
+            var result = await _pricing.ReservationValidationAsync(RequestFor(order, validatedServiceIds), cancellationToken);
 
-            return result.TimeLimit;
+            return new ReservationValidationEvidence(order.CommercialVersion, result.TimeLimit, _clock.GetDateTime(), validatedServiceIds.Order().ToList());
         }
 
-        private AirFareBoundReservationValidationRequest RequestFor(Order order, IReadOnlyCollection<long> airServiceIds)
+        private static IReadOnlySet<long> ValidationScopeOf(Order order, IReadOnlyCollection<long> airServiceIds)
         {
-            var itinerary = new Itinerary(order);
-            var scope = airServiceIds.ToHashSet();
-
-            var coveredServiceIds = order.FarePricingUnits
-                .SelectMany(pricingUnit => pricingUnit.FareComponents)
-                .SelectMany(component => component.CoveredOrderServiceIds)
+            var atomServiceIds = order.FarePricingAtomsCovering(airServiceIds)
+                .SelectMany(atom => atom.AirServiceIds)
                 .ToHashSet();
 
-            if (scope.Except(coveredServiceIds).ToList() is [var uncoveredServiceId, ..])
+            if (airServiceIds.Except(atomServiceIds).ToList() is [var uncoveredServiceId, ..])
                 throw ExceptionFactory.AirServiceValidationFactsAreMissing(uncoveredServiceId);
+
+            return atomServiceIds;
+        }
+
+        private AirFareBoundReservationValidationRequest RequestFor(Order order, IReadOnlySet<long> validatedServiceIds)
+        {
+            var itinerary = new Itinerary(order);
 
             var pricingUnits = order.FarePricingUnits
                 .OrderBy(pricingUnit => pricingUnit.Sequence)
-                .Where(pricingUnit => pricingUnit.FareComponents.Any(component => component.CoveredOrderServiceIds.Any(scope.Contains)))
                 .Select(pricingUnit => new ScopedPricingUnit(
                     pricingUnit,
                     pricingUnit.FareComponents
@@ -57,11 +61,12 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                         .Select(component => new ScopedFareComponent(
                             component,
                             component.CoveredOrderServiceIds
-                                .Where(serviceId => IsIndivisible(pricingUnit) || scope.Contains(serviceId))
+                                .Where(validatedServiceIds.Contains)
                                 .Select(itinerary.Priced)
                                 .ToList()))
                         .Where(component => component.Services.Count > 0)
                         .ToList()))
+                .Where(pricingUnit => pricingUnit.FareComponents.Count > 0)
                 .ToList();
 
             return new AirFareBoundReservationValidationRequest(
@@ -148,9 +153,6 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                 priced.RbdId,
                 flight.Count(service => service.Traveller.InfantParentTravellerId is null));
         }
-
-        private static bool IsIndivisible(OrderFarePricingUnit pricingUnit)
-            => pricingUnit.CoveredJourneyIds.Count > 1 || pricingUnit.FareComponents.Count > 1;
 
         private static AirPriceJourneyType JourneyTypeOf(OrderFarePricingUnit pricingUnit) => pricingUnit.SemanticType switch
         {

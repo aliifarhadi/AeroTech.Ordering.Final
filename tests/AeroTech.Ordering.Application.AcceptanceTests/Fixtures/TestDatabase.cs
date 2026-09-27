@@ -3,6 +3,7 @@ using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Ordering.Application._Shared.Events;
 using AeroTech.Ordering.Persistence;
 using AeroTech.Ordering.Persistence.Outbox;
+using AeroTech.Ordering.Query._Shared.DbContexts;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +27,12 @@ public sealed class TestDatabase(IClock clock) : IAsyncDisposable
             new AnonymousActorResolver(),
             clock,
             domainEventDispatcher ?? new IgnoringDomainEventDispatcher());
+
+    public OrderQueryDbContext NewQueryContext()
+        => new(
+            new DbContextOptionsBuilder<OrderQueryDbContext>()
+                .UseSqlServer(_connectionString, sql => sql.MigrationsHistoryTable(OrderQueryDbContext.MigrationsHistoryTable, OrderQueryDbContext.MigrationsHistorySchema))
+                .Options);
 
     public ServiceProvider NewOutboxServices()
     {

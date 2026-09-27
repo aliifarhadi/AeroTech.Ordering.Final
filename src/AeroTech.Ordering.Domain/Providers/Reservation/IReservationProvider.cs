@@ -1,3 +1,4 @@
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 
@@ -14,6 +15,11 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         Task<ReservationPreparation> PrepareAsync(
             Order order,
             IReadOnlyList<ReservationUnitIntent> units,
+            CancellationToken cancellationToken = default);
+
+        Task<ReservationValidationEvidence?> ValidateAsync(
+            Order order,
+            IReadOnlyCollection<long> orderServiceIds,
             CancellationToken cancellationToken = default);
 
         ProviderRequest ReserveRequestFor(Order order, ReservationIntent intent);

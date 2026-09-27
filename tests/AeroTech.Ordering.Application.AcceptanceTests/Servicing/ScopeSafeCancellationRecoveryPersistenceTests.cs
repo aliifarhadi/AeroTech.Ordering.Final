@@ -79,7 +79,7 @@ public sealed class ScopeSafeCancellationRecoveryPersistenceTests : IAsyncLifeti
     }
 
     private Task<CancelOrderResult> CancelAsync(OrderingDbContext context, long orderId, long serviceId)
-        => Services(context).Cancel.CancelAsync(orderId, [serviceId], VoidReason.CustomerRequest, UnrestrictedOrderAuthorization.Instance, ReservationHarness.CancellingActor);
+        => Services(context).Cancel.CancelAsync(orderId, [serviceId], VoidReason.CustomerRequest, null, UnrestrictedOrderAuthorization.Instance, ReservationHarness.CancellingActor);
 
     private async Task InContextAsync(Func<OrderingDbContext, Task> operate)
     {

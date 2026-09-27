@@ -48,6 +48,11 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 
         public IReadOnlyCollection<OrderFareComponent> FareComponents => _fareComponents.AsReadOnly();
 
+        public IReadOnlyList<FarePricingAtom> PricingAtoms()
+            => SemanticType == FarePricingUnitType.OneWay
+                ? _fareComponents.Select(component => new FarePricingAtom(Id, component.CoveredOrderServiceIds)).ToList()
+                : [new FarePricingAtom(Id, _fareComponents.SelectMany(component => component.CoveredOrderServiceIds))];
+
         internal void AddFareComponent(OrderFareComponent fareComponent) => _fareComponents.Add(fareComponent);
     }
 }

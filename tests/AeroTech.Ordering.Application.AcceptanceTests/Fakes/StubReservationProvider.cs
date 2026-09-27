@@ -1,5 +1,6 @@
 using System.Globalization;
 using AeroTech.Messages.Ordering.Enums;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Reservation;
@@ -24,6 +25,8 @@ public sealed class StubReservationProvider(
     public List<ProviderRequest> ConfirmCalls { get; } = [];
 
     public List<ProviderRequest> CancelConfirmedCalls { get; } = [];
+
+    public List<IReadOnlyCollection<long>> ValidateCalls { get; } = [];
 
     public Queue<Func<ProviderRequest, ConfirmedCancellationOutcome>> CancelConfirmedResponses { get; } = new();
 
@@ -52,7 +55,16 @@ public sealed class StubReservationProvider(
         Order order,
         IReadOnlyList<ReservationUnitIntent> units,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(new ReservationPreparation(null, ValidationTimeLimit));
+        => Task.FromResult(new ReservationPreparation(null, EvidenceFor(order, units.SelectMany(unit => unit.OrderServiceIds).ToList())));
+
+    public Task<ReservationValidationEvidence?> ValidateAsync(
+        Order order,
+        IReadOnlyCollection<long> orderServiceIds,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateCalls.Add(orderServiceIds.ToList());
+        return Task.FromResult(EvidenceFor(order, orderServiceIds));
+    }
 
     public ProviderRequest ReserveRequestFor(Order order, ReservationIntent intent)
         => new(
@@ -167,6 +179,11 @@ public sealed class StubReservationProvider(
             null);
 
     public string OperationRefOf(ReservationIntent intent) => $"{providerKey}-{intent.IdempotencyKey}";
+
+    private ReservationValidationEvidence? EvidenceFor(Order order, IReadOnlyCollection<long> orderServiceIds)
+        => ValidationTimeLimit is { } validUntil
+            ? new ReservationValidationEvidence(order.CommercialVersion, validUntil, DateTimeOffset.UnixEpoch, orderServiceIds.Distinct().ToList())
+            : null;
 
     private sealed record StubUnitDetails(long OrderServiceId) : ReservationUnitDetails;
 }

@@ -128,6 +128,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         string? SourceReference,
         string? SourceSystem,
         string? ReasonCode,
+        string? ReasonText,
         bool IsInvoluntary,
         string? WaiverCode,
         DateTimeOffset CommittedAt);

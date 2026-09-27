@@ -2,6 +2,7 @@ using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.Providers;
@@ -72,7 +73,7 @@ public sealed class DueHoldSelectionPersistenceTests : IAsyncLifetime
             FulfillmentProviderKeys.FlightFlow,
             ReservationMode.HoldThenConfirm,
             expiresAt,
-            expiresAt,
+            new ReservationValidationEvidence(order.CommercialVersion, expiresAt, _clock.Now, serviceIds),
             [new ReservationUnitIntent(UnitKey, serviceIds, new UnitDetails())],
             _ids,
             _clock.Now);

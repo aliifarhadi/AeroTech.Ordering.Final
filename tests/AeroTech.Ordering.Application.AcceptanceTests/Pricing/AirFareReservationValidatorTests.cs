@@ -5,6 +5,7 @@ using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Messages.Shared.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Pricing;
@@ -42,10 +43,11 @@ public sealed class AirFareReservationValidatorTests
     {
         var order = _harness.SeedOrder([TravellerSpec.Adult(1), TravellerSpec.Adult(2)], [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)]);
 
-        var timeLimit = await ValidateAsync(order, ReservationHarness.AirServices(order));
+        var evidence = await ValidateAsync(order, ReservationHarness.AirServices(order));
 
         var request = _pricing.Requests.Single();
-        Assert.Equal(_pricing.TimeLimit, timeLimit);
+        Assert.Equal((1, _pricing.TimeLimit, _harness.Clock.Now), (evidence.CommercialVersion, evidence.ValidUntil, evidence.ValidatedAt));
+        Assert.Equal(IdsOf(ReservationHarness.AirServices(order)), evidence.ValidatedOrderServiceIds);
         Assert.Equal(new AirFareBoundReservationSalesContext(7, null, SalesChannel.BackOffice, 42, _harness.Clock.Now, 1), request.SalesContext);
         Assert.Equal([PassengerTypeCode.ADT, PassengerTypeCode.ADT], request.Passengers.Select(passenger => passenger.PassengerTypeCode));
         Assert.Equal(
@@ -81,6 +83,41 @@ public sealed class AirFareReservationValidatorTests
     }
 
     [Fact]
+    public async Task Targeted_segment_of_a_through_fare_component_is_validated_with_the_whole_component()
+    {
+        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101, 102)]);
+
+        var evidence = await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
+
+        var unit = Assert.Single(_pricing.Requests.Single().PricingUnits);
+        Assert.Equal(["101", "102"], Assert.Single(unit.AirFares).Flights.Select(flight => flight.FlightId));
+        Assert.Equal(IdsOf(ReservationHarness.AirServices(order)), evidence.ValidatedOrderServiceIds);
+    }
+
+    [Fact]
+    public async Task Each_sector_fare_component_of_a_one_way_pricing_unit_is_its_own_validation_atom()
+    {
+        var order = _harness.SeedOrder(
+            [TravellerSpec.Adult(1)],
+            [new BoundSpec("OUT", 101, 102)],
+            pricingUnits: [PricingUnitSpec.ThroughOneWay("OUT", new FareSpec(8001, 101), new FareSpec(8002, 102))]);
+        var targeted = ReservationHarness.AirService(order, 1, 101);
+
+        var evidence = await ValidateAsync(order, [targeted]);
+
+        Assert.Equal(
+            [(JourneyType.OneWay, OrderFixture.AirportOf(1, 0), OrderFixture.AirportOf(1, 1), "OUT", "8001", "101")],
+            _pricing.Requests.Single().PricingUnits.Select(unit => (
+                unit.JourneyType,
+                unit.PricingOriginAirportId,
+                unit.PricingDestinationAirportId,
+                unit.BoundIds.Single(),
+                unit.AirFares.Single().AirFareId,
+                unit.AirFares.Single().Flights.Single().FlightId)));
+        Assert.Equal([targeted.Id], evidence.ValidatedOrderServiceIds);
+    }
+
+    [Fact]
     public async Task Sector_fares_of_a_one_way_pricing_unit_are_validated_as_one_air_price_pricing_unit_each()
     {
         var order = _harness.SeedOrder(
@@ -88,7 +125,7 @@ public sealed class AirFareReservationValidatorTests
             [new BoundSpec("OUT", 101, 102)],
             pricingUnits: [PricingUnitSpec.ThroughOneWay("OUT", new FareSpec(8001, 101), new FareSpec(8002, 102))]);
 
-        await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
+        await ValidateAsync(order, ReservationHarness.AirServices(order));
 
         Assert.Equal(
             [
@@ -145,24 +182,26 @@ public sealed class AirFareReservationValidatorTests
             [new BoundSpec("OUT", 101), new BoundSpec("IN", 201)],
             pricingUnits: [PricingUnitSpec.RoundTripFare(["OUT", "IN"], new FareSpec(9001, 101, 201))]);
 
-        await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
+        var evidence = await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
 
         var unit = Assert.Single(_pricing.Requests.Single().PricingUnits);
         Assert.Equal(JourneyType.RoundTrip, unit.JourneyType);
         Assert.Equal(["OUT", "IN"], unit.BoundIds);
         Assert.Equal([("9001", "101"), ("9001", "201")], unit.AirFares.Select(fare => (fare.AirFareId, fare.Flights.Single().FlightId)));
+        Assert.Equal(IdsOf(ReservationHarness.AirServices(order)), evidence.ValidatedOrderServiceIds);
     }
 
     [Fact]
-    public async Task Targeted_part_of_a_one_way_pricing_unit_is_validated_alone()
+    public async Task Targeted_traveller_is_validated_with_every_traveller_its_fare_component_covers()
     {
         var order = _harness.SeedOrder([TravellerSpec.Adult(1), TravellerSpec.Adult(2)], [new BoundSpec("OUT", 101)]);
 
-        await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
+        var evidence = await ValidateAsync(order, [ReservationHarness.AirService(order, 1, 101)]);
 
         var request = _pricing.Requests.Single();
-        Assert.Single(request.Passengers);
-        Assert.Equal(1, request.PricingUnits.Single().AirFares.Single().Flights.Single().RequiredSeats);
+        Assert.Equal(2, request.Passengers.Count);
+        Assert.Equal(2, request.PricingUnits.Single().AirFares.Single().Flights.Single().RequiredSeats);
+        Assert.Equal(IdsOf(ReservationHarness.AirServices(order)), evidence.ValidatedOrderServiceIds);
     }
 
     [Fact]
@@ -203,6 +242,9 @@ public sealed class AirFareReservationValidatorTests
         Assert.Empty(_pricing.Requests);
     }
 
-    private Task<DateTimeOffset> ValidateAsync(Order order, IReadOnlyList<OrderAirTransportService> airServices)
-        => new AirFareReservationValidator(_pricing, _harness.Clock).ValidateAsync(order, airServices.Select(service => service.Id).ToList());
+    private Task<ReservationValidationEvidence> ValidateAsync(Order order, IReadOnlyList<OrderAirTransportService> airServices)
+        => new AirFareReservationValidator(_pricing, _harness.Clock).ValidateAsync(order, IdsOf(airServices));
+
+    private static List<long> IdsOf(IEnumerable<OrderAirTransportService> airServices)
+        => airServices.Select(service => service.Id).Order().ToList();
 }

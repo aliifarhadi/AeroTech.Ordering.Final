@@ -23,6 +23,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder.Back
                 command.OrderId,
                 command.ServiceIds ?? [],
                 command.Reason,
+                command.ReasonDetail,
                 UnrestrictedOrderAuthorization.Instance,
                 _salesContextFactory.Create(Channel),
                 cancellationToken);

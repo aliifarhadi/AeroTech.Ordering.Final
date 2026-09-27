@@ -165,7 +165,7 @@
         public const string ReservationIsNotConfirmable = "Reservation '{0}' in status {1} cannot be confirmed.";
         public const string ReservationCannotBeConfirmedAfterLastTicketingDate = "Reservation '{0}' cannot be confirmed because its order passed its last ticketing date {1}.";
         public const string ReservationHoldHasLapsed = "The provider hold of reservation '{0}' lapsed at {1}, so it cannot be confirmed.";
-        public const string ReservationValidationIsStale = "The fare validation of reservation '{0}' is not current (valid until {1}), so it cannot be confirmed.";
+        public const string ReservationValidationIsStale = "The fare validation of reservation '{0}' does not cover its services at the current commercial version (valid until {1}), so it cannot be confirmed.";
         public const string ConfirmationRecoveryRequestIsMissing = "Fulfillment task '{0}' of reservation '{1}' has no persisted confirmation request, so its unresolved confirmation cannot be replayed.";
         public const string FulfillmentTaskTargetIsDuplicated = "Fulfillment task '{0}' already targets {1} '{2}' for {3}.";
         public const string OrderCannotBeIssuedAfterLastTicketingDate = "Order '{0}' passed its last ticketing date {1}, so it cannot be issued.";
@@ -194,7 +194,7 @@
         public const string DocumentNumberIsRequired = "An accountable document requires a document number.";
         public const string OrderIsNotFullyTicketed = "Order '{0}' cannot be Ticketed while air service '{1}' has no ticket coupon.";
         public const string AirServiceIsNotReserved = "Air service '{0}' requires reserved capacity but has none, so it cannot be ticketed.";
-        public const string ReservationValidationIsStaleForIssue = "The fare validation of reservation '{0}' is not current (valid until {1}), so its services cannot be ticketed.";
+        public const string ReservationValidationIsStaleForIssue = "The fare validation of reservation '{0}' does not cover the services being ticketed at the current commercial version (valid until {1}), so they cannot be ticketed.";
         public const string DocumentStockAllocationIsRetired = "Document role '{2}' of fulfillment task '{1}' holds a retired number on document stock '{0}' and cannot be numbered again.";
         public const string OrderServiceRequiresDocumentServicing = "Service '{0}' is covered by a ticket coupon that is not void; void or refund the document before cancelling the service.";
         public const string SeatCancellationRequiresAncillaryStage = "Seat service '{0}' cannot be cancelled on its own until seat unassignment is supported; cancel its air service instead.";
@@ -213,5 +213,8 @@
         public const string ConfirmedCancellationTaskTargetsAreInvalid = "Confirmed-capacity cancellation task '{0}' does not target reservation units only, so its provider effect scope is unknown.";
         public const string CancellationRequiresServices = "A cancellation of order '{0}' must end at least one active service.";
         public const string ExternalElectronicTicketVoidIsNotSupported = "Electronic ticket '{0}' is under external document authority, which has no void provider; refund it instead.";
+        public const string RepricingRequiredAfterPartialCancellation = "Fare pricing unit '{1}' of order '{0}' was partially cancelled, so its accepted pricing no longer authorizes issuing its remaining services; a source-authoritative repricing or servicing decision is required.";
+        public const string OrderChangeReasonTextIsTooLong = "The reason text of a change to order '{0}' has {1} characters; at most {2} are allowed.";
+        public const string ReservationValidationEvidenceIsInvalid = "Reservation validation evidence at commercial version {0} must name at least one distinct validated service.";
     }
 }

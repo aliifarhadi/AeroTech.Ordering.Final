@@ -4,7 +4,8 @@
 **Target:** `aliifarhadi/AeroTech.Ordering.Final`  
 **Reviewed source HEAD:** `85f48bb652d96ce155c96ee07045223656db1ecb` (`k8s-stg`, `Stage 2- Final`)  
 **Implementation policy:** Full domain is designed now; code is materialized stage-by-stage only.  
-**Owner decision:** Ordering core continues from Stage 3 without a Payment/JetPay prerequisite. Financial orchestration is integrated later as an additive boundary, not as an intrinsic Ticket/Reservation domain dependency. This document is the full-horizon domain authority; implementation remains deliberately Stage-by-Stage.
+**Owner decision:** Ordering core continues from Stage 3 without a Payment/JetPay prerequisite. Financial orchestration is integrated later as an additive boundary, not as an intrinsic Ticket/Reservation domain dependency. This document is the full-horizon domain authority; implementation remains deliberately Stage-by-Stage.  
+**In-place amendment — Stage 5 R2 Domain Closure (Owner decision, 2026-09-27):** `OrderChange.ReasonText` (§9.1), canonical `ReservationValidationEvidence` (§13.1, §13.6), reservation root status as summary only with unit-scoped Issue eligibility (§27.3), and the derived `FarePricingAtom` pricing-integrity rule (§7.4). This document remains the single authority; no v2.1/v2.2 exists.
 
 ---
 
@@ -711,6 +712,37 @@ Fare Component is an occurrence, not the AirFare master identity. Two components
 
 No tariff/rule/routing field is invented. Add such fields later only when an actual accepted AirPrice/AirOffer contract supplies them.
 
+## 7.4 `FarePricingAtom` — derived pricing-integrity rule (Stage 5 R2)
+
+A commercial partial cancellation does not create a new fare. Ordering therefore distinguishes an **intact** accepted pricing atom from a **fractured** one. `FarePricingAtom` is a derived concept computed from the accepted fare topology. It is **not a persisted entity**, not an aggregate and not a table.
+
+### Atom derivation
+
+| `OrderFarePricingUnit.SemanticType` | Pricing atom |
+|---|---|
+| `OneWay` | Each `OrderFareComponent` is one atom: all Air service IDs in its `CoveredOrderServiceIds`. A through fare component spanning several segments is one indivisible atom, even when it is the only component of its pricing unit. |
+| `RoundTrip`, `OpenJaw`, `CircleTrip` | The whole pricing unit is one atom: the union of all its fare components' `CoveredOrderServiceIds`. |
+| `Unspecified`, `Other` | The whole pricing unit is one conservative atom. Partial-pricing independence is never inferred. |
+
+### Intact and fractured atoms
+
+- An atom is **intact** when all of its Air services are commercially `Active`.
+- An atom whose Air services are all ended is irrelevant to new issuance.
+- An atom is **fractured** when it holds at least one `Active` Air service **and** at least one ended (non-`Active`) Air service.
+
+A fractured atom means the original accepted pricing no longer authorizes issuing its remaining services. Until a source-authoritative repricing / exchange / servicing decision creates successor pricing topology, Issue of any service in a fractured atom fails with `REPRICING_REQUIRED_AFTER_PARTIAL_CANCELLATION` (Ordering code 2820, HTTP 409), evaluated **before** any AirPrice call, document-stock lock or allocation, Issue `FulfillmentTask` or document. No new fare is invented and no invalidated partial fare is reused.
+
+| Accepted topology | Partial cancellation | Remaining scope |
+|---|---|---|
+| OUT = OneWay unit A, IN = OneWay unit B | cancel IN | OUT atom intact → issueable (reservation root may be `Mixed`) |
+| One RoundTrip unit over OUT + IN | cancel IN | fractured → OUT blocked pending repricing |
+| One through fare component over Segment 1 + Segment 2 | cancel Segment 2 | fractured → Segment 1 blocked |
+| One OneWay unit, component A = Segment 1, component B = Segment 2 | cancel all of component B | component A intact → Segment 1 issueable |
+
+### Validation scope
+
+A reservation-validation request for a service scope expands that scope to every pricing atom it touches; at Issue those atoms are always intact, because a fractured atom fails before validation. The persisted `ReservationValidationEvidence.ValidatedOrderServiceIds` (§13.6) records exactly the expanded Air service scope represented in the request.
+
 ---
 
 # 8. Pricing ledger and Revenue-Accounting-preserving facts
@@ -833,8 +865,20 @@ Ordering does not calculate proration when these values are absent.
 | `CommittedAt` | `DateTimeOffset` | No | NOW | Commit timestamp. |
 | `SourceSystem` | `string?` | Yes | FUTURE / SOURCE-GATED | AirOffer/AirPrice/Disruption/etc. when sourced. |
 | `ReasonCode` | `string?` | Yes | FUTURE / SOURCE-GATED | Source business reason. |
+| `ReasonText` | `string?` | Yes | NOW (Stage 5 R2) | Human-readable reason detail / annotation preserved with the change. |
 | `IsInvoluntary` | `bool` | No | FUTURE | Voluntary vs disruption/involuntary servicing. Default may only be set by the committing use case. |
 | `WaiverCode` | `string?` | Yes | FUTURE / SOURCE-GATED | Source-approved waiver. |
+
+`ReasonCode`, `ReasonText`, `SourceSystem`, `SourceReference`, `IsInvoluntary` and `WaiverCode` are separate facts; none is folded into another.
+
+### `ReasonText` invariants
+
+- maximum length 500 characters, after trimming leading and trailing whitespace;
+- whitespace-only → `null`;
+- not a source policy code, not a waiver, not a replacement for `ReasonCode`;
+- never used to derive business eligibility.
+
+Backoffice cancellation maps `request.Reason → OrderChange.ReasonCode` and `request.ReasonDetail → OrderChange.ReasonText`. Historical `OrderChange` rows have `ReasonText = null`; no value is backfilled. `DocumentVoidRecord.ReasonText` is a separate document fact and is unchanged.
 
 Final semantic vocabulary must be able to represent: `Create, AddProduct, RemoveService, Cancel, ChangeService, TravellerCorrection, ContactCorrection, Split, Refund, Exchange, Reissue, Revalidation, InvoluntaryReaccommodation, GroupNameUpdate, GroupCapacityChange`.
 
@@ -1018,9 +1062,10 @@ This covers charter without creating a second incompatible Order model.
 | `CorrelationReference` | `string` | No | NOW | Technical/business correlation; never substitutes for OrderReference/PNR/provider refs. |
 | `ProviderOperationRef` | `string?` | Yes | NOW | Provider operation/resource reference such as FlightFlow HoldId. Immutable once known. |
 | `ProviderRecordLocator` | `string?` | Yes | FUTURE / SOURCE-GATED | Supplier PNR/booking locator when distinct from operation/hold reference. Never overwrite `Order.RecordLocator`. |
-| `Status` | `FulfillmentReservationStatus` | No | NOW | Business reservation summary derived from unit/resource evidence. |
+| `Status` | `FulfillmentReservationStatus` | No | NOW | Business reservation summary derived from unit/resource evidence. **Summary only:** it is never by itself an Issue gate (§27.3); a truthful `Mixed` root is never rewritten to pass Issue. |
 | `RequestedExpiresAt` | `DateTimeOffset?` | Yes | NOW | Exact requested provider hold expiry persisted as part of external intent. Never recomputed on Unknown replay. |
-| `ReservationValidationTimeLimit` | `DateTimeOffset?` | Yes | NOW | Validity of the **latest accepted AirPrice reservation-validation evidence for this reservation scope**. It may be refreshed while Held before Confirm/Issue; it is not a hard Order expiry. |
+| `ValidationEvidence` | `ReservationValidationEvidence?` | Yes | NOW (Stage 5 R2) | Canonical latest AirPrice reservation-validation evidence (§13.6): commercial version, validity, observation time and exact validated service scope. The only business authority for validation currency. |
+| `ReservationValidationTimeLimit` | `DateTimeOffset?` | Yes | NOW | **Compatibility projection only.** For evidence recorded since Stage 5 R2 it equals `ValidationEvidence.ValidUntil`. Historical rows keep their timestamp for history, but a timestamp alone never proves which scope and commercial version were validated and is never eligibility authority. It is not a hard Order expiry. |
 | `ExpiresAt` | `DateTimeOffset?` | Yes | NOW | Provider-returned resource expiry/valid-until. Provider truth for current reservation. |
 | `CreatedAt` | `DateTimeOffset` | No | NOW | Local creation time. |
 | `LastObservedAt` | `DateTimeOffset` | No | NOW | Last authoritative/local evidence application time. |
@@ -1093,8 +1138,8 @@ Materialize only for a real group-capacity provider contract.
 6. Held/Confirmed services are never re-reserved as a new resource without first reaching a conclusive terminal state or provider-supported change/split operation.
 7. Partial/mixed provider truth is retained. It is never collapsed to a boolean.
 8. Multi-provider reservation operations are independent; one provider failure does not automatically release another provider's successful resource unless an explicit business compensation policy says so.
-9. `ExpiresAt`, `ReservationValidationTimeLimit`, and `LastTicketingDate` remain distinct facts.
-10. A stale validation decision blocks Confirm/Issue until refreshed; it does not permanently expire the Order while the hard ticketing deadline remains open.
+9. `ExpiresAt`, `ValidationEvidence` (with its `ReservationValidationTimeLimit` projection), and `LastTicketingDate` remain distinct facts.
+10. Validation evidence that does not cover the required scope at the current `CommercialVersion` and time (§13.6) blocks Confirm/Issue until refreshed; it does not permanently expire the Order while the hard ticketing deadline remains open.
 
 ## 13.5 Time decision for airline reservation
 
@@ -1139,6 +1184,35 @@ Order remains commercially alive if ticketing/order deadline is still open
     ↓
 A new Reserve may run with a new reservation identity and fresh AirPrice validation
 ```
+
+## 13.6 `ReservationValidationEvidence` — canonical owned evidence (Stage 5 R2)
+
+A bare timestamp does not say which service scope and which commercial version were validated. The canonical latest validation evidence is an owned value of `FulfillmentReservation`, persisted atomically as one logical snapshot. It is not an aggregate root.
+
+| Field | Type | Null | Meaning |
+|---|---|---:|---|
+| `CommercialVersion` | `int` | No | `Order.CommercialVersion` the validation request was built from. Always > 0. |
+| `ValidUntil` | `DateTimeOffset` | No | AirPrice-returned validity of the accepted validation. |
+| `ValidatedAt` | `DateTimeOffset` | No | Local observation time of the accepted validation. |
+| `ValidatedOrderServiceIds` | `IReadOnlyCollection<long>` | No | Exact, distinct, non-empty Air service scope represented in the accepted validation request, after any pricing-atom expansion (§7.4). Ordering-known request evidence, never guessed afterwards and never fabricated as provider output. |
+
+Meaning: at `ValidatedAt`, the pricing/reservation authority accepted validation for exactly `ValidatedOrderServiceIds` against `CommercialVersion`, until `ValidUntil`.
+
+Evidence is current for a required service scope `S` only when:
+
+```text
+Evidence != null
+Evidence.CommercialVersion == Order.CommercialVersion
+now < Evidence.ValidUntil
+S ⊆ Evidence.ValidatedOrderServiceIds
+```
+
+Any failed condition means validation must be refreshed. A commercial cancellation increments `CommercialVersion`, so pre-cancellation evidence is stale even when its timestamp is still in the future.
+
+- **Reserve** captures evidence from the AirPrice validation performed while preparing the reservation.
+- **Confirm** (Held): when evidence does not cover the reservation's Air services at the current version and time, refresh through AirPrice, persist the new evidence, then confirm. Safe provider Confirm replay is unchanged.
+- **Issue**: refresh is **validation-only** (§27.3). It never recreates or re-plans the reservation, never calls FlightFlow Reserve/Confirm/Cancel, never changes reservation units, provider references or resource state, and never requires the current active service plan to equal the historical reservation plan.
+- **Historical rows:** evidence is never backfilled with a guessed scope or version. A row that holds only the legacy `ReservationValidationTimeLimit` has `ValidationEvidence = null` and is revalidated before its next Confirm/Issue.
 
 ---
 
@@ -1868,13 +1942,15 @@ CancelOrder / CancelServices
 2. Block while Issue/Confirm external effect is Unknown.
 3. Obtain current source authority/penalty decision when required.
 4. Release/cancel provider reservations as required.
-5. Append `OrderChange(Cancel)`.
+5. Append `OrderChange(Cancel)` with `ReasonCode` from the request reason and the normalized request reason detail as `ReasonText` (§9.1).
 6. Mark affected Items/Services `Cancelled`; never delete them.
 7. Append penalty/refund pricing lines from source decision.
 8. Record any source commercial credit/refund entitlement without requiring a payment-rail call.
 9. Preserve PNR, provider refs and all history. Future financial orchestration handles money movement additively.
 
 `OrderStatus.Cancelled` is only a full-order summary when all active commercial scope is cancelled and no issued value remains requiring document servicing.
+
+A partial cancellation may leave a truthful `Mixed` reservation root. The remaining active scope stays issueable only while its pricing atoms are intact (§7.4) and its target reservation units are `Confirmed` (§27.3).
 
 ## 22.2 Void — issued document reversal
 
@@ -2236,19 +2312,33 @@ Requires:
 - reservation is Held;
 - provider mode is HoldThenConfirm;
 - resource hold not expired;
-- current reservation/fare validation still valid or has been freshly revalidated;
+- current `ReservationValidationEvidence` covers the reservation's Air services at the current `CommercialVersion` and time, or has been freshly revalidated (§13.6);
 - no conflicting Unknown effect.
 
 ## 27.3 Issue
 
-Requires:
+`FulfillmentReservation.Status` is summary only. A `Confirmed` root is sufficient but not necessary for Issue: a `Mixed` root may be issueable for a confirmed target subset. The reservation root status is never by itself an Issue gate, and a truthful `Mixed` root is never changed back to `Confirmed` to pass Issue.
 
-- active commercial Service scope;
-- required capacity Confirmed/committed according to provider profile;
-- applicable hard ticketing deadline open;
-- complete ticket/EMD issuance data;
-- no unresolved competing servicing operation;
-- document number authority/stock.
+Requires, for every outstanding active ticketable Air service selected by Issue:
+
+1. the service is commercially `Active`;
+2. it is not already documented by a surviving non-void ETKT coupon;
+3. latest reservation coverage exists when its provider requires reservation;
+4. the **exact latest `ReservationUnit` covering that service is `Confirmed`** — required issue-scope ReservationUnit(s) must be Confirmed, not the whole FulfillmentReservation root;
+5. required provider unit/reference facts exist;
+6. no overlapping unresolved Reserve/Confirm/Release/Cancel/Issue effect exists for the issue targets;
+7. the accepted pricing topology still authorizes the scope: no pricing atom touching it is fractured (§7.4);
+8. current `ReservationValidationEvidence` covers the issue scope at the current `CommercialVersion` (§13.6);
+9. the applicable hard ticketing deadline is open;
+10. document number authority/stock and complete ticket/EMD snapshot data exist.
+
+The issuance scope keeps target granularity per reservation — the reservation, its exact target `ReservationUnit` ids and the issue `OrderService` ids — so no later rule can fall back to reservation-root status.
+
+When evidence does not cover a reservation's issue scope, Issue performs a **validation-only** refresh for exactly that scope (expanded to its intact pricing atoms), persists the returned evidence, and re-checks it immediately before document allocation. The refresh never re-plans or recreates the reservation and never mutates provider resources.
+
+`OutstandingServices` remain the Active ticketable Air services minus those covered by surviving non-void ticket coupons; a cancelled Air service is never reintroduced into Issue because it remains in historical fare or reservation structures. `Order.MarkTicketed` evaluates only Active ticketable Air services: once every remaining one is documented the Order is `Ticketed`, even while a historical reservation root stays `Mixed`.
+
+Benchmark basis: IATA reservation procedures issue tickets according to the reservation status of each segment, not one PNR-level status; IATA servicing guidance recognizes full and partial cancellation; Amadeus ticketing accepts segment selection and rejects non-active ticketing segments rather than requiring one common state across all historical segments; changed itineraries are repriced or revalidated rather than silently reusing a fractured fare.
 
 ## 27.4 Refund/Exchange
 
@@ -3020,6 +3110,7 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `CommittedAt` | `DateTimeOffset` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S36-S100 |
 | `SourceSystem` | `string?` | SOURCE-GATED | S36-S100 |
 | `ReasonCode` | `string?` | SOURCE-GATED | S36-S100 |
+| `ReasonText` | `string?` | OWNER-DECISION (Stage 5 R2) | S36-S100 |
 | `IsInvoluntary` | `bool` | BENCHMARKED-DOMAIN; materialize in owning Stage | S36-S100 |
 | `WaiverCode` | `string?` | SOURCE-GATED | S36-S100 |
 ## 10.1 `OrderTimeLimit` — future Order child
@@ -3083,7 +3174,8 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `ProviderRecordLocator` | `string?` | SOURCE-GATED | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
 | `Status` | `FulfillmentReservationStatus` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
 | `RequestedExpiresAt` | `DateTimeOffset?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
-| `ReservationValidationTimeLimit` | `DateTimeOffset?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
+| `ValidationEvidence` | `ReservationValidationEvidence?` | OWNER-DECISION (Stage 5 R2) / BENCHMARKED-DOMAIN | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
+| `ReservationValidationTimeLimit` | `DateTimeOffset?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE; compatibility projection since Stage 5 R2 | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
 | `ExpiresAt` | `DateTimeOffset?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
 | `CreatedAt` | `DateTimeOffset` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S09-S20, S34-S45, S52-S78, S85, S97-S98 |
 | `LastObservedAt` | `DateTimeOffset` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S09-S20, S34-S45, S52-S78, S85, S97-S98 |

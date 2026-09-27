@@ -28,6 +28,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
 
         public string? ReasonCode { get; set; }
 
+        public string? ReasonText { get; set; }
+
         public bool IsInvoluntary { get; set; }
 
         public string? WaiverCode { get; set; }

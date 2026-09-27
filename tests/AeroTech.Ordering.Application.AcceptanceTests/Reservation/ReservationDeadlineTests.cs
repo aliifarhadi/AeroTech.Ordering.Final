@@ -38,10 +38,10 @@ public sealed class ReservationDeadlineTests
         var timeLimit = _harness.Clock.Now.AddHours(1);
         var reservation = await ReserveAsync(order, timeLimit, holdExpiry: _harness.Clock.Now.AddMinutes(90));
 
-        Assert.True(reservation.IsConfirmableAt(timeLimit.AddSeconds(-1), order.LastTicketingDate));
+        Assert.True(IsConfirmableAt(reservation, order, timeLimit.AddSeconds(-1)));
         Assert.False(reservation.HoldLapsedAt(timeLimit));
-        Assert.True(reservation.ValidationIsStaleAt(timeLimit));
-        Assert.False(reservation.IsConfirmableAt(timeLimit, order.LastTicketingDate));
+        Assert.False(reservation.HasCurrentValidationFor(AirServiceIds(order), order.CommercialVersion, timeLimit));
+        Assert.False(IsConfirmableAt(reservation, order, timeLimit));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class ReservationDeadlineTests
 
         _harness.Clock.Now = holdExpiry;
 
-        Assert.False(expired.IsConfirmableAt(_harness.Clock.Now, order.LastTicketingDate));
+        Assert.False(IsConfirmableAt(expired, order, _harness.Clock.Now));
         Assert.Contains(order.Id, await _harness.DueOrderIdsAsync());
 
         await _harness.EnforceDeadlinesAsync(order);
@@ -119,7 +119,7 @@ public sealed class ReservationDeadlineTests
 
         _harness.Clock.Now = lastTicketingDate;
 
-        Assert.False(reservation.IsConfirmableAt(_harness.Clock.Now, order.LastTicketingDate));
+        Assert.False(IsConfirmableAt(reservation, order, _harness.Clock.Now));
         Assert.Contains(order.Id, await _harness.DueOrderIdsAsync());
 
         await _harness.EnforceDeadlinesAsync(order);
@@ -201,8 +201,8 @@ public sealed class ReservationDeadlineTests
 
         Assert.Equal(lastTicketingDate, _harness.FlightFlow.HoldRequests.Single().ExpiresAt);
         Assert.Equal(timeLimit, reservation.ReservationValidationTimeLimit);
-        Assert.True(reservation.IsConfirmableAt(lastTicketingDate.AddSeconds(-1), order.LastTicketingDate));
-        Assert.False(reservation.IsConfirmableAt(lastTicketingDate, order.LastTicketingDate));
+        Assert.True(IsConfirmableAt(reservation, order, lastTicketingDate.AddSeconds(-1)));
+        Assert.False(IsConfirmableAt(reservation, order, lastTicketingDate));
     }
 
     [Fact]
@@ -213,8 +213,8 @@ public sealed class ReservationDeadlineTests
         var reservation = await ReserveAsync(order, timeLimit);
 
         Assert.Equal(timeLimit, _harness.FlightFlow.HoldRequests.Single().ExpiresAt);
-        Assert.True(reservation.IsConfirmableAt(timeLimit.AddSeconds(-1), order.LastTicketingDate));
-        Assert.False(reservation.IsConfirmableAt(timeLimit, order.LastTicketingDate));
+        Assert.True(IsConfirmableAt(reservation, order, timeLimit.AddSeconds(-1)));
+        Assert.False(IsConfirmableAt(reservation, order, timeLimit));
     }
 
     [Fact]
@@ -226,8 +226,8 @@ public sealed class ReservationDeadlineTests
         var reservation = await ReserveAsync(order, timeLimit, returned);
 
         Assert.Equal((timeLimit, returned), (reservation.RequestedExpiresAt, reservation.ExpiresAt));
-        Assert.True(reservation.IsConfirmableAt(returned.AddSeconds(-1), order.LastTicketingDate));
-        Assert.False(reservation.IsConfirmableAt(returned, order.LastTicketingDate));
+        Assert.True(IsConfirmableAt(reservation, order, returned.AddSeconds(-1)));
+        Assert.False(IsConfirmableAt(reservation, order, returned));
     }
 
     [Fact]
@@ -240,7 +240,7 @@ public sealed class ReservationDeadlineTests
 
         Assert.Equal((timeLimit, returned, timeLimit), (reservation.RequestedExpiresAt, reservation.ExpiresAt, reservation.ReservationValidationTimeLimit));
         Assert.False(reservation.HoldLapsedAt(timeLimit));
-        Assert.False(reservation.IsConfirmableAt(timeLimit, order.LastTicketingDate));
+        Assert.False(IsConfirmableAt(reservation, order, timeLimit));
     }
 
     [Fact]
@@ -337,4 +337,10 @@ public sealed class ReservationDeadlineTests
 
         return _harness.Reservation(result.Reservations.Single().ReservationId);
     }
+
+    private static bool IsConfirmableAt(FulfillmentReservation reservation, Order order, DateTimeOffset now)
+        => reservation.IsConfirmableAt(now, order.LastTicketingDate, AirServiceIds(order), order.CommercialVersion);
+
+    private static IReadOnlyList<long> AirServiceIds(Order order)
+        => ReservationHarness.AirServices(order).Select(service => service.Id).ToList();
 }

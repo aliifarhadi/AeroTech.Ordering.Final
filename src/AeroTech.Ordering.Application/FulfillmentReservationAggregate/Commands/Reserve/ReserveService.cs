@@ -167,7 +167,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                     provider.ProviderKey,
                     group.Key.Mode,
                     preparation.RequestedExpiresAt,
-                    preparation.ValidationTimeLimit,
+                    preparation.ValidationEvidence,
                     units,
                     _idGenerator,
                     createdAt);

@@ -108,6 +108,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 change.SourceReference,
                 change.SourceSystem,
                 change.ReasonCode,
+                change.ReasonText,
                 change.IsInvoluntary,
                 change.WaiverCode,
                 change.CommittedAt);

@@ -1,3 +1,4 @@
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.Providers.Pricing;
 
@@ -9,12 +10,20 @@ public sealed class StubAirFareReservationValidator(FixedClock clock) : IAirFare
 
     public Func<Order, IReadOnlyCollection<long>, DateTimeOffset>? Behavior { get; set; }
 
-    public Task<DateTimeOffset> ValidateAsync(
+    public Task<ReservationValidationEvidence> ValidateAsync(
         Order order,
         IReadOnlyCollection<long> airServiceIds,
         CancellationToken cancellationToken = default)
     {
         Calls.Add(airServiceIds.ToList());
-        return Task.FromResult(Behavior?.Invoke(order, airServiceIds) ?? clock.Now.AddDays(1));
+
+        var validUntil = Behavior?.Invoke(order, airServiceIds) ?? clock.Now.AddDays(1);
+        var validatedServiceIds = order.FarePricingAtomsCovering(airServiceIds)
+            .SelectMany(atom => atom.AirServiceIds)
+            .Union(airServiceIds)
+            .Order()
+            .ToList();
+
+        return Task.FromResult(new ReservationValidationEvidence(order.CommercialVersion, validUntil, clock.Now, validatedServiceIds));
     }
 }

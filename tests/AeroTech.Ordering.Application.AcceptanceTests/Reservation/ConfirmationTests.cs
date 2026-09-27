@@ -67,12 +67,12 @@ public sealed class ConfirmationTests
     {
         var order = SeedOrder();
         var reservation = await ReserveAsync(order);
-        typeof(FulfillmentReservation).GetProperty(nameof(FulfillmentReservation.ReservationValidationTimeLimit))!.SetValue(reservation, null);
+        typeof(FulfillmentReservation).GetProperty(nameof(FulfillmentReservation.ValidationEvidence))!.SetValue(reservation, null);
 
         await _harness.ConfirmReservedCapacityAsync(order);
 
         Assert.Equal(2, _harness.AirFareValidator.Calls.Count);
-        Assert.NotNull(reservation.ReservationValidationTimeLimit);
+        Assert.Equal(reservation.ValidationEvidence!.ValidUntil, reservation.ReservationValidationTimeLimit);
         Assert.Equal(FulfillmentReservationStatus.Confirmed, reservation.Status);
     }
 

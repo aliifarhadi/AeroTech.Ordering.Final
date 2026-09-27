@@ -9,6 +9,13 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 {
     public sealed partial class Order
     {
+        public IReadOnlyList<FarePricingAtom> FarePricingAtomsCovering(IReadOnlyCollection<long> airServiceIds)
+            => _farePricingUnits
+                .OrderBy(pricingUnit => pricingUnit.Sequence)
+                .SelectMany(pricingUnit => pricingUnit.PricingAtoms())
+                .Where(atom => atom.AirServiceIds.Overlaps(airServiceIds))
+                .ToList();
+
         private void BuildPricing(OfferReader reader, IIdGenerator idGenerator, long changeId, DateTimeOffset createdAt)
         {
             foreach (var traveller in _travellers.OrderBy(traveller => traveller.Index))

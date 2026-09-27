@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Messages.Ordering.Enums;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers;
@@ -66,10 +67,19 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             foreach (var paxReference in units.Select(unit => DetailsOf(unit).PaxReference).Distinct())
                 AirPricePassengerTypes.From(index.Traveller(paxReference).PassengerType, FulfillmentProviderKeys.FlightFlow);
 
-            var timeLimit = await _airFareValidator.ValidateAsync(order, index.AirServiceIdsAmong(memberIds), cancellationToken);
+            var evidence = await _airFareValidator.ValidateAsync(order, index.AirServiceIdsAmong(memberIds), cancellationToken);
 
-            return new ReservationPreparation(Earliest(timeLimit, order.LastTicketingDate), timeLimit);
+            return new ReservationPreparation(Earliest(evidence.ValidUntil, order.LastTicketingDate), evidence);
         }
+
+        public async Task<ReservationValidationEvidence?> ValidateAsync(
+            Order order,
+            IReadOnlyCollection<long> orderServiceIds,
+            CancellationToken cancellationToken = default)
+            => await _airFareValidator.ValidateAsync(
+                order,
+                new FlightUnitIndex(order, ProviderKey).AirServiceIdsAmong(orderServiceIds.ToHashSet()),
+                cancellationToken);
 
         public ProviderRequest ReserveRequestFor(Order order, ReservationIntent intent)
             => new(

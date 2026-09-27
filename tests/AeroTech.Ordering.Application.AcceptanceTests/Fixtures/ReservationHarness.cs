@@ -10,6 +10,7 @@ using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Rel
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Services;
 using AeroTech.Ordering.Application.OrderAggregate.Services.Cancellation;
@@ -180,7 +181,11 @@ public sealed class ReservationHarness
         => _issue.IssueAsync(order.Id, ticketDocumentStockId, UnrestrictedOrderAuthorization.Instance, IssueActorId);
 
     public Task<CancelOrderResult> CancelAsync(Order order, params long[] serviceIds)
-        => _cancel.CancelAsync(order.Id, serviceIds, VoidReason.CustomerRequest, UnrestrictedOrderAuthorization.Instance, CancellingActor);
+        => _cancel.CancelAsync(order.Id, serviceIds, VoidReason.CustomerRequest, null, UnrestrictedOrderAuthorization.Instance, CancellingActor);
+
+    public Task<CancelOrderResult> CancelThroughBackofficeAsync(Order order, string? reasonDetail, params long[] serviceIds)
+        => new BackofficeCancelOrderCommandHandler(_cancel, new FixedSalesContextFactory(CancellingActor))
+            .Handle(new BackofficeCancelOrderCommand(order.Id, serviceIds, VoidReason.CustomerRequest, reasonDetail), CancellationToken.None);
 
     public Task<VoidElectronicTicketsResult> VoidAsync(Order order, long? callerOfficeId, params ElectronicTicket[] tickets)
         => VoidTargetsAsync(order, callerOfficeId, tickets.Select(ticket => new ElectronicTicketVoidTarget(ticket.Id, ticket.DocumentVersion)).ToList());

@@ -1,4 +1,5 @@
 using AeroTech.Messages.Ordering.Enums;
+using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.ValueObjects;
 
 namespace AeroTech.Ordering.Domain.Providers.Reservation
 {
@@ -18,7 +19,7 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
 
     public sealed record ReservationPreparation(
         DateTimeOffset? RequestedExpiresAt,
-        DateTimeOffset? ValidationTimeLimit);
+        ReservationValidationEvidence? ValidationEvidence);
 
     public sealed record ReleaseIntent(
         string ProviderKey,

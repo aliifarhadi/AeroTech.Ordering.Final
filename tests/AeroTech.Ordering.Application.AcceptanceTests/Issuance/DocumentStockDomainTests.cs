@@ -108,10 +108,34 @@ public sealed class DocumentStockDomainTests
         var retired = stock.Allocate(7, "ETKT:1:1", _ids, Now);
 
         stock.Retire(retired.Id, Now);
-        var replacement = stock.Allocate(7, "ETKT:1:1", _ids, Now);
+        var replacement = stock.Allocate(8, "ETKT:1:1", _ids, Now);
 
         Assert.Equal(StockNumberState.Retired, retired.State);
         Assert.Equal((2L, 3L), (replacement.Serial, stock.NextNumber));
+    }
+
+    [Fact]
+    public void Retired_task_and_role_are_never_numbered_again()
+    {
+        var stock = Define();
+        var retired = stock.Allocate(7, "ETKT:1:1", _ids, Now);
+        stock.Retire(retired.Id, Now);
+
+        var exception = Assert.Throws<BusinessException>(() => stock.Allocate(7, "ETKT:1:1", _ids, Now));
+
+        Assert.Equal((2802, 409), (exception.Code, exception.HttpStatus));
+        Assert.Equal((2L, 1), (stock.NextNumber, stock.Allocations.Count));
+    }
+
+    [Fact]
+    public void Issued_task_and_role_replay_the_same_allocation()
+    {
+        var stock = Define();
+        var issued = stock.Allocate(7, "ETKT:1:1", _ids, Now);
+        stock.MarkIssued(issued.Id, Now);
+
+        Assert.Same(issued, stock.Allocate(7, "ETKT:1:1", _ids, Now));
+        Assert.Equal((2L, 1), (stock.NextNumber, stock.Allocations.Count));
     }
 
     [Theory]

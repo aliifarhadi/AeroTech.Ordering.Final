@@ -526,6 +526,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException ReservationValidationIsStaleForIssue(params object?[] args) =>
             new(2801, ExceptionMessages.ReservationValidationIsStaleForIssue, args) { HttpStatus = 409 };
 
+        public static BusinessException DocumentStockAllocationIsRetired(params object?[] args) =>
+            new(2802, ExceptionMessages.DocumentStockAllocationIsRetired, args) { HttpStatus = 409 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

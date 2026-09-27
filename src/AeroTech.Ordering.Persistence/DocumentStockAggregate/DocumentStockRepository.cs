@@ -15,10 +15,21 @@ namespace AeroTech.Ordering.Persistence.DocumentStockAggregate
             => await _dbContext.DocumentStocks.AddAsync(stock, cancellationToken);
 
         public Task<DocumentStock?> GetAsync(long id, CancellationToken cancellationToken = default)
-            => _dbContext.DocumentStocks.FirstOrDefaultAsync(stock => stock.Id == id, cancellationToken);
+            => _dbContext.DocumentStocks
+                .Include(stock => stock.Allocations)
+                .FirstOrDefaultAsync(stock => stock.Id == id, cancellationToken);
 
-        public Task ReloadAsync(DocumentStock stock, CancellationToken cancellationToken = default)
-            => _dbContext.Entry(stock).ReloadAsync(cancellationToken);
+        public async Task ReloadAsync(DocumentStock stock, CancellationToken cancellationToken = default)
+        {
+            var entry = _dbContext.Entry(stock);
+
+            await entry.ReloadAsync(cancellationToken);
+
+            foreach (var allocation in stock.Allocations)
+                await _dbContext.Entry(allocation).ReloadAsync(cancellationToken);
+
+            await entry.Collection(item => item.Allocations).Query().LoadAsync(cancellationToken);
+        }
 
         public Task<long?> FindOverlappingIdAsync(
             int ownerAirlineId,

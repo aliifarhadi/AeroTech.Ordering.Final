@@ -195,5 +195,6 @@
         public const string OrderIsNotFullyTicketed = "Order '{0}' cannot be Ticketed while air service '{1}' has no ticket coupon.";
         public const string AirServiceIsNotReserved = "Air service '{0}' requires reserved capacity but has none, so it cannot be ticketed.";
         public const string ReservationValidationIsStaleForIssue = "The fare validation of reservation '{0}' is not current (valid until {1}), so its services cannot be ticketed.";
+        public const string DocumentStockAllocationIsRetired = "Document role '{2}' of fulfillment task '{1}' holds a retired number on document stock '{0}' and cannot be numbered again.";
     }
 }

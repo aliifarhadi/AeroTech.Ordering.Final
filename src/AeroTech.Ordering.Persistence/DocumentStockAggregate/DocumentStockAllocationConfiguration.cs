@@ -1,4 +1,3 @@
-using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.DocumentStockAggregate.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,9 +16,7 @@ namespace AeroTech.Ordering.Persistence.DocumentStockAggregate
             builder.Property(allocation => allocation.DocumentNumber).HasMaxLength(32).IsRequired();
 
             builder.HasIndex(allocation => allocation.DocumentNumber).IsUnique();
-            builder.HasIndex(allocation => new { allocation.DocumentStockId, allocation.IssueFulfillmentTaskId, allocation.DocumentRole })
-                .IsUnique()
-                .HasFilter($"[State] <> {(int)StockNumberState.Retired}");
+            builder.HasIndex(allocation => new { allocation.DocumentStockId, allocation.IssueFulfillmentTaskId, allocation.DocumentRole }).IsUnique();
             builder.HasIndex(allocation => allocation.IssueFulfillmentTaskId);
         }
     }

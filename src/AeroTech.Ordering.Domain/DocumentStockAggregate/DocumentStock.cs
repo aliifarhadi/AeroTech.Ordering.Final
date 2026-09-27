@@ -116,11 +116,12 @@ namespace AeroTech.Ordering.Domain.DocumentStockAggregate
             DateTimeOffset allocatedAt)
         {
             var existing = _allocations.FirstOrDefault(allocation => allocation.IssueFulfillmentTaskId == issueFulfillmentTaskId
-                                                                     && allocation.DocumentRole == documentRole
-                                                                     && allocation.State != StockNumberState.Retired);
+                                                                     && allocation.DocumentRole == documentRole);
 
             if (existing is not null)
-                return existing;
+                return existing.State == StockNumberState.Retired
+                    ? throw ExceptionFactory.DocumentStockAllocationIsRetired(Id, issueFulfillmentTaskId, documentRole)
+                    : existing;
 
             EnsureCanIssue(DocumentKind, 1);
 

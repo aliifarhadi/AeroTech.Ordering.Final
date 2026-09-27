@@ -439,6 +439,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException ReservationValidationIsStale(params object?[] args) =>
             new(2772, ExceptionMessages.ReservationValidationIsStale, args) { HttpStatus = 409 };
 
+        public static BusinessException ConfirmationRecoveryRequestIsMissing(params object?[] args) =>
+            new(2773, ExceptionMessages.ConfirmationRecoveryRequestIsMissing, args) { HttpStatus = 500 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

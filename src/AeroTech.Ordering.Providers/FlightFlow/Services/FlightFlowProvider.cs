@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AeroTech.Ordering.Domain._Shared;
@@ -15,6 +16,8 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
         private const int ExpiredSeatHoldErrorCode = 1176;
         private const int ReleasedSeatHoldErrorCode = 1177;
         private const int CancelledSeatHoldErrorCode = 1178;
+        private const int InconsistentSeatHoldErrorCode = 1179;
+        private const int SeatHoldNotFoundErrorCode = 1180;
 
         private readonly HttpClient _httpClient;
 
@@ -213,10 +216,12 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
                 var envelope = Deserialize<object>(body);
 
-                if (UnconfirmableHoldStatusOf(envelope) is { } holdStatus)
-                    return new FlightFlowReply<ConfirmHoldResult>(new ConfirmHoldResult(holdStatus, FirstError(envelope)), (int)response.StatusCode, body);
+                if ((RefusedConfirmationOf(envelope) ?? (response.StatusCode == HttpStatusCode.NotFound ? new ConfirmHoldResult(null, null) : null)) is { } refused)
+                    return new FlightFlowReply<ConfirmHoldResult>(refused, (int)response.StatusCode, body);
 
-                var (kind, reason) = Classify((int)response.StatusCode);
+                var (kind, reason) = response.StatusCode == HttpStatusCode.NotFound
+                    ? (FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome)
+                    : Classify((int)response.StatusCode);
                 throw new ProviderRequestException(
                     kind,
                     reason,
@@ -226,12 +231,13 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             }
         }
 
-        private static FlightSeatHoldStatus? UnconfirmableHoldStatusOf<T>(FlightFlowEnvelope<T>? envelope)
+        private static ConfirmHoldResult? RefusedConfirmationOf<T>(FlightFlowEnvelope<T>? envelope)
             => envelope?.Errors?.FirstOrDefault()?.Code switch
             {
-                ExpiredSeatHoldErrorCode => FlightSeatHoldStatus.Expired,
-                ReleasedSeatHoldErrorCode => FlightSeatHoldStatus.Released,
-                CancelledSeatHoldErrorCode => FlightSeatHoldStatus.Cancelled,
+                ExpiredSeatHoldErrorCode => new ConfirmHoldResult(FlightSeatHoldStatus.Expired, FirstError(envelope)),
+                ReleasedSeatHoldErrorCode => new ConfirmHoldResult(FlightSeatHoldStatus.Released, FirstError(envelope)),
+                CancelledSeatHoldErrorCode => new ConfirmHoldResult(FlightSeatHoldStatus.Cancelled, FirstError(envelope)),
+                InconsistentSeatHoldErrorCode or SeatHoldNotFoundErrorCode => new ConfirmHoldResult(null, FirstError(envelope)),
                 _ => null
             };
 

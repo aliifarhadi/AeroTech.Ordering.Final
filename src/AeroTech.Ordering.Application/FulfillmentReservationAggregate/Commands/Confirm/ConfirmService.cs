@@ -1,3 +1,4 @@
+using AeroTech.Framework.Core.Domain.Exceptions;
 using AeroTech.Framework.Core.Domain.Repository;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Messages.Ordering.Enums;
@@ -81,10 +82,27 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
             var reservations = await _reservations.ListByOrderAsync(orderId, cancellationToken);
             var targets = selectReservations(reservations);
             var operations = await PlanAsync(order, targets, cancellationToken);
-            var failures = new Dictionary<long, ProviderFailure?>();
+            var failures = new Dictionary<long, ConfirmationFailure>();
+            var dispatched = false;
 
             foreach (var operation in operations)
-                failures[operation.Reservation.Id] = await ExecuteAsync(order, reservations, operation, cancellationToken);
+            {
+                var now = _clock.GetDateTime();
+
+                if (!operation.IsRecovery && DispatchRejectionOf(order, operation.Reservation, now) is { } rejection)
+                {
+                    if (!dispatched)
+                        throw rejection.Error;
+
+                    failures[operation.Reservation.Id] = new ConfirmationFailure(rejection.Reason, rejection.Error.Message);
+                    continue;
+                }
+
+                if (await DispatchAsync(order, reservations, operation, now, cancellationToken) is { } failure)
+                    failures[operation.Reservation.Id] = new ConfirmationFailure(failure.Reason, failure.Message);
+
+                dispatched = true;
+            }
 
             return new ConfirmResult(
                 order.Id,
@@ -103,52 +121,71 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
             foreach (var reservation in targets.Where(item => item.AwaitsConfirmation))
             {
                 var latest = await _tasks.FindLatestAsync(reservation.Id, OrderFulfillmentTaskType.ConfirmInventory, cancellationToken);
-                var unresolved = latest is { IsResumable: true } ? latest : null;
 
-                if (!IsDispatchable(reservation, unresolved, _providers.CapabilityOf(order, reservation)))
-                    continue;
-
-                var provider = _providers.Resolve(reservation.FulfillmentProviderKey);
-
-                reservation.EnsureConfirmableAt(now, order.LastTicketingDate);
-
-                if (reservation.ValidationIsStaleAt(now))
-                    await RenewValidationAsync(order, reservation, provider, cancellationToken);
-
-                reservation.EnsureValidationCurrentAt(now);
-
-                operations.Add(new ConfirmationOperation(provider, reservation, unresolved));
+                if (latest is { IsResumable: true })
+                {
+                    if (_providers.CapabilityOf(order, reservation).SupportsSafeConfirmReplay)
+                        operations.Add(RecoveryOf(reservation, latest));
+                }
+                else if (reservation.Status == FulfillmentReservationStatus.Held)
+                {
+                    operations.Add(await NewConfirmationOfAsync(order, reservation, now, cancellationToken));
+                }
             }
 
             return operations;
         }
 
-        private async Task<ProviderFailure?> ExecuteAsync(
+        private ConfirmationOperation RecoveryOf(FulfillmentReservation reservation, FulfillmentTask unresolvedTask)
+            => new(
+                _providers.Resolve(reservation.FulfillmentProviderKey),
+                reservation,
+                unresolvedTask.OriginalRequest(ProviderInteractionType.ConfirmHold)
+                    ?? throw ExceptionFactory.ConfirmationRecoveryRequestIsMissing(unresolvedTask.Id, reservation.Id),
+                unresolvedTask);
+
+        private async Task<ConfirmationOperation> NewConfirmationOfAsync(
+            Order order,
+            FulfillmentReservation reservation,
+            DateTimeOffset now,
+            CancellationToken cancellationToken)
+        {
+            var provider = _providers.Resolve(reservation.FulfillmentProviderKey);
+            var rejection = DispatchRejectionOf(order, reservation, now);
+
+            if (rejection?.Reason == FulfillmentFailureReason.ValidationFailed)
+            {
+                await RenewValidationAsync(order, reservation, provider, cancellationToken);
+                rejection = DispatchRejectionOf(order, reservation, now);
+            }
+
+            if (rejection is not null)
+                throw rejection.Error;
+
+            return new ConfirmationOperation(provider, reservation, provider.ConfirmRequestFor(reservation.PrepareConfirmation()), null);
+        }
+
+        private async Task<ProviderFailure?> DispatchAsync(
             Order order,
             IReadOnlyCollection<FulfillmentReservation> reservations,
             ConfirmationOperation operation,
+            DateTimeOffset startedAt,
             CancellationToken cancellationToken)
         {
             var reservation = operation.Reservation;
-            var startedAt = _clock.GetDateTime();
-
-            reservation.EnsureConfirmableAt(startedAt, order.LastTicketingDate);
-            reservation.EnsureValidationCurrentAt(startedAt);
-
             var task = operation.UnresolvedTask ?? await NewConfirmTaskAsync(reservation, startedAt, cancellationToken);
-            var request = task.OriginalRequest(ProviderInteractionType.ConfirmHold)
-                          ?? operation.Provider.ConfirmRequestFor(reservation.PrepareConfirmation());
 
             task.StartAttempt(_idGenerator, startedAt);
-            task.RecordRequest(request, _idGenerator, startedAt);
+            task.RecordRequest(operation.Request, _idGenerator, startedAt);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var outcome = await operation.Provider.ConfirmAsync(request, cancellationToken);
+            var providerOutcome = await operation.Provider.ConfirmAsync(operation.Request, cancellationToken);
+            var outcome = operation.IsRecovery ? ReplayOutcomeOf(providerOutcome) : providerOutcome;
             var observedAt = _clock.GetDateTime();
 
             task.RecordResponse(outcome.OperationOutcome, reservation.ProviderOperationRef, outcome.Failure, outcome.Response, observedAt);
             reservation.RecordConfirmation(outcome, observedAt);
-            task.CompleteAttempt(AttemptOutcomeOf(reservation), outcome.Failure, observedAt);
+            task.CompleteAttempt(AttemptOutcomeOf(outcome), outcome.Failure, observedAt);
 
             await _summarizer.SummarizeAsync(order, reservations, cancellationToken);
             await _synchronizer.ProjectReservationChangedAsync(order.ToReadModelSnapshot(observedAt), cancellationToken);
@@ -226,32 +263,56 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
         private static bool IsInConfirmationScope(FulfillmentReservation reservation)
             => reservation.Status == FulfillmentReservationStatus.Confirmed || reservation.AwaitsConfirmation;
 
-        private static bool IsDispatchable(
-            FulfillmentReservation reservation,
-            FulfillmentTask? unresolvedTask,
-            ReservationCapability capability)
-            => unresolvedTask is null
-                ? reservation.Status == FulfillmentReservationStatus.Held
-                : capability.SupportsSafeConfirmReplay;
-
-        private static FulfillmentAttemptOutcome AttemptOutcomeOf(FulfillmentReservation reservation) => reservation.Status switch
+        private static DispatchRejection? DispatchRejectionOf(Order order, FulfillmentReservation reservation, DateTimeOffset now)
         {
-            FulfillmentReservationStatus.Confirmed => FulfillmentAttemptOutcome.Succeeded,
-            FulfillmentReservationStatus.Unknown => FulfillmentAttemptOutcome.Unknown,
-            _ => FulfillmentAttemptOutcome.Failed
+            if (order.HasPassedLastTicketingDateAt(now))
+                return new DispatchRejection(
+                    FulfillmentFailureReason.BusinessRejected,
+                    ExceptionFactory.ReservationCannotBeConfirmedAfterLastTicketingDate(reservation.Id, order.LastTicketingDate));
+
+            if (reservation.HoldLapsedAt(now))
+                return new DispatchRejection(
+                    FulfillmentFailureReason.HoldExpired,
+                    ExceptionFactory.ReservationHoldHasLapsed(reservation.Id, reservation.ExpiresAt));
+
+            return reservation.ValidationIsStaleAt(now)
+                ? new DispatchRejection(
+                    FulfillmentFailureReason.ValidationFailed,
+                    ExceptionFactory.ReservationValidationIsStale(reservation.Id, reservation.ReservationValidationTimeLimit))
+                : null;
+        }
+
+        private static ConfirmationOutcome ReplayOutcomeOf(ConfirmationOutcome outcome)
+            => outcome is { OperationOutcome: ProviderOperationOutcome.Rejected, ObservedStatus: null }
+                ? outcome with { OperationOutcome = ProviderOperationOutcome.Unknown }
+                : outcome;
+
+        private static FulfillmentAttemptOutcome AttemptOutcomeOf(ConfirmationOutcome outcome) => outcome.OperationOutcome switch
+        {
+            ProviderOperationOutcome.Succeeded => FulfillmentAttemptOutcome.Succeeded,
+            ProviderOperationOutcome.Rejected => FulfillmentAttemptOutcome.Failed,
+            _ => FulfillmentAttemptOutcome.Unknown
         };
 
-        private static ReservationConfirmationResult ResultOf(FulfillmentReservation reservation, ProviderFailure? failure)
+        private static ReservationConfirmationResult ResultOf(FulfillmentReservation reservation, ConfirmationFailure? failure)
             => new(
                 reservation.Id,
                 reservation.FulfillmentProviderKey,
                 reservation.Status,
                 failure?.Reason,
-                failure?.Message);
+                failure?.Error);
 
         private sealed record ConfirmationOperation(
             IReservationProvider Provider,
             FulfillmentReservation Reservation,
-            FulfillmentTask? UnresolvedTask);
+            ProviderRequest Request,
+            FulfillmentTask? UnresolvedTask)
+        {
+            public bool IsRecovery => UnresolvedTask is not null;
+        }
+
+        private sealed record DispatchRejection(FulfillmentFailureReason Reason, BusinessException Error);
+
+        private sealed record ConfirmationFailure(FulfillmentFailureReason Reason, string Error);
     }
 }

@@ -162,21 +162,6 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
                 ? new ConfirmationIntent(FulfillmentProviderKey, providerOperationRef)
                 : throw ExceptionFactory.ReservationIsNotConfirmable(Id, Status);
 
-        public void EnsureConfirmableAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
-        {
-            if (lastTicketingDate <= now)
-                throw ExceptionFactory.ReservationCannotBeConfirmedAfterLastTicketingDate(Id, lastTicketingDate);
-
-            if (HoldLapsedAt(now))
-                throw ExceptionFactory.ReservationHoldHasLapsed(Id, ExpiresAt);
-        }
-
-        public void EnsureValidationCurrentAt(DateTimeOffset now)
-        {
-            if (ValidationIsStaleAt(now))
-                throw ExceptionFactory.ReservationValidationIsStale(Id, ReservationValidationTimeLimit);
-        }
-
         public void RenewValidation(DateTimeOffset? validationTimeLimit)
         {
             if (!AwaitsConfirmation)

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using AeroTech.Messages.FlightFlow.Enums;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
+using AeroTech.Ordering.Providers.FlightFlow.Services;
 using AeroTech.Ordering.Providers.FlightFlow.Wire;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Fakes;
@@ -22,6 +23,8 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
     public List<ConfirmHoldRequest> ConfirmRequests { get; } = [];
 
     public Queue<Func<ConfirmHoldRequest, ConfirmHoldResult>> ConfirmResponses { get; } = new();
+
+    public Queue<HttpResponseMessage> ConfirmWireResponses { get; } = new();
 
     public Task<FlightFlowReply<FlightHeldSeatsResult>> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default)
     {
@@ -67,6 +70,10 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
     public Task<FlightFlowReply<ConfirmHoldResult>> ConfirmHoldAsync(ConfirmHoldRequest request, CancellationToken cancellationToken = default)
     {
         ConfirmRequests.Add(request);
+
+        if (ConfirmWireResponses.TryDequeue(out var wireResponse))
+            return new FlightFlowProvider(StubHttpMessageHandler.ClientFor(new StubHttpMessageHandler(_ => wireResponse)))
+                .ConfirmHoldAsync(request, cancellationToken);
 
         var respond = ConfirmResponses.TryDequeue(out var scripted) ? scripted : Confirmed;
         var result = respond(request);

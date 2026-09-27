@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
@@ -17,11 +16,19 @@ public sealed class FlightFlowConfirmationContractTests
     public static TheoryData<HttpStatusCode, string, ProviderOperationOutcome, ReservationMemberStatus?> Responses => new()
     {
         { HttpStatusCode.NoContent, string.Empty, ProviderOperationOutcome.Succeeded, ReservationMemberStatus.Confirmed },
-        { HttpStatusCode.BadRequest, ErrorBody(1176), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Expired },
-        { HttpStatusCode.BadRequest, ErrorBody(1177), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Released },
-        { HttpStatusCode.BadRequest, ErrorBody(1178), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Cancelled },
-        { HttpStatusCode.BadRequest, ErrorBody(1179), ProviderOperationOutcome.Rejected, null },
-        { HttpStatusCode.NotFound, string.Empty, ProviderOperationOutcome.Rejected, null },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1176), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Expired },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1177), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Released },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1178), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Cancelled },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1179), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Unknown },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1180), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Unknown },
+        { HttpStatusCode.NotFound, FlightFlowWire.ErrorBody(1180), ProviderOperationOutcome.Rejected, ReservationMemberStatus.Unknown },
+        { HttpStatusCode.BadRequest, FlightFlowWire.ErrorBody(1166), ProviderOperationOutcome.Rejected, null },
+        { HttpStatusCode.BadRequest, string.Empty, ProviderOperationOutcome.Rejected, null },
+        { HttpStatusCode.Unauthorized, string.Empty, ProviderOperationOutcome.Rejected, null },
+        { HttpStatusCode.Forbidden, string.Empty, ProviderOperationOutcome.Rejected, null },
+        { HttpStatusCode.Conflict, string.Empty, ProviderOperationOutcome.Rejected, null },
+        { HttpStatusCode.NotFound, string.Empty, ProviderOperationOutcome.Unknown, null },
+        { HttpStatusCode.NotFound, FlightFlowWire.ErrorBody(1166), ProviderOperationOutcome.Unknown, null },
         { HttpStatusCode.InternalServerError, string.Empty, ProviderOperationOutcome.Unknown, null }
     };
 
@@ -58,12 +65,24 @@ public sealed class FlightFlowConfirmationContractTests
         ProviderOperationOutcome expectedOutcome,
         ReservationMemberStatus? expectedStatus)
     {
-        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+        var handler = new StubHttpMessageHandler(_ => FlightFlowWire.Response(status, body));
 
         var outcome = await ConfirmAsync(handler);
 
         Assert.Equal((expectedOutcome, expectedStatus), (outcome.OperationOutcome, outcome.ObservedStatus));
         Assert.Equal<int?>((int)status, outcome.Response!.StatusCode);
+    }
+
+    [Fact]
+    public async Task Plain_not_found_is_an_indeterminate_outcome_not_a_missing_hold()
+    {
+        var handler = new StubHttpMessageHandler(_ => FlightFlowWire.Response(HttpStatusCode.NotFound));
+
+        var outcome = await ConfirmAsync(handler);
+
+        Assert.Equal(
+            (ProviderOperationOutcome.Unknown, (ReservationMemberStatus?)null, FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome),
+            (outcome.OperationOutcome, outcome.ObservedStatus, outcome.Failure!.Kind, outcome.Failure.Reason));
     }
 
     [Fact]
@@ -95,7 +114,4 @@ public sealed class FlightFlowConfirmationContractTests
 
     private static FlightFlowReservationProvider ProviderOver(StubHttpMessageHandler handler)
         => new(new FlightFlowProvider(StubHttpMessageHandler.ClientFor(handler)), new StubAirFareReservationValidator(new FixedClock()));
-
-    private static string ErrorBody(int code)
-        => $$"""{"data":null,"errors":[{"code":{{code}},"title":"Cannot confirm the seat hold.","detail":null}]}""";
 }

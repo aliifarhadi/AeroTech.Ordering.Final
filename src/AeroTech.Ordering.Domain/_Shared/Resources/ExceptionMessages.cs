@@ -166,5 +166,6 @@
         public const string ReservationCannotBeConfirmedAfterLastTicketingDate = "Reservation '{0}' cannot be confirmed because its order passed its last ticketing date {1}.";
         public const string ReservationHoldHasLapsed = "The provider hold of reservation '{0}' lapsed at {1}, so it cannot be confirmed.";
         public const string ReservationValidationIsStale = "The fare validation of reservation '{0}' is not current (valid until {1}), so it cannot be confirmed.";
+        public const string ConfirmationRecoveryRequestIsMissing = "Fulfillment task '{0}' of reservation '{1}' has no persisted confirmation request, so its unresolved confirmation cannot be replayed.";
     }
 }

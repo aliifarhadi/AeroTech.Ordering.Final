@@ -261,7 +261,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             return null;
         }
 
-        private static ReservationMemberStatus ToUnitStatus(FlightSeatHoldStatus status) => status switch
+        private static ReservationMemberStatus ToUnitStatus(FlightSeatHoldStatus? status) => status switch
         {
             FlightSeatHoldStatus.Held => ReservationMemberStatus.Held,
             FlightSeatHoldStatus.Confirmed => ReservationMemberStatus.Confirmed,

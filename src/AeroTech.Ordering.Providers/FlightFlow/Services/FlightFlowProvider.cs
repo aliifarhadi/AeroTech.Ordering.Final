@@ -216,7 +216,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
                 var envelope = Deserialize<object>(body);
 
-                if ((RefusedConfirmationOf(envelope) ?? (response.StatusCode == HttpStatusCode.NotFound ? new ConfirmHoldResult(null, null) : null)) is { } refused)
+                if (RefusedConfirmationOf(envelope) is { } refused)
                     return new FlightFlowReply<ConfirmHoldResult>(refused, (int)response.StatusCode, body);
 
                 var (kind, reason) = response.StatusCode == HttpStatusCode.NotFound

@@ -66,9 +66,11 @@ public sealed class ConfirmationRecoveryTests
 
         var result = await _harness.ConfirmReservedCapacityAsync(order);
 
+        var task = _harness.TaskOf(reservation.Id, OrderFulfillmentTaskType.ConfirmInventory);
         Assert.Equal(2, _harness.FlightFlow.ConfirmRequests.Count);
+        Assert.Single(task.Interactions.Select(interaction => (interaction.RequestPayload, interaction.RequestHash)).Distinct());
         Assert.Equal(FulfillmentReservationStatus.Confirmed, reservation.Status);
-        Assert.Equal(OrderFulfillmentStatus.Succeeded, _harness.TaskOf(reservation.Id, OrderFulfillmentTaskType.ConfirmInventory).Status);
+        Assert.Equal(OrderFulfillmentStatus.Succeeded, task.Status);
         Assert.Null(result.Reservations.Single().FailureReason);
         Assert.Empty(_harness.FlightFlow.ReleaseRequests);
         Assert.Equal((OrderStatus.Expired, OrderStatus.Expired), (result.Status, order.Status));

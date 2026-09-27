@@ -229,6 +229,46 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
             LastObservedAt = observedAt;
         }
 
+        public ConfirmedCancellationIntent PrepareConfirmedCancellation(IReadOnlyCollection<long> unitIds, string commercialReason)
+        {
+            var targets = TargetUnits(unitIds);
+
+            if (targets.FirstOrDefault(unit => !IsCancellable(unit)) is { } notCancellable)
+                throw ExceptionFactory.ReservationUnitIsNotCancellable(notCancellable.Id, Id, notCancellable.Status);
+
+            return new ConfirmedCancellationIntent(
+                FulfillmentProviderKey,
+                ProviderOperationRef!,
+                targets.Select(unit => new ConfirmedCancellationUnit(unit.Id, unit.ProviderUnitRef!)).ToList(),
+                commercialReason);
+        }
+
+        public void RecordConfirmedCancellation(
+            IReadOnlyCollection<long> unitIds,
+            ConfirmedCancellationOutcome outcome,
+            DateTimeOffset observedAt)
+        {
+            var targets = TargetUnits(unitIds);
+
+            if (targets.FirstOrDefault(unit => unit.Status is not (ReservationMemberStatus.Confirmed or ReservationMemberStatus.Unknown)) is { } settled)
+                throw ExceptionFactory.ReservationUnitIsNotCancellable(settled.Id, Id, settled.Status);
+
+            var observedUnitStatus = outcome switch
+            {
+                { OperationOutcome: ProviderOperationOutcome.Succeeded } => ReservationMemberStatus.Cancelled,
+                { OperationOutcome: ProviderOperationOutcome.Rejected, ObservedStatus: { } observedStatus } => ToUnitStatus(observedStatus),
+                { OperationOutcome: ProviderOperationOutcome.Rejected } => (ReservationMemberStatus?)null,
+                _ => ReservationMemberStatus.Unknown
+            };
+
+            if (observedUnitStatus is { } unitStatus)
+                foreach (var unit in targets)
+                    unit.Mark(unitStatus);
+
+            Status = StatusFromUnits();
+            LastObservedAt = observedAt;
+        }
+
         public void RecordExpired(DateTimeOffset observedAt)
         {
             if (Status != FulfillmentReservationStatus.Held)
@@ -236,6 +276,19 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
             MarkAll(FulfillmentReservationStatus.Expired, ReservationMemberStatus.Expired);
             LastObservedAt = observedAt;
+        }
+
+        private bool IsCancellable(ReservationUnit unit)
+            => unit.Status == ReservationMemberStatus.Confirmed && unit.ProviderUnitRef is not null && ProviderOperationRef is not null;
+
+        private IReadOnlyList<ReservationUnit> TargetUnits(IReadOnlyCollection<long> unitIds)
+        {
+            var targets = _units.Where(unit => unitIds.Contains(unit.Id)).ToList();
+
+            if (targets.Count == 0 || targets.Count != unitIds.Distinct().Count())
+                throw ExceptionFactory.ReservationOutcomeDoesNotMatchUnits(Id);
+
+            return targets;
         }
 
         private void AssignProviderOperationRef(string? providerOperationRef)

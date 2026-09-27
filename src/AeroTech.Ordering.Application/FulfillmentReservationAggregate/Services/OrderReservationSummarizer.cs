@@ -1,4 +1,5 @@
 using AeroTech.Ordering.Application.OrderAggregate.Services;
+using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 
@@ -22,15 +23,25 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
         {
             var latestUnitStatusByService = ReservationCoverage.LatestUnitStatusByService(reservations);
 
-            var requiredServiceIds = order.Services
-                .Where(_providers.RequiresReservation)
-                .Select(service => service.Id)
-                .ToList();
-
-            order.SummarizeReservation(requiredServiceIds, latestUnitStatusByService);
+            order.SummarizeReservation(RequiredServiceIds(order), latestUnitStatusByService);
 
             if (order.RequiresRecordLocator(latestUnitStatusByService))
                 order.AssignRecordLocator(await _recordLocators.AllocateAsync(cancellationToken));
         }
+
+        public void SummarizeServicing(
+            Order order,
+            IReadOnlyCollection<FulfillmentReservation> reservations,
+            IReadOnlyCollection<ElectronicTicket> tickets)
+            => order.SummarizeServicing(
+                TicketCoverage.DocumentedServiceIds(tickets),
+                RequiredServiceIds(order),
+                ReservationCoverage.LatestUnitStatusByService(reservations));
+
+        private IReadOnlyList<long> RequiredServiceIds(Order order)
+            => order.Services
+                .Where(_providers.RequiresReservation)
+                .Select(service => service.Id)
+                .ToList();
     }
 }

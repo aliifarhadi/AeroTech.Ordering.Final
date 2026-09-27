@@ -716,6 +716,9 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.Property<DateTimeOffset>("CommittedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("IsInvoluntary")
+                        .HasColumnType("bit");
+
                     b.Property<DateTimeOffset>("LastUpdateTime")
                         .HasColumnType("datetimeoffset");
 
@@ -725,9 +728,21 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.Property<long>("OrderId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("ReasonCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("SourceReference")
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("SourceSystem")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("WaiverCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.HasKey("Id");
 
@@ -908,6 +923,9 @@ namespace AeroTech.Ordering.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<long>("CreatedByChangeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("EndedByChangeId")
                         .HasColumnType("bigint");
 
                     b.Property<int>("Kind")
@@ -1176,6 +1194,9 @@ namespace AeroTech.Ordering.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<long>("CreatedByChangeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("EndedByChangeId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("FulfillmentProviderKey")
@@ -1746,8 +1767,52 @@ namespace AeroTech.Ordering.Persistence.Migrations
                                 .HasForeignKey("ElectronicTicketId");
                         });
 
+                    b.OwnsOne("AeroTech.Ordering.Domain.ElectronicTicketAggregate.ValueObjects.DocumentVoidRecord", "VoidRecord", b1 =>
+                        {
+                            b1.Property<long>("ElectronicTicketId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<long?>("ActorId")
+                                .HasColumnType("bigint")
+                                .HasColumnName("VoidActorId");
+
+                            b1.Property<string>("ProviderReference")
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("VoidProviderReference");
+
+                            b1.Property<string>("ReasonCode")
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)")
+                                .HasColumnName("VoidReasonCode");
+
+                            b1.Property<string>("ReasonText")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("VoidReasonText");
+
+                            b1.Property<long>("VoidFulfillmentTaskId")
+                                .HasColumnType("bigint")
+                                .HasColumnName("VoidFulfillmentTaskId");
+
+                            b1.Property<DateTimeOffset>("VoidedAt")
+                                .HasColumnType("datetimeoffset")
+                                .HasColumnName("VoidedAt");
+
+                            b1.HasKey("ElectronicTicketId");
+
+                            b1.HasIndex("VoidFulfillmentTaskId");
+
+                            b1.ToTable("ElectronicTickets", "Order");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ElectronicTicketId");
+                        });
+
                     b.Navigation("IssuanceContext")
                         .IsRequired();
+
+                    b.Navigation("VoidRecord");
                 });
 
             modelBuilder.Entity("AeroTech.Ordering.Domain.ElectronicTicketAggregate.Entities.TicketCoupon", b =>

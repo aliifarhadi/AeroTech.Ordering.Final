@@ -29,6 +29,16 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         string ProviderKey,
         string ProviderOperationRef);
 
+    public sealed record ConfirmedCancellationIntent(
+        string ProviderKey,
+        string ProviderOperationRef,
+        IReadOnlyList<ConfirmedCancellationUnit> Units,
+        string CommercialReason);
+
+    public sealed record ConfirmedCancellationUnit(
+        long ReservationUnitId,
+        string ProviderUnitRef);
+
     public sealed record ProviderRequest(
         ProviderInteractionType InteractionType,
         string? IdempotencyKey,

@@ -34,6 +34,7 @@ namespace AeroTech.Ordering.Domain.ElectronicTicketAggregate
             IssuanceContext = args.IssuanceContext;
             Authority = authority;
             IssuedAt = issuedAt;
+            VoidDeadline = args.VoidDeadline;
             CurrencyId = args.CurrencyId;
             StatusSummary = ElectronicTicketStatus.Issued;
             DocumentVersion = 1;
@@ -73,6 +74,10 @@ namespace AeroTech.Ordering.Domain.ElectronicTicketAggregate
 
         public long? PredecessorExchangeChangeId { get; private set; }
 
+        public DocumentVoidRecord? VoidRecord { get; private set; }
+
+        public bool IsVoided => StatusSummary == ElectronicTicketStatus.Voided;
+
         public IReadOnlyCollection<TicketCoupon> Coupons => _coupons.AsReadOnly();
 
         public IReadOnlyCollection<TicketPriceLink> PriceLinks => _priceLinks.AsReadOnly();
@@ -98,6 +103,59 @@ namespace AeroTech.Ordering.Domain.ElectronicTicketAggregate
             ticket.RaiseIssued(idGenerator);
 
             return ticket;
+        }
+
+        public void EnsureVoidableBy(long? callerOfficeId, DateTimeOffset now)
+        {
+            if (Authority != DocumentAuthority.Local)
+                throw ExceptionFactory.ExternalElectronicTicketVoidIsNotSupported(Id);
+
+            if (StatusSummary != ElectronicTicketStatus.Issued || VoidRecord is not null)
+                throw ExceptionFactory.ElectronicTicketIsNotVoidable(Id, StatusSummary);
+
+            if (VoidDeadline is not { } voidDeadline)
+                throw ExceptionFactory.ElectronicTicketVoidDeadlineIsMissing(Id);
+
+            if (now >= voidDeadline)
+                throw ExceptionFactory.ElectronicTicketVoidWindowIsClosed(Id, voidDeadline);
+
+            if (IssuanceContext.IssuingOfficeId is not { } issuingOfficeId || callerOfficeId != issuingOfficeId)
+                throw ExceptionFactory.ElectronicTicketIssuingOfficeMismatch(Id, IssuanceContext.IssuingOfficeId, callerOfficeId);
+
+            foreach (var coupon in _coupons)
+                coupon.EnsureVoidable(Id);
+        }
+
+        public void Void(
+            DocumentVoidRecord record,
+            VoidReason reason,
+            long voidedBy,
+            long? callerOfficeId,
+            IIdGenerator idGenerator)
+        {
+            EnsureVoidableBy(callerOfficeId, record.VoidedAt);
+
+            foreach (var coupon in _coupons)
+                coupon.MarkVoid();
+
+            StatusSummary = ElectronicTicketStatus.Voided;
+            VoidRecord = record;
+            DocumentVersion++;
+
+            Causes(new ElectronicTicketVoided(
+                idGenerator.NewId().ToString(),
+                Id.ToString(),
+                record.VoidedAt,
+                Id,
+                CurrentServicingOrderId,
+                DocumentNumber,
+                record.VoidFulfillmentTaskId,
+                reason,
+                record.ReasonText,
+                voidedBy,
+                record.VoidedAt,
+                record.ProviderReference,
+                DocumentVersion));
         }
 
         private void AddCoupon(IssueTicketCouponArgs args, IIdGenerator idGenerator)

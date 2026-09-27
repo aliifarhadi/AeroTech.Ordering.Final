@@ -1,0 +1,79 @@
+version: '1.0'
+authority: docs/CODING-AGENT-PROMPT-Ordering-Stage5-Cancel-Void-v1.0-FINAL.md
+note: >-
+  Thin guardrail. This file lists ONLY the Stage-5 type set, value-object set and the
+  numeric values of the enums Stage 5 amends. It deliberately does not describe
+  properties, SQL types, lengths, indexes, namespaces, assemblies, table names or
+  mapping strategy. Whether Stage 5 is finished is decided by the authority's
+  domain, acceptance, concurrency and sabotage scenarios.
+
+stage_file: .canonical-stage
+
+stage5:
+  types:
+    - Order
+    - OrderItem
+    - OrderService
+    - OrderAirTransportService
+    - OrderSeatService
+    - OrderTraveller
+    - TravellerProfileRevision
+    - OrderTravellerDocument
+    - OrderContact
+    - OrderContactPoint
+    - OrderJourney
+    - OrderSegment
+    - OrderSegmentLeg
+    - OrderChange
+    - PricingLine
+    - PricingAllocation
+    - OrderRemark
+    - OrderFarePricingUnit
+    - OrderFareComponent
+    - FulfillmentReservation
+    - ReservationUnit
+    - FulfillmentTask
+    - FulfillmentTaskTarget
+    - FulfillmentTaskAttempt
+    - ProviderInteraction
+    - ElectronicTicket
+    - TicketCoupon
+    - TicketPriceLink
+    - DocumentStock
+    - DocumentStockAllocation
+
+  abstract_types:
+    - OrderService
+
+  value_objects:
+    - SalesContext
+    - BaggageAllowance
+    - ExchangeRateSnapshot
+    - IssuedSegmentSnapshot
+    - DocumentIssuanceContext
+    - DocumentVoidRecord
+
+  enums:
+    OrderFulfillmentTaskType:
+      ReserveInventory: 1
+      ReleaseReserved: 2
+      ConfirmInventory: 3
+      CancelConfirmed: 4
+      IssueTicket: 5
+      IssueEmd: 6
+      AssignSeat: 7
+      ConfirmCipVoucher: 8
+      IssueESim: 9
+      BookHotel: 10
+      VoidTicket: 11
+    ProviderInteractionType:
+      CreateHold: 1
+      ReleaseHold: 2
+      ConfirmHold: 3
+      CancelConfirmed: 4
+      ReverseConfirmed: 5
+      ExtendHold: 6
+      IssueTicket: 7
+      IssueEmd: 8
+      ReadReservation: 9
+      VoidTicket: 10

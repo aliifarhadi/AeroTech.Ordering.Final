@@ -10,6 +10,7 @@ namespace AeroTech.Ordering.Domain.ElectronicTicketAggregate.Arguments
         long IssueFulfillmentTaskId,
         string DocumentNumber,
         DocumentIssuanceContext IssuanceContext,
+        DateTimeOffset? VoidDeadline,
         int CurrencyId,
         IReadOnlyList<IssueTicketCouponArgs> Coupons);
 

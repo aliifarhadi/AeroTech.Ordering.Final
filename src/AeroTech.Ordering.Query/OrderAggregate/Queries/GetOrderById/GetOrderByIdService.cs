@@ -42,6 +42,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
             var remarks = await OwnedBy(_dbContext.OrderRemarks, orderId, cancellationToken);
             var tickets = await OwnedBy(_dbContext.ElectronicTickets, orderId, cancellationToken);
             var coupons = await OwnedBy(_dbContext.TicketCoupons, orderId, cancellationToken);
+            var changes = await OwnedBy(_dbContext.OrderChanges, orderId, cancellationToken);
 
             var documentsByTraveller = documents.ToLookup(document => document.TravellerId);
             var segmentsByJourney = segments.ToLookup(segment => segment.OrderJourneyId);
@@ -71,7 +72,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 pricingLines.Select(line => ToDto(line, allocationsByLine[line.Id])).ToList(),
                 contacts.OrderBy(contact => contact.Sequence).Select(contact => ToDto(contact, pointsByContact[contact.Id])).ToList(),
                 remarks.OrderBy(remark => remark.CreatedAt).Select(ToDto).ToList(),
-                tickets.OrderBy(ticket => ticket.IssuedAt).ThenBy(ticket => ticket.Id).Select(ticket => ToDto(ticket, couponsByTicket[ticket.Id])).ToList());
+                tickets.OrderBy(ticket => ticket.IssuedAt).ThenBy(ticket => ticket.Id).Select(ticket => ToDto(ticket, couponsByTicket[ticket.Id])).ToList(),
+                changes.OrderBy(change => change.CommercialVersion).ThenBy(change => change.CommittedAt).ThenBy(change => change.Id).Select(ToDto).ToList());
         }
 
         private static Task<List<TReadModel>> OwnedBy<TReadModel>(
@@ -137,6 +139,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 item.Kind,
                 item.AcceptedTotal,
                 item.CommercialStatus,
+                item.EndedByChangeId,
                 services.Select(ToDto).ToList());
 
         private static OrderServiceDto ToDto(OrderServiceReadModel service)
@@ -155,7 +158,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 service.IsRefundable,
                 service.IsChangeable,
                 service.IsUpgradable,
-                service.SeatNumber);
+                service.SeatNumber,
+                service.EndedByChangeId);
 
         private static BaggageAllowanceDto? ToBaggageDto(int? pieces, decimal? weight, WeightUnit? unit)
             => pieces is null || weight is null || unit is null
@@ -205,7 +209,36 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 ticket.CurrencyId,
                 ticket.StatusSummary,
                 ticket.DocumentVersion,
+                ticket.VoidDeadline,
+                ToVoidRecordDto(ticket),
                 coupons.OrderBy(coupon => coupon.CouponNumber).Select(ToDto).ToList());
+
+        private static OrderDocumentVoidRecordDto? ToVoidRecordDto(ElectronicTicketReadModel ticket)
+            => ticket is { VoidFulfillmentTaskId: { } voidFulfillmentTaskId, VoidedAt: { } voidedAt }
+                ? new OrderDocumentVoidRecordDto(
+                    voidFulfillmentTaskId,
+                    ticket.VoidReasonCode,
+                    ticket.VoidReasonText,
+                    ticket.VoidProviderReference,
+                    ticket.VoidActorId,
+                    voidedAt)
+                : null;
+
+        private static OrderChangeDto ToDto(OrderChangeReadModel change)
+            => new(
+                change.Id,
+                change.ChangeType,
+                change.CommercialVersion,
+                change.ActorId,
+                change.Channel,
+                change.ContextType,
+                change.PrincipalType,
+                change.SourceReference,
+                change.SourceSystem,
+                change.ReasonCode,
+                change.IsInvoluntary,
+                change.WaiverCode,
+                change.CommittedAt);
 
         private static OrderTicketCouponDto ToDto(TicketCouponReadModel coupon)
             => new(

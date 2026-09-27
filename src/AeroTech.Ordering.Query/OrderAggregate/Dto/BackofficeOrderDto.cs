@@ -22,7 +22,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         IReadOnlyList<BackofficeOrderPricingLineDto> PricingLines,
         IReadOnlyList<BackofficeOrderContactDto> Contacts,
         IReadOnlyList<BackofficeOrderRemarkDto> Remarks,
-        IReadOnlyList<BackofficeElectronicTicketDto> Tickets);
+        IReadOnlyList<BackofficeElectronicTicketDto> Tickets,
+        IReadOnlyList<BackofficeOrderChangeDto> Changes);
 
     public sealed record SellingOfficeDto(EnumValueDto Kind, long Id, string? Code, string? Name);
 
@@ -54,6 +55,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         EnumValueDto Kind,
         decimal AcceptedTotal,
         EnumValueDto CommercialStatus,
+        long? EndedByChangeId,
         IReadOnlyList<BackofficeOrderServiceDto> Services);
 
     public sealed record BackofficeOrderServiceDto(
@@ -71,7 +73,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         bool IsRefundable,
         bool IsChangeable,
         bool IsUpgradable,
-        string? SeatNumber);
+        string? SeatNumber,
+        long? EndedByChangeId);
 
     public sealed record BackofficeBaggageAllowanceDto(int Pieces, decimal Weight, EnumValueDto Unit);
 
@@ -134,7 +137,24 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         int CurrencyId,
         EnumValueDto StatusSummary,
         int DocumentVersion,
+        DateTimeOffset? VoidDeadline,
+        OrderDocumentVoidRecordDto? VoidRecord,
         IReadOnlyList<BackofficeTicketCouponDto> Coupons);
+
+    public sealed record BackofficeOrderChangeDto(
+        long Id,
+        EnumValueDto ChangeType,
+        int CommercialVersion,
+        long ActorId,
+        EnumValueDto Channel,
+        EnumValueDto ContextType,
+        EnumValueDto PrincipalType,
+        string? SourceReference,
+        string? SourceSystem,
+        string? ReasonCode,
+        bool IsInvoluntary,
+        string? WaiverCode,
+        DateTimeOffset CommittedAt);
 
     public sealed record BackofficeTicketCouponDto(
         long Id,

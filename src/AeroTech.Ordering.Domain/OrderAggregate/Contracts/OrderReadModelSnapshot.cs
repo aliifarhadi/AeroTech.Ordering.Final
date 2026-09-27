@@ -1,6 +1,7 @@
 ﻿using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Messages.Shared.Enums;
+using AeroTech.Ordering.Domain._Shared.Contracts;
 using PassengerTypeCode = AeroTech.Messages.Ordering.Enums.PassengerTypeCode;
 
 namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
@@ -39,6 +40,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         public IReadOnlyList<OrderContactSnapshot> Contacts { get; init; } = Array.Empty<OrderContactSnapshot>();
 
         public IReadOnlyList<OrderRemarkSnapshot> Remarks { get; init; } = Array.Empty<OrderRemarkSnapshot>();
+
+        public IReadOnlyList<OrderChangeSnapshot> Changes { get; init; } = Array.Empty<OrderChangeSnapshot>();
     }
 
     public sealed record OrderTravellerSnapshot(
@@ -92,7 +95,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         long ItemId,
         ProductType Kind,
         decimal AcceptedTotal,
-        OrderItemCommercialState CommercialStatus);
+        OrderItemCommercialState CommercialStatus,
+        long? EndedByChangeId);
 
     public sealed record OrderServiceSnapshot(
         long ServiceId,
@@ -110,7 +114,23 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         bool IsRefundable,
         bool IsChangeable,
         bool IsUpgradable,
-        string? SeatNumber);
+        string? SeatNumber,
+        long? EndedByChangeId);
+
+    public sealed record OrderChangeSnapshot(
+        long ChangeId,
+        OrderChangeType ChangeType,
+        int CommercialVersion,
+        long ActorId,
+        SalesChannel Channel,
+        CallerContextType ContextType,
+        CallerPrincipalType PrincipalType,
+        string? SourceReference,
+        string? SourceSystem,
+        string? ReasonCode,
+        bool IsInvoluntary,
+        string? WaiverCode,
+        DateTimeOffset CommittedAt);
 
     public sealed record BaggageAllowanceSnapshot(int Pieces, decimal Weight, WeightUnit Unit);
 

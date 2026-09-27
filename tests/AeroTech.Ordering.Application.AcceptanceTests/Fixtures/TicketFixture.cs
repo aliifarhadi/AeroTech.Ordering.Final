@@ -18,6 +18,8 @@ public static class TicketFixture
 
     public static readonly DateTimeOffset IssuedAt = new(2026, 10, 1, 10, 0, 0, TimeSpan.Zero);
 
+    public static readonly DateTimeOffset LocalMidnightAfterIssue = new(2026, 10, 2, 0, 0, 0, TimeSpan.Zero);
+
     public static ElectronicTicket Issue(IIdGenerator ids, IssueElectronicTicketArgs args)
         => ElectronicTicket.IssueLocally(ids.NewId(), args, ids, IssuedAt);
 
@@ -29,6 +31,7 @@ public static class TicketFixture
             IssueFulfillmentTaskId,
             documentNumber,
             new DocumentIssuanceContext(10, null, 5, 77, null, null, null, SalesChannel.BackOffice, null),
+            null,
             CurrencyId,
             coupons);
 

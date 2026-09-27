@@ -154,6 +154,66 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             }
         }
 
+        public ProviderRequest CancelConfirmedRequestFor(ConfirmedCancellationIntent intent)
+            => new(
+                ProviderInteractionType.CancelConfirmed,
+                null,
+                null,
+                JsonSerializer.Serialize(
+                    new CancelConfirmedSeatsRequest(
+                        intent.ProviderOperationRef,
+                        intent.Units.Select(unit => unit.ProviderUnitRef).ToList(),
+                        FlightSeatHoldCancellationReason.PaxRequest),
+                    FlightFlowJson.Options));
+
+        public async Task<ConfirmedCancellationOutcome> CancelConfirmedAsync(ProviderRequest request, CancellationToken cancellationToken = default)
+        {
+            var cancellation = PayloadOf<CancelConfirmedSeatsRequest>(request);
+
+            try
+            {
+                var reply = await _flightFlow.CancelConfirmedAsync(cancellation, cancellationToken);
+
+                if (reply.Result.RefusedStatus is { } refusedStatus)
+                    return new ConfirmedCancellationOutcome(
+                        ProviderOperationOutcome.Rejected,
+                        refusedStatus,
+                        RefusalOf(refusedStatus, reply.Result.Reason, reply.StatusCode),
+                        ResponseOf(reply));
+
+                return CancelsExactly(cancellation, reply.Result)
+                    ? new ConfirmedCancellationOutcome(ProviderOperationOutcome.Succeeded, FulfillmentReservationStatus.Cancelled, null, ResponseOf(reply))
+                    : new ConfirmedCancellationOutcome(
+                        ProviderOperationOutcome.Unknown,
+                        null,
+                        new ProviderFailure(
+                            FulfillmentFailureKind.Indeterminate,
+                            FulfillmentFailureReason.UnknownOutcome,
+                            "The cancellation response did not report exactly the requested seat holds as cancelled.",
+                            reply.StatusCode),
+                        ResponseOf(reply));
+            }
+            catch (ProviderRequestException exception)
+            {
+                return new ConfirmedCancellationOutcome(OutcomeOf(exception), null, FailureOf(exception), ResponseOf(exception));
+            }
+        }
+
+        private static bool CancelsExactly(CancelConfirmedSeatsRequest request, CancelConfirmedSeatsResult result)
+        {
+            if (!string.Equals(result.HoldBatchId, request.HoldBatchId, StringComparison.Ordinal) || result.Seats is null)
+                return false;
+
+            var cancelled = result.Seats
+                .Where(seat => seat.Status == FlightSeatHoldStatus.Cancelled && seat.SeatHoldReference is not null)
+                .Select(seat => seat.SeatHoldReference!)
+                .ToList();
+
+            return cancelled.Count == result.Seats.Count
+                   && cancelled.Count == cancelled.Distinct(StringComparer.Ordinal).Count()
+                   && cancelled.ToHashSet(StringComparer.Ordinal).SetEquals(request.SeatHoldReferences);
+        }
+
         private static HoldSeatsRequest HoldRequestFor(FlightUnitIndex index, ReservationIntent intent)
         {
             var units = intent.Units.Select(DetailsOf).ToList();

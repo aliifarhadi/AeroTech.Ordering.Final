@@ -1,22 +1,29 @@
 using AeroTech.Messages.Ordering.Enums;
+using AeroTech.Messages.Shared.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.DocumentStockAggregate.Commands.DefineDocumentStock;
 using AeroTech.Ordering.Application.DocumentStockAggregate.Commands.DefineDocumentStock.Backoffice;
 using AeroTech.Ordering.Application.DocumentStockAggregate.Services;
+using AeroTech.Ordering.Application.ElectronicTicketAggregate.Commands.VoidElectronicTickets;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Confirm;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Services.Cancellation;
 using AeroTech.Ordering.Application.OrderAggregate.Services.Issuance;
 using AeroTech.Ordering.Application._Shared.Authorization;
+using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
+using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain.Providers.Reservation;
+using AeroTech.Ordering.Domain._Shared.Contracts;
 using AeroTech.Ordering.Providers.FlightFlow.Services;
 using Microsoft.Extensions.Options;
 
@@ -30,8 +37,15 @@ public sealed class ReservationHarness
     private readonly IReservationDeadlineService _deadlines;
     private readonly IIssueOrderService _issue;
     private readonly IDefineDocumentStockService _stocks;
+    private readonly ICancelOrderService _cancel;
+    private readonly IVoidElectronicTicketsService _void;
 
     public const long IssueActorId = 77;
+
+    public const long IssuingOfficeId = 5;
+
+    public static readonly SalesContext CancellingActor =
+        new(SalesChannel.BackOffice, CallerContextType.Airline, CallerPrincipalType.Human, 88, 88, null, null, null, null, SellingOfficeKind.AirlineOffice, IssuingOfficeId);
 
     public ReservationHarness(params IReservationProvider[] additionalProviders)
     {
@@ -73,9 +87,25 @@ public sealed class ReservationHarness
             Synchronizer,
             Synchronizer,
             Synchronizer,
+            OfficeTimeZones,
             UnitOfWork,
             Ids,
             Clock);
+        _cancel = new CancelOrderService(
+            Orders,
+            Reservations,
+            Tasks,
+            Tickets,
+            new CancellationPlanner(),
+            releaser,
+            new ConfirmedCapacityCanceller(Tasks, providers, UnitOfWork, Ids, Clock),
+            summarizer,
+            reservationLock,
+            Synchronizer,
+            UnitOfWork,
+            Ids,
+            Clock);
+        _void = new VoidElectronicTicketsService(Orders, Reservations, Tasks, Tickets, summarizer, reservationLock, Synchronizer, Synchronizer, UnitOfWork, Ids, Clock);
     }
 
     public FixedClock Clock { get; } = new();
@@ -105,6 +135,8 @@ public sealed class ReservationHarness
     public FlightFlowReservationProvider FlightFlowReservation { get; }
 
     public StubAirFareReservationValidator AirFareValidator { get; }
+
+    public StubAirlineOfficeTimeZoneResolver OfficeTimeZones { get; } = new();
 
     public Order SeedOrder(
         IReadOnlyList<TravellerSpec> travellers,
@@ -146,6 +178,22 @@ public sealed class ReservationHarness
 
     public Task<IssueOrderResult> IssueAsync(Order order, long ticketDocumentStockId)
         => _issue.IssueAsync(order.Id, ticketDocumentStockId, UnrestrictedOrderAuthorization.Instance, IssueActorId);
+
+    public Task<CancelOrderResult> CancelAsync(Order order, params long[] serviceIds)
+        => _cancel.CancelAsync(order.Id, serviceIds, VoidReason.CustomerRequest, UnrestrictedOrderAuthorization.Instance, CancellingActor);
+
+    public Task<VoidElectronicTicketsResult> VoidAsync(Order order, long? callerOfficeId, params ElectronicTicket[] tickets)
+        => VoidTargetsAsync(order, callerOfficeId, tickets.Select(ticket => new ElectronicTicketVoidTarget(ticket.Id, ticket.DocumentVersion)).ToList());
+
+    public Task<VoidElectronicTicketsResult> VoidTargetsAsync(Order order, long? callerOfficeId, IReadOnlyList<ElectronicTicketVoidTarget> targets)
+        => _void.VoidAsync(
+            order.Id,
+            targets,
+            VoidReason.CustomerRequest,
+            "  Passenger changed plans  ",
+            UnrestrictedOrderAuthorization.Instance,
+            IssueActorId,
+            callerOfficeId);
 
     public Task<ReserveResult> ReserveOrderAsync(Order order)
         => _reserve.ReserveOrderAsync(order.Id, UnrestrictedOrderAuthorization.Instance);

@@ -19,6 +19,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
 
         public OrderServiceCommercialState CommercialStatus { get; set; }
 
+        public long? EndedByChangeId { get; set; }
+
         public string? BookingClass { get; set; }
 
         public string? FareBasis { get; set; }

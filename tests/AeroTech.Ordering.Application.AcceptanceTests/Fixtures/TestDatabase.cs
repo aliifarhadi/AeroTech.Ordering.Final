@@ -1,9 +1,13 @@
 using AeroTech.Framework.Core.Domain.Events;
 using AeroTech.Framework.Core.ServiceContracts;
+using AeroTech.Ordering.Application._Shared.Events;
 using AeroTech.Ordering.Persistence;
+using AeroTech.Ordering.Persistence.Outbox;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 
@@ -22,6 +26,21 @@ public sealed class TestDatabase(IClock clock) : IAsyncDisposable
             new AnonymousActorResolver(),
             clock,
             domainEventDispatcher ?? new IgnoringDomainEventDispatcher());
+
+    public ServiceProvider NewOutboxServices()
+    {
+        var services = new ServiceCollection();
+
+        services.AddMediatR(configuration => configuration.RegisterServicesFromAssemblyContaining<MediatRDomainEventDispatcher>());
+        services.AddSingleton(clock);
+        services.AddSingleton<IActorResolver, AnonymousActorResolver>();
+        services.AddSingleton(Options.Create(new IntegrationEventOptions()));
+        services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
+        services.AddScoped(provider => NewContext(provider.GetRequiredService<IDomainEventDispatcher>()));
+        services.AddScoped<IOutboxWriter, OutboxWriter>();
+
+        return services.BuildServiceProvider();
+    }
 
     public async ValueTask DisposeAsync()
     {

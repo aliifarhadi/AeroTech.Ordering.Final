@@ -13,7 +13,17 @@ namespace AeroTech.Ordering.Domain.ElectronicTicketAggregate.Contracts
         int CurrencyId,
         ElectronicTicketStatus StatusSummary,
         int DocumentVersion,
+        DateTimeOffset? VoidDeadline,
+        DocumentVoidRecordSnapshot? VoidRecord,
         IReadOnlyList<TicketCouponReadModelSnapshot> Coupons);
+
+    public sealed record DocumentVoidRecordSnapshot(
+        long VoidFulfillmentTaskId,
+        string? ReasonCode,
+        string? ReasonText,
+        string? ProviderReference,
+        long? ActorId,
+        DateTimeOffset VoidedAt);
 
     public sealed record TicketCouponReadModelSnapshot(
         long CouponId,

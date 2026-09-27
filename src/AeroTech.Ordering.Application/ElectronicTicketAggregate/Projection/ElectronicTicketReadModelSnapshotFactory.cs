@@ -1,6 +1,7 @@
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.Contracts;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.Entities;
+using AeroTech.Ordering.Domain.ElectronicTicketAggregate.ValueObjects;
 
 namespace AeroTech.Ordering.Application.ElectronicTicketAggregate.Projection
 {
@@ -18,7 +19,20 @@ namespace AeroTech.Ordering.Application.ElectronicTicketAggregate.Projection
                 ticket.CurrencyId,
                 ticket.StatusSummary,
                 ticket.DocumentVersion,
+                ticket.VoidDeadline,
+                ToSnapshot(ticket.VoidRecord),
                 ticket.Coupons.OrderBy(coupon => coupon.CouponNumber).Select(ToSnapshot).ToList());
+
+        private static DocumentVoidRecordSnapshot? ToSnapshot(DocumentVoidRecord? voidRecord)
+            => voidRecord is null
+                ? null
+                : new DocumentVoidRecordSnapshot(
+                    voidRecord.VoidFulfillmentTaskId,
+                    voidRecord.ReasonCode,
+                    voidRecord.ReasonText,
+                    voidRecord.ProviderReference,
+                    voidRecord.ActorId,
+                    voidRecord.VoidedAt);
 
         private static TicketCouponReadModelSnapshot ToSnapshot(TicketCoupon coupon)
             => new(

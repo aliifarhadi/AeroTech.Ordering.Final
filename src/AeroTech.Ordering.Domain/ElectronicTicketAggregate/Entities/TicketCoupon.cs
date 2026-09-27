@@ -2,6 +2,7 @@ using AeroTech.Framework.Core.Domain.Entities;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.ElectronicTicketAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
+using AeroTech.Ordering.Domain._Shared.Resources;
 
 namespace AeroTech.Ordering.Domain.ElectronicTicketAggregate.Entities
 {
@@ -89,5 +90,19 @@ namespace AeroTech.Ordering.Domain.ElectronicTicketAggregate.Entities
         public DateTimeOffset? UsedAt { get; private set; }
 
         public string? UsageReference { get; private set; }
+
+        internal void EnsureVoidable(long electronicTicketId)
+        {
+            if (FinancialStatus != TicketCouponFinancialStatus.Open || UsedAt is not null)
+                throw ExceptionFactory.TicketCouponIsNotVoidable(
+                    electronicTicketId,
+                    CouponNumber,
+                    UsedAt is null ? FinancialStatus : TicketCouponFinancialStatus.Used);
+
+            if (ControlStatus != TicketCouponControlStatus.Local)
+                throw ExceptionFactory.TicketCouponControlIsNotLocal(electronicTicketId, CouponNumber, ControlStatus);
+        }
+
+        internal void MarkVoid() => FinancialStatus = TicketCouponFinancialStatus.Void;
     }
 }

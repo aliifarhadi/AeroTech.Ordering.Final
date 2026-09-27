@@ -23,6 +23,10 @@ public sealed class StubReservationProvider(
 
     public List<ProviderRequest> ConfirmCalls { get; } = [];
 
+    public List<ProviderRequest> CancelConfirmedCalls { get; } = [];
+
+    public Queue<Func<ProviderRequest, ConfirmedCancellationOutcome>> CancelConfirmedResponses { get; } = new();
+
     public Queue<Func<ReservationIntent, ReservationOutcome>> ReserveResponses { get; } = new();
 
     public Queue<Func<ReservationIntent, ReservationOutcome>> ReadResponses { get; } = new();
@@ -93,6 +97,31 @@ public sealed class StubReservationProvider(
         var respond = ConfirmResponses.TryDequeue(out var scripted) ? scripted : Confirmed;
         return Task.FromResult(respond(request));
     }
+
+    public ProviderRequest CancelConfirmedRequestFor(ConfirmedCancellationIntent intent)
+        => new(
+            ProviderInteractionType.CancelConfirmed,
+            null,
+            null,
+            $"{intent.ProviderOperationRef}:{string.Join(",", intent.Units.Select(unit => unit.ProviderUnitRef))}");
+
+    public Task<ConfirmedCancellationOutcome> CancelConfirmedAsync(ProviderRequest request, CancellationToken cancellationToken = default)
+    {
+        CancelConfirmedCalls.Add(request);
+
+        var respond = CancelConfirmedResponses.TryDequeue(out var scripted) ? scripted : CancelledConfirmed;
+        return Task.FromResult(respond(request));
+    }
+
+    public static ConfirmedCancellationOutcome CancelledConfirmed(ProviderRequest request)
+        => new(ProviderOperationOutcome.Succeeded, FulfillmentReservationStatus.Cancelled, null, null);
+
+    public static ConfirmedCancellationOutcome UnobservedCancellation(ProviderRequest request)
+        => new(
+            ProviderOperationOutcome.Unknown,
+            null,
+            new ProviderFailure(FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome, "The cancellation outcome was not observed.", null),
+            null);
 
     public ReservationOutcome Resolved(ReservationIntent intent)
         => result == ReservationMemberStatus.Rejected

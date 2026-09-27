@@ -1,3 +1,4 @@
+using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 
@@ -9,5 +10,10 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
             Order order,
             IReadOnlyCollection<FulfillmentReservation> reservations,
             CancellationToken cancellationToken = default);
+
+        void SummarizeServicing(
+            Order order,
+            IReadOnlyCollection<FulfillmentReservation> reservations,
+            IReadOnlyCollection<ElectronicTicket> tickets);
     }
 }

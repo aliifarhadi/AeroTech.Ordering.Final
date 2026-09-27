@@ -1,4 +1,6 @@
-﻿using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark.Backoffice;
+﻿using AeroTech.Ordering.Application.ElectronicTicketAggregate.Commands.VoidElectronicTickets.Backoffice;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark.Backoffice;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder.Backoffice;
@@ -72,5 +74,19 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate
             [FromBody] IssueOrderRequest request,
             CancellationToken cancellationToken)
             => Ok(await _mediator.Send(new BackofficeIssueOrderCommand(orderId, request.TicketDocumentStockId), cancellationToken));
+
+        [HttpPost("{orderId:long}/Cancellations")]
+        public async Task<IActionResult> Cancel(
+            long orderId,
+            [FromBody] CancelOrderRequest request,
+            CancellationToken cancellationToken)
+            => Ok(await _mediator.Send(new BackofficeCancelOrderCommand(orderId, request.ServiceIds, request.Reason, request.ReasonDetail), cancellationToken));
+
+        [HttpPost("{orderId:long}/Documents/Voids")]
+        public async Task<IActionResult> VoidDocuments(
+            long orderId,
+            [FromBody] VoidDocumentsRequest request,
+            CancellationToken cancellationToken)
+            => Ok(await _mediator.Send(new BackofficeVoidElectronicTicketsCommand(orderId, request.Tickets, request.Reason, request.ReasonDetail), cancellationToken));
     }
 }

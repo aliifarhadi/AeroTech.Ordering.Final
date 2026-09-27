@@ -23,6 +23,9 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         public Task ProjectIssuedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
             => UpsertAsync(snapshot, cancellationToken);
 
+        public Task ProjectServicedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
+            => UpsertAsync(snapshot, cancellationToken);
+
         private async Task UpsertAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken)
         {
             var order = await _dbContext.Orders
@@ -46,6 +49,7 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             await ReconcileAsync(_dbContext.OrderContacts, snapshot, snapshot.Contacts, contact => contact.ContactId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderContactPoints, snapshot, ContactPoints(snapshot), point => point.ContactPoint.ContactPointId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderRemarks, snapshot, snapshot.Remarks, remark => remark.RemarkId, Apply, cancellationToken);
+            await ReconcileAsync(_dbContext.OrderChanges, snapshot, snapshot.Changes, change => change.ChangeId, Apply, cancellationToken);
         }
 
         private async Task ReconcileAsync<TReadModel, TSource>(
@@ -173,6 +177,7 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             target.Kind = source.Kind;
             target.AcceptedTotal = source.AcceptedTotal;
             target.CommercialStatus = source.CommercialStatus;
+            target.EndedByChangeId = source.EndedByChangeId;
         }
 
         private static void Apply(OrderServiceSnapshot source, OrderServiceReadModel target)
@@ -196,6 +201,7 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             target.IsChangeable = source.IsChangeable;
             target.IsUpgradable = source.IsUpgradable;
             target.SeatNumber = source.SeatNumber;
+            target.EndedByChangeId = source.EndedByChangeId;
         }
 
         private static void Apply(OrderPricingLineSnapshot source, OrderPricingLineReadModel target)
@@ -263,6 +269,22 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             target.SupersedesRemarkId = source.SupersedesRemarkId;
             target.CreatedBy = source.CreatedBy;
             target.CreatedAt = source.CreatedAt;
+        }
+
+        private static void Apply(OrderChangeSnapshot source, OrderChangeReadModel target)
+        {
+            target.ChangeType = source.ChangeType;
+            target.CommercialVersion = source.CommercialVersion;
+            target.ActorId = source.ActorId;
+            target.Channel = source.Channel;
+            target.ContextType = source.ContextType;
+            target.PrincipalType = source.PrincipalType;
+            target.SourceReference = source.SourceReference;
+            target.SourceSystem = source.SourceSystem;
+            target.ReasonCode = source.ReasonCode;
+            target.IsInvoluntary = source.IsInvoluntary;
+            target.WaiverCode = source.WaiverCode;
+            target.CommittedAt = source.CommittedAt;
         }
 
         private sealed record OwnedDocument(long TravellerId, OrderTravellerDocumentSnapshot Document);

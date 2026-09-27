@@ -21,6 +21,7 @@ using AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Contracts;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
 using AeroTech.Ordering.Domain.Providers;
+using AeroTech.Ordering.Domain._Shared.Contracts;
 using AeroTech.Ordering.Domain._Shared.Resources;
 
 namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
@@ -48,6 +49,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
         private readonly IOrderQueryDbSynchronizer _orderSynchronizer;
         private readonly IElectronicTicketQueryDbSynchronizer _ticketSynchronizer;
         private readonly IDocumentStockQueryDbSynchronizer _stockSynchronizer;
+        private readonly IAirlineOfficeTimeZoneResolver _officeTimeZones;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IIdGenerator _idGenerator;
         private readonly IClock _clock;
@@ -65,6 +67,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
             IOrderQueryDbSynchronizer orderSynchronizer,
             IElectronicTicketQueryDbSynchronizer ticketSynchronizer,
             IDocumentStockQueryDbSynchronizer stockSynchronizer,
+            IAirlineOfficeTimeZoneResolver officeTimeZones,
             IUnitOfWork unitOfWork,
             IIdGenerator idGenerator,
             IClock clock)
@@ -81,6 +84,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
             _orderSynchronizer = orderSynchronizer;
             _ticketSynchronizer = ticketSynchronizer;
             _stockSynchronizer = stockSynchronizer;
+            _officeTimeZones = officeTimeZones;
             _unitOfWork = unitOfWork;
             _idGenerator = idGenerator;
             _clock = clock;
@@ -139,6 +143,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
             if (await _tickets.AnyWithDocumentNumberAsync(allocations.Select(allocation => allocation.DocumentNumber).ToList(), cancellationToken))
                 throw ExceptionFactory.DocumentNumberIsAlreadyIssued(string.Join(", ", allocations.Select(allocation => allocation.DocumentNumber)));
 
+            var voidDeadline = await VoidDeadlineOfAsync(stock, issuedAt, cancellationToken);
             var issued = plans
                 .Zip(allocations, (plan, allocation) => ElectronicTicket.IssueLocally(
                     _idGenerator.NewId(),
@@ -149,6 +154,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
                         task.Id,
                         allocation.DocumentNumber,
                         IssuanceContextOf(order, stock, issuedByActorId),
+                        voidDeadline,
                         order.CurrencyId,
                         plan.Coupons),
                     _idGenerator,
@@ -228,6 +234,11 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
 
             return task;
         }
+
+        private async Task<DateTimeOffset?> VoidDeadlineOfAsync(DocumentStock stock, DateTimeOffset issuedAt, CancellationToken cancellationToken)
+            => stock.OfficeId is { } officeId
+                ? LocalVoidPolicy.DeadlineFor(issuedAt, await _officeTimeZones.FindTimeZoneIdAsync(officeId, cancellationToken))
+                : null;
 
         private static DocumentIssuanceContext IssuanceContextOf(Order order, DocumentStock stock, long? issuedByActorId)
             => new(

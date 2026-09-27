@@ -29,6 +29,12 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
 
     public Queue<HttpResponseMessage> ConfirmWireResponses { get; } = new();
 
+    public List<CancelConfirmedSeatsRequest> CancelConfirmedRequests { get; } = [];
+
+    public Queue<Func<CancelConfirmedSeatsRequest, CancelConfirmedSeatsResult>> CancelConfirmedResponses { get; } = new();
+
+    public Queue<HttpResponseMessage> CancelConfirmedWireResponses { get; } = new();
+
     public Task<FlightFlowReply<FlightHeldSeatsResult>> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default)
     {
         HoldRequests.Add(request);
@@ -95,8 +101,27 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
 
     public static ReleaseHeldSeatsResult Released(ReleaseHeldSeatsRequest request) => new(FulfillmentReservationStatus.Released, null);
 
-    public Task<CancelConfirmedSeatsResult> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
+    public Task<FlightFlowReply<CancelConfirmedSeatsResult>> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default)
+    {
+        CancelConfirmedRequests.Add(request);
+
+        if (CancelConfirmedWireResponses.TryDequeue(out var wireResponse))
+            return new FlightFlowProvider(StubHttpMessageHandler.ClientFor(new StubHttpMessageHandler(_ => wireResponse)))
+                .CancelConfirmedAsync(request, cancellationToken);
+
+        var respond = CancelConfirmedResponses.TryDequeue(out var scripted) ? scripted : Cancelled;
+        var result = respond(request);
+        var statusCode = result.RefusedStatus is null ? HttpStatusCode.OK : HttpStatusCode.BadRequest;
+
+        return Task.FromResult(new FlightFlowReply<CancelConfirmedSeatsResult>(result, (int)statusCode, string.Empty));
+    }
+
+    public static CancelConfirmedSeatsResult Cancelled(CancelConfirmedSeatsRequest request)
+        => new(
+            request.HoldBatchId,
+            request.SeatHoldReferences.Select(reference => new CancelledConfirmedSeat(reference, FlightSeatHoldStatus.Cancelled)).ToList(),
+            null,
+            null);
 
     public Task<SplitHeldSeatsResult> SplitHeldAsync(SplitHeldSeatsRequest request, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();

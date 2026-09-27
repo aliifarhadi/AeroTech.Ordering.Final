@@ -48,6 +48,16 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 
         public long CreatedByChangeId { get; private set; }
 
+        public long? EndedByChangeId { get; private set; }
+
         public DateTimeOffset CreatedAt { get; private set; }
+
+        public bool IsActive => CommercialStatus == OrderServiceCommercialState.Active;
+
+        internal void Cancel(long endedByChangeId)
+        {
+            CommercialStatus = OrderServiceCommercialState.Cancelled;
+            EndedByChangeId = endedByChangeId;
+        }
     }
 }

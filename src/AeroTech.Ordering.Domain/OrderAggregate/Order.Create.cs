@@ -99,6 +99,10 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 CommercialVersion,
                 args.SalesContext.Copy(),
                 reader.OfferId,
+                null,
+                null,
+                false,
+                null,
                 createdAt);
 
             _changes.Add(change);

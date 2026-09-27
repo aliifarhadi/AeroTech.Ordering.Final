@@ -8,7 +8,7 @@ namespace AeroTech.Ordering.Domain.Providers.FlightFlow
 
         Task<FlightFlowReply<ReleaseHeldSeatsResult>> ReleaseHeldAsync(ReleaseHeldSeatsRequest request, CancellationToken cancellationToken = default);
 
-        Task<CancelConfirmedSeatsResult> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default);
+        Task<FlightFlowReply<CancelConfirmedSeatsResult>> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default);
 
         Task<SplitHeldSeatsResult> SplitHeldAsync(SplitHeldSeatsRequest request, CancellationToken cancellationToken = default);
 

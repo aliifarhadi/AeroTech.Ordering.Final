@@ -529,6 +529,54 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException DocumentStockAllocationIsRetired(params object?[] args) =>
             new(2802, ExceptionMessages.DocumentStockAllocationIsRetired, args) { HttpStatus = 409 };
 
+        public static BusinessException OrderServiceRequiresDocumentServicing(params object?[] args) =>
+            new(2803, ExceptionMessages.OrderServiceRequiresDocumentServicing, args) { HttpStatus = 409 };
+
+        public static BusinessException SeatCancellationRequiresAncillaryStage(params object?[] args) =>
+            new(2804, ExceptionMessages.SeatCancellationRequiresAncillaryStage, args) { HttpStatus = 422 };
+
+        public static BusinessException PartialHeldCancellationIsNotSupportedByProvider(params object?[] args) =>
+            new(2805, ExceptionMessages.PartialHeldCancellationIsNotSupportedByProvider, args) { HttpStatus = 422 };
+
+        public static BusinessException CancellationResourceIsUnresolved(params object?[] args) =>
+            new(2806, ExceptionMessages.CancellationResourceIsUnresolved, args) { HttpStatus = 409 };
+
+        public static BusinessException ConfirmedCancellationRecoveryRequestIsMissing(params object?[] args) =>
+            new(2807, ExceptionMessages.ConfirmedCancellationRecoveryRequestIsMissing, args) { HttpStatus = 500 };
+
+        public static BusinessException ReservationUnitIsNotCancellable(params object?[] args) =>
+            new(2808, ExceptionMessages.ReservationUnitIsNotCancellable, args) { HttpStatus = 500 };
+
+        public static BusinessException ElectronicTicketNotFoundInOrder(params object?[] args) =>
+            new(2809, ExceptionMessages.ElectronicTicketNotFoundInOrder, args) { HttpStatus = 404 };
+
+        public static BusinessException ElectronicTicketVersionConflict(params object?[] args) =>
+            new(2810, ExceptionMessages.ElectronicTicketVersionConflict, args) { HttpStatus = 409 };
+
+        public static BusinessException ElectronicTicketVoidDeadlineIsMissing(params object?[] args) =>
+            new(2811, ExceptionMessages.ElectronicTicketVoidDeadlineIsMissing, args) { HttpStatus = 409 };
+
+        public static BusinessException ElectronicTicketVoidWindowIsClosed(params object?[] args) =>
+            new(2812, ExceptionMessages.ElectronicTicketVoidWindowIsClosed, args) { HttpStatus = 409 };
+
+        public static BusinessException ElectronicTicketIssuingOfficeMismatch(params object?[] args) =>
+            new(2813, ExceptionMessages.ElectronicTicketIssuingOfficeMismatch, args) { HttpStatus = 409 };
+
+        public static BusinessException ElectronicTicketIsNotVoidable(params object?[] args) =>
+            new(2814, ExceptionMessages.ElectronicTicketIsNotVoidable, args) { HttpStatus = 409 };
+
+        public static BusinessException TicketCouponIsNotVoidable(params object?[] args) =>
+            new(2815, ExceptionMessages.TicketCouponIsNotVoidable, args) { HttpStatus = 409 };
+
+        public static BusinessException TicketCouponControlIsNotLocal(params object?[] args) =>
+            new(2816, ExceptionMessages.TicketCouponControlIsNotLocal, args) { HttpStatus = 409 };
+
+        public static BusinessException ExternalElectronicTicketVoidIsNotSupported(params object?[] args) =>
+            new(2817, ExceptionMessages.ExternalElectronicTicketVoidIsNotSupported, args) { HttpStatus = 409 };
+
+        public static BusinessException CancellationRequiresServices(params object?[] args) =>
+            new(2818, ExceptionMessages.CancellationRequiresServices, args) { HttpStatus = 500 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

@@ -22,6 +22,11 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
         private const int CannotReleaseExpiredSeatHoldErrorCode = 1183;
         private const int CannotReleaseCancelledSeatHoldErrorCode = 1184;
         private const int CannotReleaseInconsistentSeatHoldErrorCode = 1185;
+        private const int SeatHoldNotFoundForCancellationErrorCode = 1186;
+        private const int CannotCancelHeldSeatHoldErrorCode = 1187;
+        private const int CannotCancelReleasedSeatHoldErrorCode = 1188;
+        private const int CannotCancelExpiredSeatHoldErrorCode = 1189;
+        private const int CannotCancelInconsistentSeatHoldErrorCode = 1190;
 
         private readonly HttpClient _httpClient;
 
@@ -258,6 +263,16 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             _ => null
         };
 
+        private static FulfillmentReservationStatus? CancellationRefusalOf(int? errorCode) => errorCode switch
+        {
+            SeatHoldNotFoundForCancellationErrorCode => FulfillmentReservationStatus.Unknown,
+            CannotCancelHeldSeatHoldErrorCode => FulfillmentReservationStatus.Held,
+            CannotCancelReleasedSeatHoldErrorCode => FulfillmentReservationStatus.Released,
+            CannotCancelExpiredSeatHoldErrorCode => FulfillmentReservationStatus.Expired,
+            CannotCancelInconsistentSeatHoldErrorCode => FulfillmentReservationStatus.Mixed,
+            _ => null
+        };
+
         private static ProviderRequestException UndocumentedSuccess(string operation, HttpResponseMessage response, string body)
             => new(
                 FulfillmentFailureKind.Indeterminate,
@@ -265,11 +280,6 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                 $"The {operation} answered HTTP {(int)response.StatusCode}, which its contract does not define as success.",
                 (int)response.StatusCode,
                 body);
-
-        private static FlightSeatHoldCancellationReason MapCancellationReason(VoidReason reason) => reason switch
-        {
-            _ => FlightSeatHoldCancellationReason.PaxRequest
-        };
 
         private static (FulfillmentFailureKind Kind, FulfillmentFailureReason Reason) Classify(int statusCode)
         {
@@ -330,10 +340,10 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             }
         }
 
-        public async Task<CancelConfirmedSeatsResult> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default)
+        public async Task<FlightFlowReply<CancelConfirmedSeatsResult>> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default)
         {
             var route = $"{SeatConfirmationsRoute}/{request.HoldBatchId}/Cancellation";
-            var payload = new { reasonCode = (int)MapCancellationReason(request.Reason), seatHoldReferences = request.SeatHoldReferences };
+            var payload = new { reasonCode = request.ReasonCode, seatHoldReferences = request.SeatHoldReferences };
 
             HttpResponseMessage response;
             string body;
@@ -348,26 +358,38 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                 throw new ProviderRequestException(
                     FulfillmentFailureKind.Indeterminate,
                     FulfillmentFailureReason.UnknownOutcome,
-                    "The seat cancellation timed out; the seats may or may not have been released.");
+                    "The confirmed-seat cancellation timed out; the seats may or may not have been cancelled.");
             }
             catch (HttpRequestException exception)
             {
                 throw new ProviderRequestException(
                     FulfillmentFailureKind.Retriable,
                     FulfillmentFailureReason.TechnicalFailed,
-                    $"The seat cancellation failed to reach FlightFlow. {exception.Message}");
+                    $"The confirmed-seat cancellation failed to reach FlightFlow. {exception.Message}");
             }
 
             using (response)
             {
-                if (response.IsSuccessStatusCode)
-                    return new CancelConfirmedSeatsResult(true, null);
+                if (response.StatusCode == HttpStatusCode.OK)
+                    return Deserialize<CancelConfirmedSeatsResult>(body)?.Data is { } cancelled
+                        ? new FlightFlowReply<CancelConfirmedSeatsResult>(cancelled, (int)response.StatusCode, body)
+                        : throw UndocumentedSuccess("confirmed-seat cancellation", response, body);
 
-                var (kind, reason) = Classify((int)response.StatusCode);
+                if (response.IsSuccessStatusCode)
+                    throw UndocumentedSuccess("confirmed-seat cancellation", response, body);
+
+                var envelope = Deserialize<object>(body);
+
+                if (CancellationRefusalOf(ErrorCodeOf(envelope)) is { } holdStatus)
+                    return new FlightFlowReply<CancelConfirmedSeatsResult>(new CancelConfirmedSeatsResult(null, null, holdStatus, FirstError(envelope)), (int)response.StatusCode, body);
+
+                var (kind, reason) = response.StatusCode == HttpStatusCode.NotFound
+                    ? (FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome)
+                    : Classify((int)response.StatusCode);
                 throw new ProviderRequestException(
                     kind,
                     reason,
-                    FirstError(Deserialize<object>(body)) ?? $"The confirmed seats for hold batch '{request.HoldBatchId}' could not be cancelled (HTTP {(int)response.StatusCode}): {Truncate(body)}",
+                    FirstError(envelope) ?? $"The confirmed seats of hold batch '{request.HoldBatchId}' could not be cancelled (HTTP {(int)response.StatusCode}): {Truncate(body)}",
                     (int)response.StatusCode,
                     body);
             }

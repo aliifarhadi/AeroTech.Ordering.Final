@@ -32,6 +32,12 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         ProviderFailure? Failure,
         ProviderResponse? Response);
 
+    public sealed record ConfirmedCancellationOutcome(
+        ProviderOperationOutcome OperationOutcome,
+        FulfillmentReservationStatus? ObservedStatus,
+        ProviderFailure? Failure,
+        ProviderResponse? Response);
+
     public sealed record ProviderFailure(
         FulfillmentFailureKind Kind,
         FulfillmentFailureReason Reason,

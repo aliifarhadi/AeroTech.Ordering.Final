@@ -34,7 +34,8 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 Services = order.Services.Select(ToSnapshot).ToList(),
                 PricingLines = order.PricingLines.Select(ToSnapshot).ToList(),
                 Contacts = order.Contacts.Select(ToSnapshot).ToList(),
-                Remarks = order.Remarks.Select(ToSnapshot).ToList()
+                Remarks = order.Remarks.Select(ToSnapshot).ToList(),
+                Changes = order.Changes.Select(ToSnapshot).ToList()
             };
 
         private static OrderTravellerSnapshot ToSnapshot(OrderTraveller traveller)
@@ -93,7 +94,23 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 segment.Duration);
 
         private static OrderItemSnapshot ToSnapshot(OrderItem item)
-            => new(item.Id, item.Kind, item.AcceptedTotal, item.CommercialStatus);
+            => new(item.Id, item.Kind, item.AcceptedTotal, item.CommercialStatus, item.EndedByChangeId);
+
+        private static OrderChangeSnapshot ToSnapshot(OrderChange change)
+            => new(
+                change.Id,
+                change.ChangeType,
+                change.CommercialVersion,
+                change.ActorContext.ActorId,
+                change.ActorContext.Channel,
+                change.ActorContext.ContextType,
+                change.ActorContext.PrincipalType,
+                change.SourceReference,
+                change.SourceSystem,
+                change.ReasonCode,
+                change.IsInvoluntary,
+                change.WaiverCode,
+                change.CommittedAt);
 
         private static OrderServiceSnapshot ToSnapshot(OrderService service) => service switch
         {
@@ -113,7 +130,8 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 air.IsRefundable,
                 air.IsChangeable,
                 air.IsUpgradable,
-                SeatNumber: null),
+                SeatNumber: null,
+                air.EndedByChangeId),
 
             OrderSeatService seat => new OrderServiceSnapshot(
                 seat.Id,
@@ -131,7 +149,8 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 IsRefundable: false,
                 IsChangeable: false,
                 IsUpgradable: false,
-                seat.SeatNumber),
+                seat.SeatNumber,
+                seat.EndedByChangeId),
 
             _ => throw new NotSupportedException($"{service.GetType().Name} has no read model projection.")
         };

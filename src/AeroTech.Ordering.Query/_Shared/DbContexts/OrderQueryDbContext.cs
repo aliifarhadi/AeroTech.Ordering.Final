@@ -41,6 +41,8 @@ namespace AeroTech.Ordering.Query._Shared.DbContexts
 
         public DbSet<OrderRemarkReadModel> OrderRemarks => Set<OrderRemarkReadModel>();
 
+        public DbSet<OrderChangeReadModel> OrderChanges => Set<OrderChangeReadModel>();
+
         public DbSet<ElectronicTicketReadModel> ElectronicTickets => Set<ElectronicTicketReadModel>();
 
         public DbSet<TicketCouponReadModel> TicketCoupons => Set<TicketCouponReadModel>();

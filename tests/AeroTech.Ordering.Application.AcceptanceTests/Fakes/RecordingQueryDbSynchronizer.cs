@@ -10,6 +10,10 @@ public sealed class RecordingQueryDbSynchronizer : IOrderQueryDbSynchronizer, IE
 
     public List<OrderReadModelSnapshot> IssueProjections { get; } = [];
 
+    public List<OrderReadModelSnapshot> ServicingProjections { get; } = [];
+
+    public List<ElectronicTicketReadModelSnapshot> VoidProjections { get; } = [];
+
     public List<ElectronicTicketReadModelSnapshot> TicketProjections { get; } = [];
 
     public List<DocumentStockReadModelSnapshot> StockProjections { get; } = [];
@@ -32,9 +36,21 @@ public sealed class RecordingQueryDbSynchronizer : IOrderQueryDbSynchronizer, IE
         return Task.CompletedTask;
     }
 
+    public Task ProjectServicedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
+    {
+        ServicingProjections.Add(snapshot);
+        return Task.CompletedTask;
+    }
+
     public Task ProjectIssuedAsync(IReadOnlyList<ElectronicTicketReadModelSnapshot> tickets, CancellationToken cancellationToken = default)
     {
         TicketProjections.AddRange(tickets);
+        return Task.CompletedTask;
+    }
+
+    public Task ProjectVoidedAsync(IReadOnlyList<ElectronicTicketReadModelSnapshot> tickets, CancellationToken cancellationToken = default)
+    {
+        VoidProjections.AddRange(tickets);
         return Task.CompletedTask;
     }
 

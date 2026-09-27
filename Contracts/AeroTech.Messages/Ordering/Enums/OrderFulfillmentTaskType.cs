@@ -15,6 +15,7 @@ namespace AeroTech.Messages.Ordering.Enums
         [Display(Name = "Confirm Cip Voucher")] ConfirmCipVoucher = 8,  
         [Display(Name = "Issue ESim")] IssueESim = 9,  
         [Display(Name = "Book Hotel")] BookHotel = 10,    
+        [Display(Name = "Void Ticket")] VoidTicket = 11,
 
     }
 

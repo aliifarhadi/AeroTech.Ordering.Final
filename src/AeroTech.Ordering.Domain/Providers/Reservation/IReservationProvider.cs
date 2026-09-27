@@ -37,5 +37,9 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         ProviderRequest ConfirmRequestFor(ConfirmationIntent intent);
 
         Task<ConfirmationOutcome> ConfirmAsync(ProviderRequest request, CancellationToken cancellationToken = default);
+
+        ProviderRequest CancelConfirmedRequestFor(ConfirmedCancellationIntent intent);
+
+        Task<ConfirmedCancellationOutcome> CancelConfirmedAsync(ProviderRequest request, CancellationToken cancellationToken = default);
     }
 }

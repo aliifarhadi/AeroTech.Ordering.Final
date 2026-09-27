@@ -24,5 +24,19 @@ namespace AeroTech.Ordering.Query.ElectronicTicketAggregate.Models
         public ElectronicTicketStatus StatusSummary { get; set; }
 
         public int DocumentVersion { get; set; }
+
+        public DateTimeOffset? VoidDeadline { get; set; }
+
+        public long? VoidFulfillmentTaskId { get; set; }
+
+        public string? VoidReasonCode { get; set; }
+
+        public string? VoidReasonText { get; set; }
+
+        public string? VoidProviderReference { get; set; }
+
+        public long? VoidActorId { get; set; }
+
+        public DateTimeOffset? VoidedAt { get; set; }
     }
 }

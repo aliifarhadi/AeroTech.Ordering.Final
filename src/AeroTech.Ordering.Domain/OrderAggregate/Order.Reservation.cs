@@ -49,19 +49,23 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             IReadOnlyCollection<long> requiredServiceIds,
             IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService)
         {
-            if (requiredServiceIds.Count == 0 || !ReservableStatuses.Contains(Status))
-                return;
+            if (ReservableStatuses.Contains(Status) && ReservationStatusOf(requiredServiceIds, latestUnitStatusByService) is { } status)
+                TransitionTo(status);
+        }
 
-            var states = requiredServiceIds
-                .Select(serviceId => latestUnitStatusByService.TryGetValue(serviceId, out var status) ? status : (ReservationMemberStatus?)null)
-                .ToList();
+        public void SummarizeServicing(
+            IReadOnlySet<long> documentedServiceIds,
+            IReadOnlyCollection<long> requiredServiceIds,
+            IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService)
+        {
+            var ticketableAirServices = TicketableAirServices();
 
-            if (states.All(status => status == ReservationMemberStatus.Confirmed))
-                TransitionTo(OrderStatus.Confirmed);
-            else if (states.Any(status => status?.IsPositive() == true || status?.IsUnresolved() == true))
-                TransitionTo(OrderStatus.ReservationUnconfirmed);
-            else if (states.Any(status => status?.IsTerminalNegative() == true))
-                TransitionTo(OrderStatus.ReserveFailed);
+            if (!_services.Any(service => service.IsActive))
+                TransitionTo(OrderStatus.Cancelled);
+            else if (ticketableAirServices.Count > 0 && ticketableAirServices.All(service => documentedServiceIds.Contains(service.Id)))
+                TransitionTo(OrderStatus.Ticketed);
+            else
+                TransitionTo(ReservationStatusOf(requiredServiceIds, latestUnitStatusByService) ?? OrderStatus.Created);
         }
 
         public bool IsExpirableAt(DateTimeOffset now) => ReservableStatuses.Contains(Status) && HasPassedLastTicketingDateAt(now);
@@ -72,6 +76,26 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 throw ExceptionFactory.OrderCannotExpire(Id, Status);
 
             TransitionTo(OrderStatus.Expired);
+        }
+
+        private static OrderStatus? ReservationStatusOf(
+            IReadOnlyCollection<long> requiredServiceIds,
+            IReadOnlyDictionary<long, ReservationMemberStatus> latestUnitStatusByService)
+        {
+            if (requiredServiceIds.Count == 0)
+                return null;
+
+            var states = requiredServiceIds
+                .Select(serviceId => latestUnitStatusByService.TryGetValue(serviceId, out var status) ? status : (ReservationMemberStatus?)null)
+                .ToList();
+
+            if (states.All(status => status == ReservationMemberStatus.Confirmed))
+                return OrderStatus.Confirmed;
+
+            if (states.Any(status => status?.IsPositive() == true || status?.IsUnresolved() == true))
+                return OrderStatus.ReservationUnconfirmed;
+
+            return states.Any(status => status?.IsTerminalNegative() == true) ? OrderStatus.ReserveFailed : null;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Messages.Shared.Enums;
+using AeroTech.Ordering.Domain._Shared.Contracts;
 using PassengerTypeCode = AeroTech.Messages.Ordering.Enums.PassengerTypeCode;
 
 namespace AeroTech.Ordering.Query.OrderAggregate.Dto
@@ -26,7 +27,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         IReadOnlyList<OrderPricingLineDto> PricingLines,
         IReadOnlyList<OrderContactDto> Contacts,
         IReadOnlyList<OrderRemarkDto> Remarks,
-        IReadOnlyList<OrderElectronicTicketDto> Tickets);
+        IReadOnlyList<OrderElectronicTicketDto> Tickets,
+        IReadOnlyList<OrderChangeDto> Changes);
 
     public sealed record OrderTravellerDto(
         long Id,
@@ -77,6 +79,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         ProductType Kind,
         decimal AcceptedTotal,
         OrderItemCommercialState CommercialStatus,
+        long? EndedByChangeId,
         IReadOnlyList<OrderServiceDto> Services);
 
     public sealed record OrderServiceDto(
@@ -94,7 +97,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         bool IsRefundable,
         bool IsChangeable,
         bool IsUpgradable,
-        string? SeatNumber);
+        string? SeatNumber,
+        long? EndedByChangeId);
 
     public sealed record BaggageAllowanceDto(int Pieces, decimal Weight, WeightUnit Unit);
 
@@ -169,7 +173,32 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         int CurrencyId,
         ElectronicTicketStatus StatusSummary,
         int DocumentVersion,
+        DateTimeOffset? VoidDeadline,
+        OrderDocumentVoidRecordDto? VoidRecord,
         IReadOnlyList<OrderTicketCouponDto> Coupons);
+
+    public sealed record OrderDocumentVoidRecordDto(
+        long VoidFulfillmentTaskId,
+        string? ReasonCode,
+        string? ReasonText,
+        string? ProviderReference,
+        long? ActorId,
+        DateTimeOffset VoidedAt);
+
+    public sealed record OrderChangeDto(
+        long Id,
+        OrderChangeType ChangeType,
+        int CommercialVersion,
+        long ActorId,
+        SalesChannel Channel,
+        CallerContextType ContextType,
+        CallerPrincipalType PrincipalType,
+        string? SourceReference,
+        string? SourceSystem,
+        string? ReasonCode,
+        bool IsInvoluntary,
+        string? WaiverCode,
+        DateTimeOffset CommittedAt);
 
     public sealed record OrderTicketCouponDto(
         long Id,

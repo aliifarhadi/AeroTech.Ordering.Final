@@ -17,6 +17,10 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             int commercialVersion,
             SalesContext actorContext,
             string? sourceReference,
+            string? sourceSystem,
+            string? reasonCode,
+            bool isInvoluntary,
+            string? waiverCode,
             DateTimeOffset committedAt)
         {
             Id = id;
@@ -25,6 +29,10 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             CommercialVersion = commercialVersion;
             ActorContext = actorContext;
             SourceReference = sourceReference;
+            SourceSystem = sourceSystem;
+            ReasonCode = reasonCode;
+            IsInvoluntary = isInvoluntary;
+            WaiverCode = waiverCode;
             CommittedAt = committedAt;
         }
 
@@ -37,6 +45,14 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
         public SalesContext ActorContext { get; private set; } = default!;
 
         public string? SourceReference { get; private set; }
+
+        public string? SourceSystem { get; private set; }
+
+        public string? ReasonCode { get; private set; }
+
+        public bool IsInvoluntary { get; private set; }
+
+        public string? WaiverCode { get; private set; }
 
         public DateTimeOffset CommittedAt { get; private set; }
     }

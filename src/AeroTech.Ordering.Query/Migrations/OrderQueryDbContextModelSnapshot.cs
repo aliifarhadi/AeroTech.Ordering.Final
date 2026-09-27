@@ -104,6 +104,30 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.Property<long>("TravellerId")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("VoidActorId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("VoidDeadline")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("VoidFulfillmentTaskId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("VoidProviderReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("VoidReasonCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("VoidReasonText")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("VoidedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DocumentNumber")
@@ -171,6 +195,61 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.HasIndex("OrderId");
 
                     b.ToTable("TicketCoupons", "ReadModel");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Query.OrderAggregate.Models.OrderChangeReadModel", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ActorId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ChangeType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CommercialVersion")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CommittedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("ContextType")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsInvoluntary")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("PrincipalType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReasonCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("SourceReference")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("SourceSystem")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("WaiverCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId", "CommercialVersion");
+
+                    b.ToTable("OrderChanges", "ReadModel");
                 });
 
             modelBuilder.Entity("AeroTech.Ordering.Query.OrderAggregate.Models.OrderContactPointReadModel", b =>
@@ -245,6 +324,9 @@ namespace AeroTech.Ordering.Query.Migrations
 
                     b.Property<int>("CommercialStatus")
                         .HasColumnType("int");
+
+                    b.Property<long?>("EndedByChangeId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Kind")
                         .HasColumnType("int");
@@ -624,6 +706,9 @@ namespace AeroTech.Ordering.Query.Migrations
 
                     b.Property<int>("CommercialStatus")
                         .HasColumnType("int");
+
+                    b.Property<long?>("EndedByChangeId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("FareBasis")
                         .HasMaxLength(64)

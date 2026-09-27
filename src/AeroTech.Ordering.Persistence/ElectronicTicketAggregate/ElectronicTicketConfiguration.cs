@@ -29,6 +29,17 @@ namespace AeroTech.Ordering.Persistence.ElectronicTicketAggregate
             });
             builder.Navigation(ticket => ticket.IssuanceContext).IsRequired();
 
+            builder.OwnsOne(ticket => ticket.VoidRecord, record =>
+            {
+                record.Property(value => value.VoidFulfillmentTaskId).HasColumnName("VoidFulfillmentTaskId");
+                record.Property(value => value.ReasonCode).HasColumnName("VoidReasonCode").HasMaxLength(64);
+                record.Property(value => value.ReasonText).HasColumnName("VoidReasonText").HasMaxLength(500);
+                record.Property(value => value.ProviderReference).HasColumnName("VoidProviderReference").HasMaxLength(100);
+                record.Property(value => value.ActorId).HasColumnName("VoidActorId");
+                record.Property(value => value.VoidedAt).HasColumnName("VoidedAt");
+                record.HasIndex(value => value.VoidFulfillmentTaskId);
+            });
+
             builder.HasMany(ticket => ticket.Coupons)
                 .WithOne()
                 .HasForeignKey(coupon => coupon.TicketId)

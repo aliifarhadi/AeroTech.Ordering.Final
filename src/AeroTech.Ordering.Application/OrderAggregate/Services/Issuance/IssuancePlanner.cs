@@ -19,7 +19,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Issuance
 
         public IReadOnlyList<OrderAirTransportService> OutstandingServices(Order order, IReadOnlyCollection<ElectronicTicket> tickets)
         {
-            var documentedServiceIds = DocumentedServiceIds(tickets);
+            var documentedServiceIds = TicketCoverage.DocumentedServiceIds(tickets);
 
             return order.TicketableAirServices().Where(service => !documentedServiceIds.Contains(service.Id)).ToList();
         }
@@ -76,14 +76,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Issuance
                         .ToList()))
                 .ToList();
         }
-
-        private static IReadOnlySet<long> DocumentedServiceIds(IEnumerable<ElectronicTicket> tickets)
-            => tickets
-                .Where(ticket => ticket.StatusSummary != ElectronicTicketStatus.Voided)
-                .SelectMany(ticket => ticket.Coupons)
-                .Where(coupon => coupon.FinancialStatus != TicketCouponFinancialStatus.Void)
-                .Select(coupon => coupon.CurrentOrderServiceId)
-                .ToHashSet();
 
         private static IReadOnlyDictionary<long, Coverage> LatestCoverageByService(IEnumerable<FulfillmentReservation> reservations)
             => reservations

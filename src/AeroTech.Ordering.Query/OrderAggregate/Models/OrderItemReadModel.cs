@@ -13,5 +13,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
         public decimal AcceptedTotal { get; set; }
 
         public OrderItemCommercialState CommercialStatus { get; set; }
+
+        public long? EndedByChangeId { get; set; }
     }
 }

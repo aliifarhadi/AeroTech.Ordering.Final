@@ -27,7 +27,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 order.PricingLines.Select(ToDto).ToList(),
                 order.Contacts.Select(ToDto).ToList(),
                 order.Remarks.Select(ToDto).ToList(),
-                order.Tickets.Select(ToDto).ToList());
+                order.Tickets.Select(ToDto).ToList(),
+                order.Changes.Select(ToDto).ToList());
 
         private static SellingOfficeDto? ToSellingOffice(OrderDetailDto order, ReferenceCodes codes)
         {
@@ -50,7 +51,25 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 ticket.CurrencyId,
                 EnumValueDto.Of(ticket.StatusSummary),
                 ticket.DocumentVersion,
+                ticket.VoidDeadline,
+                ticket.VoidRecord,
                 ticket.Coupons.Select(ToDto).ToList());
+
+        private static BackofficeOrderChangeDto ToDto(OrderChangeDto change)
+            => new(
+                change.Id,
+                EnumValueDto.Of(change.ChangeType),
+                change.CommercialVersion,
+                change.ActorId,
+                EnumValueDto.Of(change.Channel),
+                EnumValueDto.Of(change.ContextType),
+                EnumValueDto.Of(change.PrincipalType),
+                change.SourceReference,
+                change.SourceSystem,
+                change.ReasonCode,
+                change.IsInvoluntary,
+                change.WaiverCode,
+                change.CommittedAt);
 
         private static BackofficeTicketCouponDto ToDto(OrderTicketCouponDto coupon)
             => new(
@@ -99,6 +118,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 EnumValueDto.Of(item.Kind),
                 item.AcceptedTotal,
                 EnumValueDto.Of(item.CommercialStatus),
+                item.EndedByChangeId,
                 item.Services.Select(ToDto).ToList());
 
         private static BackofficeOrderServiceDto ToDto(OrderServiceDto service)
@@ -117,7 +137,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 service.IsRefundable,
                 service.IsChangeable,
                 service.IsUpgradable,
-                service.SeatNumber);
+                service.SeatNumber,
+                service.EndedByChangeId);
 
         private static BackofficeBaggageAllowanceDto? ToDto(BaggageAllowanceDto? baggage)
             => baggage is null

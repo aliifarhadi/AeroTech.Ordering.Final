@@ -1,5 +1,4 @@
 using System.Text.Json;
-using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
@@ -12,10 +11,8 @@ using AeroTech.Ordering.Persistence;
 using AeroTech.Ordering.Persistence.DocumentStockAggregate;
 using AeroTech.Ordering.Persistence.ElectronicTicketAggregate;
 using AeroTech.Ordering.Persistence.OrderAggregate;
-using AeroTech.Ordering.Persistence.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Xunit;
 using static AeroTech.Ordering.Application.AcceptanceTests.Fixtures.TicketFixture;
 using IssuedV1 = AeroTech.Messages.Ordering.IntegrationEvents.V1.ElectronicTicketIssued;
@@ -135,7 +132,7 @@ public sealed class IssuancePersistenceTests : IAsyncLifetime
     [Fact]
     public async Task Issued_event_reaches_the_outbox_only_with_its_ticket()
     {
-        await using var services = OutboxServices();
+        await using var services = _database.NewOutboxServices();
 
         await SaveInScopeAsync(services, context => new ElectronicTicketRepository(context).AddAsync(Issue(_ids, Args([Coupon(101)]))));
         await Assert.ThrowsAnyAsync<DbUpdateException>(() =>
@@ -152,7 +149,7 @@ public sealed class IssuancePersistenceTests : IAsyncLifetime
     {
         var order = OrderFixture.Create(_ids, _clock, [TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)]);
         await SaveAsync(context => new OrderRepository(context).AddAsync(order));
-        await using var services = OutboxServices();
+        await using var services = _database.NewOutboxServices();
         ElectronicTicket ticket = null!;
 
         await SaveInScopeAsync(services, async context =>
@@ -201,21 +198,6 @@ public sealed class IssuancePersistenceTests : IAsyncLifetime
         var context = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
         await stage(context);
         await context.SaveChangesAsync();
-    }
-
-    private ServiceProvider OutboxServices()
-    {
-        var services = new ServiceCollection();
-
-        services.AddMediatR(configuration => configuration.RegisterServicesFromAssemblyContaining<MediatRDomainEventDispatcher>());
-        services.AddSingleton<IClock>(_clock);
-        services.AddSingleton<IActorResolver, TestDatabase.AnonymousActorResolver>();
-        services.AddSingleton(Options.Create(new IntegrationEventOptions()));
-        services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
-        services.AddScoped(provider => _database.NewContext(provider.GetRequiredService<IDomainEventDispatcher>()));
-        services.AddScoped<IOutboxWriter, OutboxWriter>();
-
-        return services.BuildServiceProvider();
     }
 
     private static object Evidence(ElectronicTicket ticket)

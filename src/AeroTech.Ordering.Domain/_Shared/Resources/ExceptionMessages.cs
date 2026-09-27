@@ -196,5 +196,21 @@
         public const string AirServiceIsNotReserved = "Air service '{0}' requires reserved capacity but has none, so it cannot be ticketed.";
         public const string ReservationValidationIsStaleForIssue = "The fare validation of reservation '{0}' is not current (valid until {1}), so its services cannot be ticketed.";
         public const string DocumentStockAllocationIsRetired = "Document role '{2}' of fulfillment task '{1}' holds a retired number on document stock '{0}' and cannot be numbered again.";
+        public const string OrderServiceRequiresDocumentServicing = "Service '{0}' is covered by a ticket coupon that is not void; void or refund the document before cancelling the service.";
+        public const string SeatCancellationRequiresAncillaryStage = "Seat service '{0}' cannot be cancelled on its own until seat unassignment is supported; cancel its air service instead.";
+        public const string PartialHeldCancellationIsNotSupportedByProvider = "Reservation '{0}' holds retained services under one provider operation that can only be released as a whole, so part of it cannot be cancelled.";
+        public const string CancellationResourceIsUnresolved = "Reservation '{0}' is {1} for the services being cancelled; its provider state must be resolved before the cancellation can be committed.";
+        public const string ConfirmedCancellationRecoveryRequestIsMissing = "Confirmed-capacity cancellation task '{0}' of reservation '{1}' has no recorded provider request to replay.";
+        public const string ReservationUnitIsNotCancellable = "Reservation unit '{0}' of reservation '{1}' is {2} or has no provider reference, so its confirmed capacity cannot be cancelled.";
+        public const string ElectronicTicketNotFoundInOrder = "Electronic ticket '{0}' was not found in order '{1}'.";
+        public const string ElectronicTicketVersionConflict = "Electronic ticket '{0}' is at document version {1}, not the expected version {2}.";
+        public const string ElectronicTicketVoidDeadlineIsMissing = "Electronic ticket '{0}' has no void deadline under the local void policy; refund it instead.";
+        public const string ElectronicTicketVoidWindowIsClosed = "The void window of electronic ticket '{0}' closed at {1}; refund it instead.";
+        public const string ElectronicTicketIssuingOfficeMismatch = "Electronic ticket '{0}' was issued by office '{1}', so office '{2}' has no local authority to void it; refund it instead.";
+        public const string ElectronicTicketIsNotVoidable = "Electronic ticket '{0}' is {1}, so it cannot be voided; refund it instead.";
+        public const string TicketCouponIsNotVoidable = "Coupon {1} of electronic ticket '{0}' is {2}, so the ticket cannot be voided; refund it instead.";
+        public const string TicketCouponControlIsNotLocal = "Coupon {1} of electronic ticket '{0}' is under {2} control, so the ticket cannot be voided locally; refund it instead.";
+        public const string CancellationRequiresServices = "A cancellation of order '{0}' must end at least one active service.";
+        public const string ExternalElectronicTicketVoidIsNotSupported = "Electronic ticket '{0}' is under external document authority, which has no void provider; refund it instead.";
     }
 }

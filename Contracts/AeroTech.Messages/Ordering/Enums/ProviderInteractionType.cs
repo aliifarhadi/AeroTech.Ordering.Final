@@ -12,6 +12,7 @@ namespace AeroTech.Messages.Ordering.Enums
         [Display(Name = "Extend Hold")] ExtendHold = 6,
         [Display(Name = "Issue Ticket")] IssueTicket = 7,
         [Display(Name = "Issue Emd")] IssueEmd = 8,
-        [Display(Name = "Read Reservation")] ReadReservation = 9
+        [Display(Name = "Read Reservation")] ReadReservation = 9,
+        [Display(Name = "Void Ticket")] VoidTicket = 10
     }
 }

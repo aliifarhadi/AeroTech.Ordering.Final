@@ -1,14 +1,17 @@
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Ordering.Application.DocumentStockAggregate.Commands.DefineDocumentStock;
 using AeroTech.Ordering.Application.DocumentStockAggregate.Services;
+using AeroTech.Ordering.Application.ElectronicTicketAggregate.Commands.VoidElectronicTickets;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Confirm;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Services.Cancellation;
 using AeroTech.Ordering.Application.OrderAggregate.Services.Issuance;
 using AeroTech.Ordering.Application._Shared.Authorization;
 using AeroTech.Ordering.Application._Shared.Behaviors;
@@ -60,6 +63,7 @@ namespace AeroTech.Ordering.Application
             services.AddScoped<IReservationProviderResolver, ReservationProviderResolver>();
             services.AddScoped<IOrderReservationSummarizer, OrderReservationSummarizer>();
             services.AddScoped<IReservationReleaser, ReservationReleaser>();
+            services.AddScoped<IConfirmedCapacityCanceller, ConfirmedCapacityCanceller>();
             services.AddScoped<IReservationDeadlineService, ReservationDeadlineService>();
             services.AddScoped<IReserveService, ReserveService>();
             services.AddScoped<IReleaseReservationService, ReleaseReservationService>();
@@ -68,6 +72,9 @@ namespace AeroTech.Ordering.Application
             services.AddScoped<IDefineDocumentStockService, DefineDocumentStockService>();
             services.AddScoped<IIssuancePlanner, IssuancePlanner>();
             services.AddScoped<IIssueOrderService, IssueOrderService>();
+            services.AddScoped<ICancellationPlanner, CancellationPlanner>();
+            services.AddScoped<ICancelOrderService, CancelOrderService>();
+            services.AddScoped<IVoidElectronicTicketsService, VoidElectronicTicketsService>();
 
             return services;
         }

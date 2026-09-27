@@ -19,6 +19,10 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
 
     public Queue<Func<ReleaseHeldSeatsRequest, ReleaseHeldSeatsResult>> ReleaseResponses { get; } = new();
 
+    public List<ConfirmHoldRequest> ConfirmRequests { get; } = [];
+
+    public Queue<Func<ConfirmHoldRequest, ConfirmHoldResult>> ConfirmResponses { get; } = new();
+
     public Task<FlightFlowReply<FlightHeldSeatsResult>> CreateHoldAsync(HoldSeatsRequest request, CancellationToken cancellationToken = default)
     {
         HoldRequests.Add(request);
@@ -60,8 +64,18 @@ public sealed class ScriptedFlightFlowProvider(Func<string, string> flightIdOfCa
             .SelectMany(flight => flight.Seats.Select(seat => (flightIdOfCapacity(flight.FlightCapId), seat.PaxReference, seat.Seat)))
             .ToList();
 
-    public Task ConfirmHoldAsync(ConfirmHoldRequest request, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
+    public Task<FlightFlowReply<ConfirmHoldResult>> ConfirmHoldAsync(ConfirmHoldRequest request, CancellationToken cancellationToken = default)
+    {
+        ConfirmRequests.Add(request);
+
+        var respond = ConfirmResponses.TryDequeue(out var scripted) ? scripted : Confirmed;
+        var result = respond(request);
+        var statusCode = result.HoldStatus == FlightSeatHoldStatus.Confirmed ? HttpStatusCode.NoContent : HttpStatusCode.BadRequest;
+
+        return Task.FromResult(new FlightFlowReply<ConfirmHoldResult>(result, (int)statusCode, string.Empty));
+    }
+
+    public static ConfirmHoldResult Confirmed(ConfirmHoldRequest request) => new(FlightSeatHoldStatus.Confirmed, null);
 
     public Task<CancelConfirmedSeatsResult> CancelConfirmedAsync(CancelConfirmedSeatsRequest request, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();

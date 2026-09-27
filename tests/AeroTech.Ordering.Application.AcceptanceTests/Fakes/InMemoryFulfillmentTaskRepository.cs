@@ -20,9 +20,12 @@ public sealed class InMemoryFulfillmentTaskRepository(InMemoryUnitOfWork unitOfW
         long fulfillmentReservationId,
         OrderFulfillmentTaskType taskType,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(_committed
+        => Task.FromResult(Latest(fulfillmentReservationId, taskType));
+
+    public FulfillmentTask? Latest(long fulfillmentReservationId, OrderFulfillmentTaskType taskType)
+        => _committed
             .Where(task => task.FulfillmentReservationId == fulfillmentReservationId && task.TaskType == taskType)
             .OrderByDescending(task => task.CreatedAt)
             .ThenByDescending(task => task.Id)
-            .FirstOrDefault());
+            .FirstOrDefault();
 }

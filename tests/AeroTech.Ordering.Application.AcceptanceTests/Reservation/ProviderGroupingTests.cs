@@ -30,7 +30,7 @@ public sealed class ProviderGroupingTests
         Assert.Empty(harness.FlightFlow.HoldRequests);
         Assert.Equal(["ProviderA", "ProviderB"], result.Reservations.Select(reservation => reservation.FulfillmentProviderKey).Order());
         Assert.Equal(ReservationMode.ImmediateConfirm, harness.Reservation(result.Reservations.Single(item => item.FulfillmentProviderKey == "ProviderB").ReservationId).Mode);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]

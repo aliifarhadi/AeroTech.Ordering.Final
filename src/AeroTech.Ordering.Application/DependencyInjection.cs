@@ -1,4 +1,5 @@
 using AeroTech.Framework.Core.ServiceContracts;
+using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Confirm;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
@@ -58,6 +59,7 @@ namespace AeroTech.Ordering.Application
             services.AddScoped<IReservationDeadlineService, ReservationDeadlineService>();
             services.AddScoped<IReserveService, ReserveService>();
             services.AddScoped<IReleaseReservationService, ReleaseReservationService>();
+            services.AddScoped<IConfirmService, ConfirmService>();
 
             return services;
         }

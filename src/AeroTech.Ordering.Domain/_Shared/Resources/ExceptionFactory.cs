@@ -415,9 +415,6 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException LastTicketingDatePassed(params object?[] args) =>
             new(2761, ExceptionMessages.LastTicketingDatePassed, args) { HttpStatus = 422 };
 
-        public static BusinessException ReservationTaskIsNotResumable(params object?[] args) =>
-            new(2763, ExceptionMessages.ReservationTaskIsNotResumable, args) { HttpStatus = 500 };
-
         public static BusinessException ProviderReadBackIsNotAvailable(params object?[] args) =>
             new(2764, ExceptionMessages.ProviderReadBackIsNotAvailable, args) { HttpStatus = 501 };
 
@@ -427,11 +424,20 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException ProviderInteractionIsAlreadyInFlight(params object?[] args) =>
             new(2766, ExceptionMessages.ProviderInteractionIsAlreadyInFlight, args) { HttpStatus = 500 };
 
-        public static BusinessException ProviderMutationRequiresIdempotencyKey(params object?[] args) =>
-            new(2767, ExceptionMessages.ProviderMutationRequiresIdempotencyKey, args) { HttpStatus = 500 };
-
         public static BusinessException FarePricingUnitValidationIsUnsupported(params object?[] args) =>
             new(2768, ExceptionMessages.FarePricingUnitValidationIsUnsupported, args) { HttpStatus = 501 };
+
+        public static BusinessException ReservationIsNotConfirmable(params object?[] args) =>
+            new(2769, ExceptionMessages.ReservationIsNotConfirmable, args) { HttpStatus = 409 };
+
+        public static BusinessException ReservationCannotBeConfirmedAfterLastTicketingDate(params object?[] args) =>
+            new(2770, ExceptionMessages.ReservationCannotBeConfirmedAfterLastTicketingDate, args) { HttpStatus = 422 };
+
+        public static BusinessException ReservationHoldHasLapsed(params object?[] args) =>
+            new(2771, ExceptionMessages.ReservationHoldHasLapsed, args) { HttpStatus = 409 };
+
+        public static BusinessException ReservationValidationIsStale(params object?[] args) =>
+            new(2772, ExceptionMessages.ReservationValidationIsStale, args) { HttpStatus = 409 };
 
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;

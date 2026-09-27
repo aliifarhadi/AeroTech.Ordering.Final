@@ -11,7 +11,8 @@ public sealed class StubReservationProvider(
     ReservationMode mode,
     ReservationMemberStatus result,
     bool supportsReadBack = false,
-    bool expiresAutomatically = false)
+    bool expiresAutomatically = false,
+    bool supportsSafeConfirmReplay = false)
     : IReservationProvider
 {
     public List<ReservationIntent> ReserveCalls { get; } = [];
@@ -20,14 +21,20 @@ public sealed class StubReservationProvider(
 
     public List<ReleaseIntent> ReleaseCalls { get; } = [];
 
+    public List<ProviderRequest> ConfirmCalls { get; } = [];
+
     public Queue<Func<ReservationIntent, ReservationOutcome>> ReserveResponses { get; } = new();
 
     public Queue<Func<ReservationIntent, ReservationOutcome>> ReadResponses { get; } = new();
 
+    public Queue<Func<ProviderRequest, ConfirmationOutcome>> ConfirmResponses { get; } = new();
+
+    public DateTimeOffset? ValidationTimeLimit { get; set; }
+
     public string ProviderKey => providerKey;
 
     public ReservationCapability CapabilityFor(OrderService service)
-        => new(mode, BatchResultMode.PerUnit, ReservationActionScope.Unit, ReservationActionScope.Unit, false, false, true, supportsReadBack, expiresAutomatically);
+        => new(mode, BatchResultMode.PerUnit, ReservationActionScope.Unit, ReservationActionScope.Unit, false, false, true, supportsReadBack, expiresAutomatically, supportsSafeConfirmReplay);
 
     public IReadOnlyList<ReservationUnitIntent> PlanUnits(Order order, IReadOnlyCollection<OrderService> services)
         => services
@@ -41,7 +48,7 @@ public sealed class StubReservationProvider(
         Order order,
         IReadOnlyList<ReservationUnitIntent> units,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(new ReservationPreparation(null, null));
+        => Task.FromResult(new ReservationPreparation(null, ValidationTimeLimit));
 
     public ProviderRequest ReserveRequestFor(Order order, ReservationIntent intent)
         => new(
@@ -76,6 +83,17 @@ public sealed class StubReservationProvider(
         return Task.FromResult(new ReleaseOutcome(ProviderOperationOutcome.Succeeded, null, null));
     }
 
+    public ProviderRequest ConfirmRequestFor(ConfirmationIntent intent)
+        => new(ProviderInteractionType.ConfirmHold, null, null, intent.ProviderOperationRef);
+
+    public Task<ConfirmationOutcome> ConfirmAsync(ProviderRequest request, CancellationToken cancellationToken = default)
+    {
+        ConfirmCalls.Add(request);
+
+        var respond = ConfirmResponses.TryDequeue(out var scripted) ? scripted : Confirmed;
+        return Task.FromResult(respond(request));
+    }
+
     public ReservationOutcome Resolved(ReservationIntent intent)
         => result == ReservationMemberStatus.Rejected
             ? new ReservationOutcome(ProviderOperationOutcome.Rejected, null, null, null, null, [], null, null)
@@ -100,6 +118,23 @@ public sealed class StubReservationProvider(
             null,
             [],
             new ProviderFailure(FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome, "The outcome was not observed.", null),
+            null);
+
+    public static ConfirmationOutcome Confirmed(ProviderRequest request)
+        => new(ProviderOperationOutcome.Succeeded, ReservationMemberStatus.Confirmed, null, null);
+
+    public static ConfirmationOutcome RejectedConfirmation(ProviderRequest request)
+        => new(
+            ProviderOperationOutcome.Rejected,
+            null,
+            new ProviderFailure(FulfillmentFailureKind.Permanent, FulfillmentFailureReason.ProviderRejected, "The provider refused to confirm.", null),
+            null);
+
+    public static ConfirmationOutcome UnobservedConfirmation(ProviderRequest request)
+        => new(
+            ProviderOperationOutcome.Unknown,
+            null,
+            new ProviderFailure(FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome, "The confirmation outcome was not observed.", null),
             null);
 
     public string OperationRefOf(ReservationIntent intent) => $"{providerKey}-{intent.IdempotencyKey}";

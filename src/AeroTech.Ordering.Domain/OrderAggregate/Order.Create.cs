@@ -261,6 +261,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                             fareComponent?.FareFamily,
                             fareComponent?.FareType,
                             flight.RbdId,
+                            flight.CabinClassId,
                             ToAllowance(coupon.CheckedBaggage),
                             ToAllowance(coupon.CabinBaggage),
                             coupon.IsRefundable,

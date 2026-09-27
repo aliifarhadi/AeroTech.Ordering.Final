@@ -4,7 +4,10 @@ using AeroTech.Ordering.Domain.FulfillmentReservationAggregate.Contracts;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 
-public sealed class InMemoryFulfillmentReservationRepository(InMemoryUnitOfWork unitOfWork) : IFulfillmentReservationRepository
+public sealed class InMemoryFulfillmentReservationRepository(
+    InMemoryUnitOfWork unitOfWork,
+    InMemoryOrderRepository orders,
+    InMemoryFulfillmentTaskRepository tasks) : IFulfillmentReservationRepository
 {
     private readonly List<FulfillmentReservation> _committed = [];
 
@@ -27,9 +30,17 @@ public sealed class InMemoryFulfillmentReservationRepository(InMemoryUnitOfWork 
         int batchSize,
         CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<long>>(_committed
-            .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held && reservation.HoldLapsedAt(now))
+            .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held)
+            .Where(reservation => reservation.HoldLapsedAt(now)
+                                  || (HasPassedLastTicketingDate(reservation, now) && !ReleaseWasRejected(reservation)))
             .Select(reservation => reservation.OrderId)
             .Distinct()
             .Take(batchSize)
             .ToList());
+
+    private bool HasPassedLastTicketingDate(FulfillmentReservation reservation, DateTimeOffset now)
+        => orders.Find(reservation.OrderId)?.HasPassedLastTicketingDateAt(now) == true;
+
+    private bool ReleaseWasRejected(FulfillmentReservation reservation)
+        => tasks.Latest(reservation.Id, OrderFulfillmentTaskType.ReleaseReserved) is { Status: OrderFulfillmentStatus.Failed };
 }

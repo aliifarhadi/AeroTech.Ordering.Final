@@ -112,16 +112,16 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
 
             foreach (var reservation in reservations.Where(item => item.IsUnresolved && item.CoveredOrderServiceIds.Any(serviceIds.Contains)))
             {
+                var task = await _tasks.FindLatestAsync(reservation.Id, OrderFulfillmentTaskType.ReserveInventory, cancellationToken);
+
+                if (task is not { IsResumable: true } || task.OriginalRequest(ProviderInteractionType.CreateHold) is not { } request)
+                    continue;
+
                 var provider = _providers.Resolve(reservation.FulfillmentProviderKey);
                 var coveredServiceIds = reservation.CoveredOrderServiceIds.ToHashSet();
                 var units = provider.PlanUnits(order, order.Services.Where(service => coveredServiceIds.Contains(service.Id)).ToList());
 
                 reservation.EnsurePlannedAs(units);
-
-                var task = await _tasks.FindLatestAsync(reservation.Id, OrderFulfillmentTaskType.ReserveInventory, cancellationToken);
-
-                if (task is not { IsResumable: true } || task.OriginalRequest(ProviderInteractionType.CreateHold) is not { } request)
-                    throw ExceptionFactory.ReservationTaskIsNotResumable(reservation.Id);
 
                 var readBack = reservation.ProviderOperationRef is { } providerOperationRef
                                && _providers.CapabilityOf(order, reservation).SupportsReadBack

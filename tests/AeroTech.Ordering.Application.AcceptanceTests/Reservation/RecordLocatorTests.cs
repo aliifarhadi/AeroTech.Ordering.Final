@@ -32,7 +32,7 @@ public sealed class RecordLocatorTests
 
         Assert.Equal("PNR001", order.RecordLocator);
         Assert.Single(_harness.RecordLocators.Generated);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]

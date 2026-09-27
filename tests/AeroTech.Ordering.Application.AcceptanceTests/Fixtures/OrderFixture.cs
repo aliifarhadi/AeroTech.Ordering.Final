@@ -43,6 +43,7 @@ public sealed record PricingUnitSpec(string SourceKind, FarePricingUnitType Sema
 public static class OrderFixture
 {
     public const long RbdId = 25;
+    public const long CabinClassId = 4;
     public const int AircraftId = 1;
 
     private const int CurrencyId = 1;
@@ -177,6 +178,7 @@ public static class OrderFixture
                         departure.AddHours(1),
                         60,
                         AircraftId,
+                        CabinClassId,
                         RbdId,
                         CapacityIdOf(flightId),
                         []);

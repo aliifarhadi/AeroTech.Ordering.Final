@@ -9,6 +9,8 @@ public sealed class InMemoryOrderRepository : IOrderRepository
 
     public void Seed(Order order) => _orders[order.Id] = order;
 
+    public Order? Find(long id) => _orders.GetValueOrDefault(id);
+
     public Task AddAsync(Order order, CancellationToken cancellationToken = default)
     {
         Seed(order);
@@ -16,7 +18,7 @@ public sealed class InMemoryOrderRepository : IOrderRepository
     }
 
     public Task<Order?> GetAsync(long id, CancellationToken cancellationToken = default)
-        => Task.FromResult(_orders.GetValueOrDefault(id));
+        => Task.FromResult(Find(id));
 
     public Task<Order?> GetByReferenceAsync(Guid orderReference, CancellationToken cancellationToken = default)
         => Task.FromResult(_orders.Values.FirstOrDefault(order => order.OrderReference == orderReference));

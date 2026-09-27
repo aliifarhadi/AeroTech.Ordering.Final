@@ -28,7 +28,8 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             SupportsSplit: true,
             ProvidesUnitReference: true,
             SupportsReadBack: false,
-            ExpiresAutomatically: true);
+            ExpiresAutomatically: true,
+            SupportsSafeConfirmReplay: true);
 
         private readonly IFlightFlowProvider _flightFlow;
         private readonly IAirFareReservationValidator _airFareValidator;
@@ -128,6 +129,34 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             catch (ProviderRequestException exception)
             {
                 return new ReleaseOutcome(OutcomeOf(exception), FailureOf(exception), ResponseOf(exception));
+            }
+        }
+
+        public ProviderRequest ConfirmRequestFor(ConfirmationIntent intent)
+            => new(
+                ProviderInteractionType.ConfirmHold,
+                null,
+                null,
+                JsonSerializer.Serialize(new ConfirmHoldRequest(intent.ProviderOperationRef), FlightFlowJson.Options));
+
+        public async Task<ConfirmationOutcome> ConfirmAsync(ProviderRequest request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var reply = await _flightFlow.ConfirmHoldAsync(PayloadOf<ConfirmHoldRequest>(request), cancellationToken);
+                var holdStatus = ToUnitStatus(reply.Result.HoldStatus);
+
+                return holdStatus == ReservationMemberStatus.Confirmed
+                    ? new ConfirmationOutcome(ProviderOperationOutcome.Succeeded, holdStatus, null, ResponseOf(reply))
+                    : new ConfirmationOutcome(
+                        ProviderOperationOutcome.Rejected,
+                        holdStatus,
+                        new ProviderFailure(FulfillmentFailureKind.Permanent, RejectionReasonOf(holdStatus), reply.Result.Reason ?? string.Empty, reply.StatusCode),
+                        ResponseOf(reply));
+            }
+            catch (ProviderRequestException exception)
+            {
+                return new ConfirmationOutcome(OutcomeOf(exception), null, FailureOf(exception), ResponseOf(exception));
             }
         }
 
@@ -241,6 +270,11 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             FlightSeatHoldStatus.Cancelled => ReservationMemberStatus.Cancelled,
             _ => ReservationMemberStatus.Unknown
         };
+
+        private static FulfillmentFailureReason RejectionReasonOf(ReservationMemberStatus holdStatus)
+            => holdStatus == ReservationMemberStatus.Expired
+                ? FulfillmentFailureReason.HoldExpired
+                : FulfillmentFailureReason.ProviderRejected;
 
         private static ProviderOperationOutcome OutcomeOf(ProviderRequestException exception)
             => exception.Kind == FulfillmentFailureKind.Permanent

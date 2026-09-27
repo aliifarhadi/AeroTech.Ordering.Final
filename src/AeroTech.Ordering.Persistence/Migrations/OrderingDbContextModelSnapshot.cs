@@ -1294,6 +1294,9 @@ namespace AeroTech.Ordering.Persistence.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<long?>("CabinClassId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("FareBasis")
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");

@@ -3,7 +3,6 @@ using System.Text;
 using AeroTech.Framework.Core.Domain.Entities;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.Providers.Reservation;
-using AeroTech.Ordering.Domain._Shared.Resources;
 
 namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities
 {
@@ -22,9 +21,6 @@ namespace AeroTech.Ordering.Domain.FulfillmentTaskAggregate.Entities
             ProviderRequest request,
             DateTimeOffset startedAt)
         {
-            if (request.InteractionType != ProviderInteractionType.ReadReservation && string.IsNullOrWhiteSpace(request.IdempotencyKey))
-                throw ExceptionFactory.ProviderMutationRequiresIdempotencyKey(request.InteractionType);
-
             Id = id;
             FulfillmentTaskId = fulfillmentTaskId;
             FulfillmentTaskAttemptId = attempt.Id;

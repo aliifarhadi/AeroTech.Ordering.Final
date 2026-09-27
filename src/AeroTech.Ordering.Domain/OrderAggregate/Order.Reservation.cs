@@ -56,11 +56,9 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 .Select(serviceId => latestUnitStatusByService.TryGetValue(serviceId, out var status) ? status : (ReservationMemberStatus?)null)
                 .ToList();
 
-            var positive = states.Count(status => status?.IsPositive() == true);
-
-            if (positive == states.Count)
+            if (states.All(status => status == ReservationMemberStatus.Confirmed))
                 TransitionTo(OrderStatus.Confirmed);
-            else if (positive > 0 || states.Any(status => status?.IsUnresolved() == true))
+            else if (states.Any(status => status?.IsPositive() == true || status?.IsUnresolved() == true))
                 TransitionTo(OrderStatus.ReservationUnconfirmed);
             else if (states.Any(status => status?.IsTerminalNegative() == true))
                 TransitionTo(OrderStatus.ReserveFailed);

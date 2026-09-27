@@ -65,10 +65,8 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
         public bool IsUnresolved => Status is FulfillmentReservationStatus.Pending or FulfillmentReservationStatus.Unknown;
 
-        public bool IsSettled => Status is FulfillmentReservationStatus.Rejected
-            or FulfillmentReservationStatus.Released
-            or FulfillmentReservationStatus.Expired
-            or FulfillmentReservationStatus.Cancelled;
+        public bool AwaitsConfirmation => Mode == ReservationMode.HoldThenConfirm
+                                          && Status is FulfillmentReservationStatus.Held or FulfillmentReservationStatus.Unknown;
 
         public IReadOnlyCollection<long> CoveredOrderServiceIds => _units.SelectMany(unit => unit.OrderServiceIds).ToList();
 
@@ -151,13 +149,65 @@ namespace AeroTech.Ordering.Domain.FulfillmentReservationAggregate
 
         public bool HoldLapsedAt(DateTimeOffset now) => ExpiresAt <= now;
 
-        public bool ValidationIsStaleAt(DateTimeOffset now) => ReservationValidationTimeLimit <= now;
+        public bool ValidationIsStaleAt(DateTimeOffset now) => ReservationValidationTimeLimit is not { } timeLimit || timeLimit <= now;
 
         public bool IsConfirmableAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
             => Status == FulfillmentReservationStatus.Held
                && !HoldLapsedAt(now)
                && !ValidationIsStaleAt(now)
                && !(lastTicketingDate <= now);
+
+        public ConfirmationIntent PrepareConfirmation()
+            => AwaitsConfirmation && ProviderOperationRef is { } providerOperationRef
+                ? new ConfirmationIntent(FulfillmentProviderKey, providerOperationRef)
+                : throw ExceptionFactory.ReservationIsNotConfirmable(Id, Status);
+
+        public void EnsureConfirmableAt(DateTimeOffset now, DateTimeOffset? lastTicketingDate)
+        {
+            if (lastTicketingDate <= now)
+                throw ExceptionFactory.ReservationCannotBeConfirmedAfterLastTicketingDate(Id, lastTicketingDate);
+
+            if (HoldLapsedAt(now))
+                throw ExceptionFactory.ReservationHoldHasLapsed(Id, ExpiresAt);
+        }
+
+        public void EnsureValidationCurrentAt(DateTimeOffset now)
+        {
+            if (ValidationIsStaleAt(now))
+                throw ExceptionFactory.ReservationValidationIsStale(Id, ReservationValidationTimeLimit);
+        }
+
+        public void RenewValidation(DateTimeOffset? validationTimeLimit)
+        {
+            if (!AwaitsConfirmation)
+                throw ExceptionFactory.ReservationIsNotConfirmable(Id, Status);
+
+            ReservationValidationTimeLimit = validationTimeLimit;
+        }
+
+        public void RecordConfirmation(ConfirmationOutcome outcome, DateTimeOffset observedAt)
+        {
+            if (!AwaitsConfirmation)
+                throw ExceptionFactory.ReservationOutcomeCannotBeRecorded(Id, Status);
+
+            switch (outcome.OperationOutcome)
+            {
+                case ProviderOperationOutcome.Succeeded:
+                    MarkAll(FulfillmentReservationStatus.Confirmed, ReservationMemberStatus.Confirmed);
+                    break;
+
+                case ProviderOperationOutcome.Rejected:
+                    if (outcome.ObservedStatus is { } observedStatus)
+                        MarkAll(ToReservationStatus(observedStatus), observedStatus);
+                    break;
+
+                default:
+                    MarkAll(FulfillmentReservationStatus.Unknown, ReservationMemberStatus.Unknown);
+                    break;
+            }
+
+            LastObservedAt = observedAt;
+        }
 
         public ReleaseIntent PrepareRelease()
             => Status == FulfillmentReservationStatus.Held && ProviderOperationRef is { } providerOperationRef

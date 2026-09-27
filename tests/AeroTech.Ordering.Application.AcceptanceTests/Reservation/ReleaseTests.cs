@@ -46,7 +46,7 @@ public sealed class ReleaseTests
         Assert.Equal(FulfillmentReservationStatus.Held, result.ReservationStatus);
         Assert.Equal(FulfillmentFailureReason.ProviderRejected, result.FailureReason);
         Assert.Equal(OrderFulfillmentStatus.Failed, _harness.TaskOf(result.ReservationId, OrderFulfillmentTaskType.ReleaseReserved).Status);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]

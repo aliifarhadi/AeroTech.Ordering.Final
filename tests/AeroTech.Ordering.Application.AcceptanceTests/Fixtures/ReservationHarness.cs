@@ -1,5 +1,6 @@
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
+using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Confirm;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
@@ -19,13 +20,14 @@ public sealed class ReservationHarness
 {
     private readonly IReserveService _reserve;
     private readonly IReleaseReservationService _release;
+    private readonly IConfirmService _confirm;
     private readonly IReservationDeadlineService _deadlines;
 
     public ReservationHarness(params IReservationProvider[] additionalProviders)
     {
         UnitOfWork = new InMemoryUnitOfWork();
-        Reservations = new InMemoryFulfillmentReservationRepository(UnitOfWork);
         Tasks = new InMemoryFulfillmentTaskRepository(UnitOfWork);
+        Reservations = new InMemoryFulfillmentReservationRepository(UnitOfWork, Orders, Tasks);
         FlightFlow = new ScriptedFlightFlowProvider(OrderFixture.FlightIdOfCapacity, UnitOfWork);
         AirFareValidator = new StubAirFareReservationValidator(Clock);
 
@@ -40,6 +42,7 @@ public sealed class ReservationHarness
 
         _reserve = new ReserveService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
         _release = new ReleaseReservationService(Orders, Reservations, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
+        _confirm = new ConfirmService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
         _deadlines = new ReservationDeadlineService(Orders, Reservations, providers, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
     }
 
@@ -88,8 +91,14 @@ public sealed class ReservationHarness
     public Task<ReleaseReservationResult> ReleaseAsync(Order order, long reservationId)
         => _release.ReleaseAsync(order.Id, reservationId, UnrestrictedOrderAuthorization.Instance);
 
-    public Task<IReadOnlyList<long>> DueOrderIdsAsync()
-        => _deadlines.ListDueOrderIdsAsync(100);
+    public Task<ConfirmResult> ConfirmReservedCapacityAsync(Order order)
+        => _confirm.ConfirmReservedCapacityAsync(order.Id, UnrestrictedOrderAuthorization.Instance);
+
+    public Task<ConfirmResult> ConfirmReservationsAsync(Order order, params long[] reservationIds)
+        => _confirm.ConfirmReservationsAsync(order.Id, reservationIds, UnrestrictedOrderAuthorization.Instance);
+
+    public Task<IReadOnlyList<long>> DueOrderIdsAsync(int batchSize = 100)
+        => _deadlines.ListDueOrderIdsAsync(batchSize);
 
     public Task EnforceDeadlinesAsync(Order order)
         => _deadlines.EnforceAsync(order.Id);

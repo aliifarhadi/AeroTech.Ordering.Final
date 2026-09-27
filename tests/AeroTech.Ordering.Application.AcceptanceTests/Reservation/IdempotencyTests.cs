@@ -22,7 +22,7 @@ public sealed class IdempotencyTests
         Assert.Empty(duplicate.Reservations);
         Assert.Single(_harness.FlightFlow.HoldRequests);
         Assert.Single(_harness.Reservations.Committed);
-        Assert.Equal(OrderStatus.Confirmed, duplicate.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, duplicate.Status);
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class IdempotencyTests
 
         Assert.Single(_harness.Reservations.Committed);
         Assert.Equal(_harness.FlightFlow.HoldRequests[0].IdempotencyKey, _harness.FlightFlow.HoldRequests[1].IdempotencyKey);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]
@@ -121,6 +121,6 @@ public sealed class IdempotencyTests
         Assert.NotEqual(_harness.FlightFlow.HoldRequests[0].IdempotencyKey, _harness.FlightFlow.HoldRequests[^1].IdempotencyKey);
         Assert.Equal(FulfillmentReservationStatus.Held, retried.Status);
         Assert.Equal(2, _harness.AirFareValidator.Calls.Count);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 }

@@ -4,6 +4,7 @@ using AeroTech.Ordering.Domain._Shared;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
 using AeroTech.Ordering.Providers.FlightFlow.Wire;
 using AeroTech.Messages.Ordering.Enums;
+using FlightSeatHoldStatus = AeroTech.Messages.FlightFlow.Enums.FlightSeatHoldStatus;
 
 namespace AeroTech.Ordering.Providers.FlightFlow.Services
 {
@@ -11,6 +12,9 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
     {
         private const string SeatHoldsRoute = "v1/Flights/Seat-Holds";
         private const string SeatConfirmationsRoute = "v1/Flights/Seat-Confirmations";
+        private const int ExpiredSeatHoldErrorCode = 1176;
+        private const int ReleasedSeatHoldErrorCode = 1177;
+        private const int CancelledSeatHoldErrorCode = 1178;
 
         private readonly HttpClient _httpClient;
 
@@ -175,7 +179,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             }
         }
 
-        public async Task ConfirmHoldAsync(ConfirmHoldRequest request, CancellationToken cancellationToken = default)
+        public async Task<FlightFlowReply<ConfirmHoldResult>> ConfirmHoldAsync(ConfirmHoldRequest request, CancellationToken cancellationToken = default)
         {
             var route = $"{SeatHoldsRoute}/{request.HoldId}/Confirmations";
 
@@ -205,17 +209,31 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
             using (response)
             {
                 if (response.IsSuccessStatusCode)
-                    return;
+                    return new FlightFlowReply<ConfirmHoldResult>(new ConfirmHoldResult(FlightSeatHoldStatus.Confirmed, null), (int)response.StatusCode, body);
+
+                var envelope = Deserialize<object>(body);
+
+                if (UnconfirmableHoldStatusOf(envelope) is { } holdStatus)
+                    return new FlightFlowReply<ConfirmHoldResult>(new ConfirmHoldResult(holdStatus, FirstError(envelope)), (int)response.StatusCode, body);
 
                 var (kind, reason) = Classify((int)response.StatusCode);
                 throw new ProviderRequestException(
                     kind,
                     reason,
-                    FirstError(Deserialize<object>(body)) ?? $"The seat hold '{request.HoldId}' could not be confirmed (HTTP {(int)response.StatusCode}): {Truncate(body)}",
+                    FirstError(envelope) ?? $"The seat hold '{request.HoldId}' could not be confirmed (HTTP {(int)response.StatusCode}): {Truncate(body)}",
                     (int)response.StatusCode,
                     body);
             }
         }
+
+        private static FlightSeatHoldStatus? UnconfirmableHoldStatusOf<T>(FlightFlowEnvelope<T>? envelope)
+            => envelope?.Errors?.FirstOrDefault()?.Code switch
+            {
+                ExpiredSeatHoldErrorCode => FlightSeatHoldStatus.Expired,
+                ReleasedSeatHoldErrorCode => FlightSeatHoldStatus.Released,
+                CancelledSeatHoldErrorCode => FlightSeatHoldStatus.Cancelled,
+                _ => null
+            };
 
         private static FlightSeatHoldCancellationReason MapCancellationReason(VoidReason reason) => reason switch
         {

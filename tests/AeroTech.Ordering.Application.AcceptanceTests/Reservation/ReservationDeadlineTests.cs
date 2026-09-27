@@ -26,7 +26,7 @@ public sealed class ReservationDeadlineTests
         await _harness.EnforceDeadlinesAsync(order);
 
         Assert.Empty(_harness.FlightFlow.ReleaseRequests);
-        Assert.Equal((FulfillmentReservationStatus.Held, OrderStatus.Confirmed), (reservation.Status, order.Status));
+        Assert.Equal((FulfillmentReservationStatus.Held, OrderStatus.ReservationUnconfirmed), (reservation.Status, order.Status));
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class ReservationDeadlineTests
         Assert.Equal(2, _harness.AirFareValidator.Calls.Count);
         Assert.NotEqual(released.Id, renewed.Id);
         Assert.Equal((FulfillmentReservationStatus.Held, freshTimeLimit), (renewed.Status, renewed.ReservationValidationTimeLimit));
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class ReservationDeadlineTests
 
         Assert.Equal(2, _harness.AirFareValidator.Calls.Count);
         Assert.Equal(FulfillmentReservationStatus.Held, renewed.Status);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public sealed class ReservationDeadlineTests
     }
 
     [Fact]
-    public async Task Unknown_release_at_the_last_ticketing_date_is_reconciled_before_the_order_expires()
+    public async Task Unknown_release_at_the_last_ticketing_date_is_retried_after_the_order_expires()
     {
         var lastTicketingDate = _harness.Clock.Now.AddMinutes(30);
         var order = SeedOrder(lastTicketingDate);
@@ -141,7 +141,8 @@ public sealed class ReservationDeadlineTests
 
         await _harness.EnforceDeadlinesAsync(order);
 
-        Assert.Equal((FulfillmentReservationStatus.Held, OrderStatus.Confirmed), (reservation.Status, order.Status));
+        Assert.Equal((FulfillmentReservationStatus.Held, OrderStatus.Expired), (reservation.Status, order.Status));
+        Assert.Contains(order.Id, await _harness.DueOrderIdsAsync());
 
         await _harness.EnforceDeadlinesAsync(order);
 
@@ -153,7 +154,7 @@ public sealed class ReservationDeadlineTests
     }
 
     [Fact]
-    public async Task Unknown_reservation_at_the_last_ticketing_date_is_neither_released_nor_expired()
+    public async Task Unknown_reservation_at_the_last_ticketing_date_is_not_released_while_the_order_expires()
     {
         var lastTicketingDate = _harness.Clock.Now.AddMinutes(30);
         var order = SeedOrder(lastTicketingDate);
@@ -167,7 +168,7 @@ public sealed class ReservationDeadlineTests
 
         Assert.Empty(_harness.FlightFlow.ReleaseRequests);
         Assert.Equal(FulfillmentReservationStatus.Unknown, _harness.Reservation(result.Reservations.Single().ReservationId).Status);
-        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
+        Assert.Equal(OrderStatus.Expired, order.Status);
     }
 
     [Fact]
@@ -235,6 +236,71 @@ public sealed class ReservationDeadlineTests
 
         Assert.Equal(FulfillmentReservationStatus.Expired, reservation.Status);
         Assert.Equal(OrderStatus.Ticketed, order.Status);
+    }
+
+    [Fact]
+    public async Task Confirmed_capacity_at_the_last_ticketing_date_expires_the_order_and_leaves_the_resource()
+    {
+        var lastTicketingDate = _harness.Clock.Now.AddMinutes(30);
+        var order = SeedOrder(lastTicketingDate);
+        var reservation = await ReserveAsync(order, _harness.Clock.Now.AddHours(1), holdExpiry: _harness.Clock.Now.AddMinutes(90));
+        await _harness.ConfirmReservedCapacityAsync(order);
+
+        _harness.Clock.Now = lastTicketingDate;
+        await _harness.EnforceDeadlinesAsync(order);
+
+        Assert.Equal((FulfillmentReservationStatus.Confirmed, OrderStatus.Expired), (reservation.Status, order.Status));
+        Assert.Empty(_harness.FlightFlow.ReleaseRequests);
+        Assert.DoesNotContain(order.Id, await _harness.DueOrderIdsAsync());
+    }
+
+    [Fact]
+    public async Task Unknown_confirmation_at_the_last_ticketing_date_is_not_released_while_the_order_expires()
+    {
+        var lastTicketingDate = _harness.Clock.Now.AddMinutes(30);
+        var order = SeedOrder(lastTicketingDate);
+        var reservation = await ReserveAsync(order, _harness.Clock.Now.AddHours(1), holdExpiry: _harness.Clock.Now.AddMinutes(90));
+        _harness.FlightFlow.ConfirmResponses.Enqueue(_ => throw new ProviderRequestException(
+            FulfillmentFailureKind.Indeterminate, FulfillmentFailureReason.UnknownOutcome, "Timed out."));
+        await _harness.ConfirmReservedCapacityAsync(order);
+
+        _harness.Clock.Now = lastTicketingDate;
+        await _harness.EnforceDeadlinesAsync(order);
+
+        Assert.Equal((FulfillmentReservationStatus.Unknown, OrderStatus.Expired), (reservation.Status, order.Status));
+        Assert.Empty(_harness.FlightFlow.ReleaseRequests);
+        Assert.DoesNotContain(order.Id, await _harness.DueOrderIdsAsync());
+    }
+
+    [Fact]
+    public async Task Orders_past_the_deadline_beyond_the_batch_size_cannot_starve_newer_held_cleanup()
+    {
+        const int batchSize = 2;
+        var start = _harness.Clock.Now;
+        var confirmedOrders = new List<Order>();
+
+        for (var index = 0; index <= batchSize; index++)
+        {
+            var confirmed = SeedOrder(start.AddMinutes(10));
+            await ReserveAsync(confirmed, start.AddHours(1), holdExpiry: start.AddMinutes(90));
+            await _harness.ConfirmReservedCapacityAsync(confirmed);
+            confirmedOrders.Add(confirmed);
+        }
+
+        var held = SeedOrder(start.AddMinutes(20));
+        var heldReservation = await ReserveAsync(held, start.AddHours(1), holdExpiry: start.AddMinutes(90));
+        _harness.Clock.Now = start.AddMinutes(30);
+
+        Assert.Contains(held.Id, await _harness.DueOrderIdsAsync(batchSize));
+
+        for (var cycle = 0; cycle <= batchSize; cycle++)
+            foreach (var orderId in await _harness.DueOrderIdsAsync(batchSize))
+                await _harness.EnforceDeadlinesAsync(_harness.Orders.Find(orderId)!);
+
+        Assert.Empty(await _harness.DueOrderIdsAsync(batchSize));
+        Assert.Equal((FulfillmentReservationStatus.Released, OrderStatus.Expired), (heldReservation.Status, held.Status));
+        Assert.All(confirmedOrders, confirmed => Assert.Equal(OrderStatus.Expired, confirmed.Status));
+        Assert.Single(_harness.FlightFlow.ReleaseRequests);
     }
 
     private Order SeedOrder(DateTimeOffset? lastTicketingDate = null)

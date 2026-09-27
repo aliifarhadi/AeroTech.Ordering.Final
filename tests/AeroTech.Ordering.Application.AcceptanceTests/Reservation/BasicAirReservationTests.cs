@@ -37,7 +37,7 @@ public sealed class BasicAirReservationTests
             flightIds.Select(flightId => OrderFixture.CapacityIdOf(flightId).ToString(CultureInfo.InvariantCulture)).Order(),
             request.Flights.Select(flight => flight.FlightCapId).Order());
         Assert.All(request.Flights, flight => Assert.Equal(travellers.Length, flight.Seats.Count));
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
         Assert.NotNull(order.RecordLocator);
     }
 

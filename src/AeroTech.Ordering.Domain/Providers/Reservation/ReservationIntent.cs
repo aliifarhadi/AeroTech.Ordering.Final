@@ -25,6 +25,10 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         string ProviderOperationRef,
         string IdempotencyKey);
 
+    public sealed record ConfirmationIntent(
+        string ProviderKey,
+        string ProviderOperationRef);
+
     public sealed record ProviderRequest(
         ProviderInteractionType InteractionType,
         string? IdempotencyKey,

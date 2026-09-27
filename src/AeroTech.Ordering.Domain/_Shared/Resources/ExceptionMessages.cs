@@ -158,11 +158,13 @@
         public const string OfferFareComponentBoundIsMissing = "Offer fare component '{0}' carries no bound id.";
         public const string FarePricingUnitContradictsOffer = "Fare pricing unit {0} covers different journeys through its fare components than the offer lists.";
         public const string LastTicketingDatePassed = "Order '{0}' passed its last ticketing date {1}, so a new reservation cannot start.";
-        public const string ReservationTaskIsNotResumable = "Unresolved reservation '{0}' has no resumable reservation task carrying its original provider request.";
         public const string ProviderReadBackIsNotAvailable = "Provider '{0}' offers no read-back of reservation state.";
         public const string ProviderInteractionIsNotInFlight = "Fulfillment task '{0}' has no provider interaction in flight.";
         public const string ProviderInteractionIsAlreadyInFlight = "Fulfillment task '{0}' already has a provider interaction in flight.";
-        public const string ProviderMutationRequiresIdempotencyKey = "Provider interaction {0} changes provider state and requires an idempotency key.";
         public const string FarePricingUnitValidationIsUnsupported = "Fare pricing unit {0} of source kind '{1}' has no semantic type that maps to an AirPrice journey type, so it cannot be validated.";
+        public const string ReservationIsNotConfirmable = "Reservation '{0}' in status {1} cannot be confirmed.";
+        public const string ReservationCannotBeConfirmedAfterLastTicketingDate = "Reservation '{0}' cannot be confirmed because its order passed its last ticketing date {1}.";
+        public const string ReservationHoldHasLapsed = "The provider hold of reservation '{0}' lapsed at {1}, so it cannot be confirmed.";
+        public const string ReservationValidationIsStale = "The fare validation of reservation '{0}' is not current (valid until {1}), so it cannot be confirmed.";
     }
 }

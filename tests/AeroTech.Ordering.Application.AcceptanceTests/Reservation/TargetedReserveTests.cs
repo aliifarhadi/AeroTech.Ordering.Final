@@ -58,7 +58,7 @@ public sealed class TargetedReserveTests
         Assert.Equal(FulfillmentReservationStatus.Rejected, first.Status);
         Assert.Equal(FulfillmentReservationStatus.Held, second.Status);
         Assert.Equal(2, _harness.AirFareValidator.Calls.Count);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]

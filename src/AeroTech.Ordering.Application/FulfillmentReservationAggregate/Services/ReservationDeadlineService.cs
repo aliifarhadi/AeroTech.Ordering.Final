@@ -71,7 +71,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
 
             var now = _clock.GetDateTime();
 
-            if (reservations.All(reservation => reservation.IsSettled) && order.IsExpirableAt(now))
+            if (order.IsExpirableAt(now))
                 order.Expire();
 
             if (settled || order.Status != statusBefore)

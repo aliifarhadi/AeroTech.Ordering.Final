@@ -25,6 +25,6 @@ public sealed class InfantReservationTests
             ReservationHarness.AirServices(order).Select(service => service.Id).Order(),
             unit.OrderServiceIds.Order());
         Assert.Equal(ReservationMemberStatus.Held, unit.Status);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 }

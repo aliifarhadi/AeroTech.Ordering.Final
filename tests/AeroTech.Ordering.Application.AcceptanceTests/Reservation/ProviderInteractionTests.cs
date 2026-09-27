@@ -202,7 +202,7 @@ public sealed class ProviderInteractionTests
         Assert.Equal(
             held.Seats.Select(seat => seat.SeatHoldReference),
             reservation.Units.Select(unit => unit.ProviderUnitRef));
-        Assert.Equal(OrderStatus.Confirmed, repeated.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, repeated.Status);
     }
 
     private static Order SeedOrderOf(ReservationHarness harness)

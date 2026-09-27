@@ -25,7 +25,15 @@ namespace AeroTech.Ordering.Persistence.FulfillmentReservationAggregate
             int batchSize,
             CancellationToken cancellationToken = default)
             => await _dbContext.FulfillmentReservations
-                .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held && reservation.ExpiresAt <= now)
+                .Where(reservation => reservation.Status == FulfillmentReservationStatus.Held)
+                .Where(reservation => reservation.ExpiresAt <= now
+                                      || (_dbContext.Orders.Any(order => order.Id == reservation.OrderId && order.LastTicketingDate <= now)
+                                          && _dbContext.FulfillmentTasks
+                                              .Where(task => task.FulfillmentReservationId == reservation.Id
+                                                             && task.TaskType == OrderFulfillmentTaskType.ReleaseReserved)
+                                              .OrderByDescending(task => task.CreatedAt)
+                                              .Select(task => (OrderFulfillmentStatus?)task.Status)
+                                              .FirstOrDefault() != OrderFulfillmentStatus.Failed))
                 .Select(reservation => reservation.OrderId)
                 .Distinct()
                 .Take(batchSize)

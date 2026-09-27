@@ -1,3 +1,4 @@
+using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Confirm.Backoffice;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation.Backoffice;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve.Backoffice;
 using AeroTech.Ordering.RestApi.V1.FulfillmentReservationAggregate.Requests;
@@ -7,6 +8,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace AeroTech.Ordering.RestApi.V1.FulfillmentReservationAggregate
 {
@@ -35,5 +37,14 @@ namespace AeroTech.Ordering.RestApi.V1.FulfillmentReservationAggregate
         [HttpPost("{reservationId:long}/Release")]
         public async Task<IActionResult> Release(long orderId, long reservationId, CancellationToken cancellationToken)
             => Ok(await _mediator.Send(new BackofficeReleaseReservationCommand(orderId, reservationId), cancellationToken));
+
+        [HttpPost("Confirmations")]
+        public async Task<IActionResult> Confirm(
+            long orderId,
+            [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ConfirmReservationsRequest? request,
+            CancellationToken cancellationToken)
+            => Ok(request?.ReservationIds is { Count: > 0 } reservationIds
+                ? await _mediator.Send(new BackofficeConfirmReservationsCommand(orderId, reservationIds), cancellationToken)
+                : await _mediator.Send(new BackofficeConfirmReservedCapacityCommand(orderId), cancellationToken));
     }
 }

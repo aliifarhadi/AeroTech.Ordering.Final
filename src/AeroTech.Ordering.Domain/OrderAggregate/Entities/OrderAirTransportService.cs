@@ -22,6 +22,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             string? fareFamily,
             string? fareType,
             long? rbdId,
+            long? cabinClassId,
             BaggageAllowance? checkedBaggageAllowance,
             BaggageAllowance? cabinBaggageAllowance,
             bool isRefundable,
@@ -40,6 +41,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             FareFamily = fareFamily;
             FareType = fareType;
             RbdId = rbdId;
+            CabinClassId = cabinClassId;
             CheckedBaggageAllowance = checkedBaggageAllowance;
             CabinBaggageAllowance = cabinBaggageAllowance;
             IsRefundable = isRefundable;
@@ -62,6 +64,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
         public string? FareType { get; private set; }
 
         public long? RbdId { get; private set; }
+
+        public long? CabinClassId { get; private set; }
 
         public BaggageAllowance? CheckedBaggageAllowance { get; private set; }
 

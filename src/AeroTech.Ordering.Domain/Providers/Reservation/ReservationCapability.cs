@@ -11,5 +11,6 @@ namespace AeroTech.Ordering.Domain.Providers.Reservation
         bool SupportsSplit,
         bool ProvidesUnitReference,
         bool SupportsReadBack,
-        bool ExpiresAutomatically);
+        bool ExpiresAutomatically,
+        bool SupportsSafeConfirmReplay);
 }

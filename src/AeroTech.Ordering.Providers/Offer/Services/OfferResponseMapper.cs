@@ -114,6 +114,7 @@ namespace AeroTech.Ordering.Providers.Offer.Services
                 flight.ArrivalDateTime,
                 flight.Duration,
                 flight.AircraftId,
+                flight.CabinClassId,
                 flight.RbdId,
                 flight.FlightCapacityId,
                 flight.Legs

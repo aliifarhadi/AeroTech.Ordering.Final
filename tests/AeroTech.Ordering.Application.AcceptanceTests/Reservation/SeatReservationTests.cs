@@ -24,7 +24,7 @@ public sealed class SeatReservationTests
         Assert.Equal([seat.AssociatedAirServiceId, seat.Id], unit.OrderServiceIds.Order());
         Assert.Equal("12A", _harness.FlightFlow.HoldRequests.Single().Flights.Single().Seats.Single().Seat);
         Assert.Equal("12A", unit.ObservedSeat);
-        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal(OrderStatus.ReservationUnconfirmed, order.Status);
     }
 
     [Fact]

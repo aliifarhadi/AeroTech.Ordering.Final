@@ -577,6 +577,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException CancellationRequiresServices(params object?[] args) =>
             new(2818, ExceptionMessages.CancellationRequiresServices, args) { HttpStatus = 500 };
 
+        public static BusinessException ConfirmedCancellationTaskTargetsAreInvalid(params object?[] args) =>
+            new(2819, ExceptionMessages.ConfirmedCancellationTaskTargetsAreInvalid, args) { HttpStatus = 500 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

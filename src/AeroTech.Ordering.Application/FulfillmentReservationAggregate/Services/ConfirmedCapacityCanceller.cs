@@ -31,6 +31,19 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
             _clock = clock;
         }
 
+        public async Task<IReadOnlyDictionary<long, IReadOnlySet<long>>> UnresolvedTargetsAsync(
+            IReadOnlyCollection<FulfillmentReservation> reservations,
+            CancellationToken cancellationToken = default)
+        {
+            var unresolvedTargets = new Dictionary<long, IReadOnlySet<long>>();
+
+            foreach (var reservation in reservations)
+                if (await _tasks.FindLatestAsync(reservation.Id, OrderFulfillmentTaskType.CancelConfirmed, cancellationToken) is { IsResumable: true } unresolvedTask)
+                    unresolvedTargets[reservation.Id] = ReservationUnitTargetsOf(unresolvedTask);
+
+            return unresolvedTargets;
+        }
+
         public async Task<ConfirmedCancellationOutcome?> ResumeAsync(FulfillmentReservation reservation, CancellationToken cancellationToken = default)
         {
             var unresolvedTask = await _tasks.FindLatestAsync(reservation.Id, OrderFulfillmentTaskType.CancelConfirmed, cancellationToken);
@@ -67,10 +80,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
             CancellationToken cancellationToken)
         {
             var provider = _providers.Resolve(task.FulfillmentProviderKey);
-            var targetUnitIds = task.Targets
-                .Where(target => target.TargetKind == FulfillmentTargetKind.ReservationUnit)
-                .Select(target => target.TargetId)
-                .ToList();
+            var targetUnitIds = ReservationUnitTargetsOf(task);
             var startedAt = _clock.GetDateTime();
 
             task.StartAttempt(_idGenerator, startedAt);
@@ -106,6 +116,11 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services
                 _idGenerator,
                 _clock.GetDateTime());
         }
+
+        private static IReadOnlySet<long> ReservationUnitTargetsOf(FulfillmentTask task)
+            => task.Targets.Count > 0 && task.Targets.All(target => target.TargetKind == FulfillmentTargetKind.ReservationUnit)
+                ? task.Targets.Select(target => target.TargetId).ToHashSet()
+                : throw ExceptionFactory.ConfirmedCancellationTaskTargetsAreInvalid(task.Id);
 
         private static ConfirmedCancellationOutcome ReplayOutcomeOf(ConfirmedCancellationOutcome outcome)
             => outcome is { OperationOutcome: ProviderOperationOutcome.Rejected, ObservedStatus: null }

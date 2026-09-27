@@ -13,7 +13,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Cancellation
             Order order,
             IReadOnlyCollection<OrderService> endingServices,
             IReadOnlyCollection<FulfillmentReservation> reservations,
-            IReadOnlySet<long> reservationsWithResumableCancellation);
+            IReadOnlyDictionary<long, IReadOnlySet<long>> unresolvedCancellationTargets);
 
         bool IsSettled(
             Order order,

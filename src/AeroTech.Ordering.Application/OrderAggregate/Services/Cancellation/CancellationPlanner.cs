@@ -22,21 +22,27 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Cancellation
             Order order,
             IReadOnlyCollection<OrderService> endingServices,
             IReadOnlyCollection<FulfillmentReservation> reservations,
-            IReadOnlySet<long> reservationsWithResumableCancellation)
+            IReadOnlyDictionary<long, IReadOnlySet<long>> unresolvedCancellationTargets)
         {
             var scope = ScopeOf(order, endingServices);
             var settlements = new List<ReservationSettlement>();
 
             foreach (var reservation in reservations)
             {
-                var openUnits = scope.EndingUnitsOf(reservation).Where(unit => !unit.Status.IsTerminalNegative()).ToList();
+                var endingUnits = scope.EndingUnitsOf(reservation);
+                var unresolvedUnitIds = unresolvedCancellationTargets.GetValueOrDefault(reservation.Id);
+
+                if (unresolvedUnitIds is not null && !unresolvedUnitIds.IsSubsetOf(endingUnits.Select(unit => unit.Id)))
+                    throw ExceptionFactory.OrderHasUnresolvedFulfillmentEffect(order.Id);
+
+                var openUnits = endingUnits.Where(unit => !unit.Status.IsTerminalNegative()).ToList();
 
                 if (openUnits.Count == 0)
                     continue;
 
                 var openUnitIds = openUnits.Select(unit => unit.Id).ToList();
 
-                if (reservationsWithResumableCancellation.Contains(reservation.Id))
+                if (unresolvedUnitIds is not null)
                     settlements.Add(new CancellationRecovery(reservation, openUnitIds));
                 else if (reservation.Status == FulfillmentReservationStatus.Held)
                     settlements.Add(HeldReleaseOf(reservation, openUnitIds, scope));

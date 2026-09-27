@@ -210,6 +210,7 @@
         public const string ElectronicTicketIsNotVoidable = "Electronic ticket '{0}' is {1}, so it cannot be voided; refund it instead.";
         public const string TicketCouponIsNotVoidable = "Coupon {1} of electronic ticket '{0}' is {2}, so the ticket cannot be voided; refund it instead.";
         public const string TicketCouponControlIsNotLocal = "Coupon {1} of electronic ticket '{0}' is under {2} control, so the ticket cannot be voided locally; refund it instead.";
+        public const string ConfirmedCancellationTaskTargetsAreInvalid = "Confirmed-capacity cancellation task '{0}' does not target reservation units only, so its provider effect scope is unknown.";
         public const string CancellationRequiresServices = "A cancellation of order '{0}' must end at least one active service.";
         public const string ExternalElectronicTicketVoidIsNotSupported = "Electronic ticket '{0}' is under external document authority, which has no void provider; refund it instead.";
     }

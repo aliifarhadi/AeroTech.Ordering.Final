@@ -108,7 +108,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder
                 order,
                 endingServices,
                 overlapping,
-                await ReservationsWithResumableCancellationAsync(overlapping, cancellationToken));
+                await _canceller.UnresolvedTargetsAsync(overlapping, cancellationToken));
             var failures = new Dictionary<long, ProviderFailure?>();
 
             foreach (var settlement in settlements)
@@ -164,19 +164,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder
             return stillConfirmed.Count == 0
                 ? null
                 : await CancelConfirmedAsync(recovery.Reservation, stillConfirmed, reasonCode, cancellationToken);
-        }
-
-        private async Task<IReadOnlySet<long>> ReservationsWithResumableCancellationAsync(
-            IReadOnlyCollection<FulfillmentReservation> reservations,
-            CancellationToken cancellationToken)
-        {
-            var resumable = new HashSet<long>();
-
-            foreach (var reservation in reservations)
-                if (await _tasks.FindLatestAsync(reservation.Id, OrderFulfillmentTaskType.CancelConfirmed, cancellationToken) is { IsResumable: true })
-                    resumable.Add(reservation.Id);
-
-            return resumable;
         }
 
         private static IReadOnlyList<FulfillmentReservation> OverlappingReservations(

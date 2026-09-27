@@ -67,6 +67,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 change.SourceReference,
                 change.SourceSystem,
                 change.ReasonCode,
+                change.ReasonText,
                 change.IsInvoluntary,
                 change.WaiverCode,
                 change.CommittedAt);

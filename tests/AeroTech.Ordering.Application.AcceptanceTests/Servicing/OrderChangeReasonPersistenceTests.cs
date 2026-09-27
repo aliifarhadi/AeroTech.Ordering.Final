@@ -16,6 +16,7 @@ using AeroTech.Ordering.Providers.FlightFlow.Services;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById;
 using AeroTech.Ordering.Query._Shared.Authorization;
 using AeroTech.Ordering.Query._Shared.DbContexts;
+using AeroTech.Ordering.Query._Shared.ReferenceCodes;
 using AeroTech.Ordering.Synchronizer.OrderAggregate;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -69,6 +70,19 @@ public sealed class OrderChangeReasonPersistenceTests : IAsyncLifetime
         Assert.Equal(
             [(OrderChangeType.Create, (string?)null, (string?)null), (OrderChangeType.Cancel, nameof(VoidReason.CustomerRequest), ReasonText)],
             detail!.Changes.Select(change => (change.ChangeType, change.ReasonCode, change.ReasonText)));
+    }
+
+    [Fact]
+    public async Task Backoffice_order_detail_response_carries_the_reason_text()
+    {
+        var order = await CancelledThroughBackofficeAsync();
+
+        await using var reader = _database.NewQueryContext();
+        var detail = await new GetBackofficeOrderByIdService(new GetOrderByIdService(reader), new ReferenceCodeReader(reader)).ExecuteAsync(order.Id);
+
+        Assert.Equal(
+            [((string?)null, (string?)null), (nameof(VoidReason.CustomerRequest), ReasonText)],
+            detail!.Changes.Select(change => (change.ReasonCode, change.ReasonText)));
     }
 
     private async Task<Order> CancelledThroughBackofficeAsync()

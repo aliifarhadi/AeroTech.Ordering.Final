@@ -152,6 +152,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         string? SourceReference,
         string? SourceSystem,
         string? ReasonCode,
+        string? ReasonText,
         bool IsInvoluntary,
         string? WaiverCode,
         DateTimeOffset CommittedAt);

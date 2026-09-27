@@ -11,6 +11,7 @@ using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Res
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder.Backoffice;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Services;
 using AeroTech.Ordering.Application.OrderAggregate.Services.Cancellation;
@@ -32,6 +33,7 @@ namespace AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 
 public sealed class ReservationHarness
 {
+    private readonly ICreateOrderFromOfferService _create;
     private readonly IReserveService _reserve;
     private readonly IReleaseReservationService _release;
     private readonly IConfirmService _confirm;
@@ -67,6 +69,7 @@ public sealed class ReservationHarness
 
         var releaser = new ReservationReleaser(Tasks, providers, UnitOfWork, Ids, Clock);
 
+        _create = new CreateOrderFromOfferService(OfferProvider, Orders, Synchronizer, UnitOfWork, Ids, Clock);
         _reserve = new ReserveService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
         _release = new ReleaseReservationService(Orders, Reservations, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
         _confirm = new ConfirmService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
@@ -139,6 +142,8 @@ public sealed class ReservationHarness
 
     public StubAirlineOfficeTimeZoneResolver OfficeTimeZones { get; } = new();
 
+    public StubOfferProvider OfferProvider { get; } = new();
+
     public Order SeedOrder(
         IReadOnlyList<TravellerSpec> travellers,
         IReadOnlyList<BoundSpec> bounds,
@@ -149,6 +154,21 @@ public sealed class ReservationHarness
         var order = OrderFixture.Create(Ids, Clock, travellers, bounds, seats, lastTicketingDate, pricingUnits);
         Orders.Seed(order);
         return order;
+    }
+
+    public async Task<Order> CreateFromOfferAsync(
+        IReadOnlyList<TravellerSpec> travellers,
+        IReadOnlyList<BoundSpec> bounds,
+        IReadOnlyList<SeatSpec>? seats = null,
+        DateTimeOffset? lastTicketingDate = null,
+        IReadOnlyList<PricingUnitSpec>? pricingUnits = null)
+    {
+        var offer = OrderFixture.Offer(Clock, travellers, bounds, pricingUnits, lastTicketingDate);
+        OfferProvider.Offers[offer.OfferId] = offer;
+
+        var created = await _create.ExecuteAsync(OrderFixture.Args(travellers, seats ?? []));
+
+        return Orders.Find(created.OrderId)!;
     }
 
     public Order SeedOrder(OfferDetail offer, IReadOnlyList<TravellerSpec> travellers)

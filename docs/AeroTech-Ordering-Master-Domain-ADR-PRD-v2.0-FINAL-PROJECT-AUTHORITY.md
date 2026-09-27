@@ -5,7 +5,7 @@
 **Reviewed source HEAD:** `85f48bb652d96ce155c96ee07045223656db1ecb` (`k8s-stg`, `Stage 2- Final`)  
 **Implementation policy:** Full domain is designed now; code is materialized stage-by-stage only.  
 **Owner decision:** Ordering core continues from Stage 3 without a Payment/JetPay prerequisite. Financial orchestration is integrated later as an additive boundary, not as an intrinsic Ticket/Reservation domain dependency. This document is the full-horizon domain authority; implementation remains deliberately Stage-by-Stage.  
-**In-place amendment — Stage 5 R2 Domain Closure (Owner decision, 2026-09-27):** `OrderChange.ReasonText` (§9.1), canonical `ReservationValidationEvidence` (§13.1, §13.6), reservation root status as summary only with unit-scoped Issue eligibility (§27.3), and the derived `FarePricingAtom` pricing-integrity rule (§7.4). This document remains the single authority; no v2.1/v2.2 exists.
+**In-place amendment — Stage 5 R2 Domain Closure (Owner decision, 2026-09-27):** `OrderChange.ReasonText` (§9.1), canonical `ReservationValidationEvidence` (§13.1, §13.6), reservation root status as summary only with unit-scoped Issue eligibility (§27.3), and the derived `FarePricingAtom` pricing-integrity rule (§7.4). The Stage 5 R2 flow-conformance amendment adds the implemented flow contracts (§27.6), the channel orchestration boundary (§27.7), the source-verified provider capability matrix (§14.5, §36) and the source-gated Offer acceptance gap. This document remains the single authority; no v2.1/v2.2 exists.
 
 ---
 
@@ -1328,17 +1328,14 @@ ambiguous mutation outcome
     └─ neither verified -> remain Unknown; manual/source reconciliation required
 ```
 
-### Current FlightFlow evidence boundary at reviewed Ordering HEAD
+### Verified provider capability — Stage 5 R2 flow conformance
 
-The reviewed Ordering adapter proves only the following local facts:
+The capability of every external operation used through Stage 5 has now been verified against the provider source (AirAvail/AirOffer `3dd2c19`, AirPrice `1b41f08`, FlightFlow `d2180b2e`). The matrix is kept in §36. Recovery follows it exactly:
 
-- CreateHold currently sends a persisted `IdempotencyKey` and expects echoed identity.
-- ConfirmHold currently sends a HoldId in the Ordering adapter.
-- Current Ordering code does not expose a Confirm read-back operation.
+- FlightFlow CreateHold, ConfirmHold, ReleaseHold and CancelConfirmed have no authoritative read-back, but do have verified safe same-effect replay. An ambiguous outcome therefore replays the exact persisted request.
+- AirPrice validation and AirOffer detail are side-effect-free queries.
 
-These observations **do not prove** that FlightFlow itself lacks confirm idempotency, resource-level duplicate protection or another read API. Stage 3 must inspect the actual FlightFlow contract/source. If available capability says safe retry/read-back exists, implement that branch. If it says it does not, implement the no-replay branch. If source cannot establish either answer, report `BLOCKED_SOURCE`; do not infer from the Ordering adapter.
-
-The same rule applies to FlightFlow automatic expiry, INF wire shape and the meaning of any provider-only monetary/request field.
+The same rule still applies to INF wire shape and to the meaning of any provider-only monetary or request field. Any operation added later must be verified before its recovery branch is chosen.
 
 ---
 
@@ -2353,6 +2350,133 @@ Requires:
 ## 27.5 Delivery-aware rules
 
 `InProgress` delivery or unknown coupon control can block refund/exchange. `NotClaimed`/NoShow is an input to AirPrice servicing policy, not an automatic local penalty rule.
+
+## 27.6 Implemented Flow Contracts — Stage 1 through Stage 5
+
+Commands stay separate, composable primitives. The lifecycle is kept coherent by the domain invariants of Order, FulfillmentReservation, FulfillmentTask, ElectronicTicket and DocumentStock, and by the end-to-end flow suite FLOW-01..FLOW-16. There is no generic workflow, saga or process-manager aggregate. The external authorities and their verified capabilities are listed in §36.
+
+### FC-1 Create order from offer
+
+| Aspect | Contract |
+|---|---|
+| Starting state | No Order; the channel supplies an AirOffer `OfferId` and travellers. |
+| Command sequence | `CreateOrderFromOffer`. |
+| Business preconditions | The offer is retrievable; the traveller set and passenger types match the offer; at least one adult; no more infants than adults; the accepted fare topology is consistent with the priced coupons. |
+| External authority | AirOffer `FlightOffers/Details` — a stateless re-price of the `OfferId` (§36). |
+| Local commit point | One transaction: Order (`Created`, `CommercialVersion` 1), `OrderChange(Create)`, itinerary, services, fare topology, pricing lines, `OrderCreated` outbox message, read model. |
+| Resulting truth | Accepted commercial snapshot = the AirOffer response observed at Create; `LastTicketingDate` from the offer; no reservation. |
+| Ambiguous outcome | An offer retrieval failure creates nothing (2606). |
+| Retry / recovery | No idempotency: a repeated Create makes a new Order. Duplicate-booking protection is not materialized. |
+| Terminal outcome | `Created`. |
+
+**Offer acceptance authority — source-gated production gap (OFFER_CREATE_AUTHORITY = NOT_VERIFIED).** At AirAvail `3dd2c19` the Details call:
+
+- decodes a plain-text, unsigned `OfferId`, including the channel, customer, country, currency and `SalesDate` it encodes;
+- re-prices it on every call from the current flight and fare rows;
+- takes ROE and charges as of the encoded `SalesDate`;
+- derives `LastTicketingDate = SalesDate + the minimum fare ticketing restriction`.
+
+The source shows no offer TTL, acceptance window or persisted offer, and it has no integrity protection on the id. Reserve-time AirPrice validation checks fare-rule permission and time limit, not the accepted amounts. The Create → Reserve price is therefore **not** claimed production-price-safe until AirOffer publishes an acceptance guarantee. No reprice endpoint is invented, and Stage 1 is not redesigned.
+
+### FC-2 Reserve
+
+| Aspect | Contract |
+|---|---|
+| Starting state | The Order is in a reservable status; Active reservation-requiring services are not covered by positive or unresolved reservation truth. |
+| Command sequence | `ReserveOrder` or `ReserveServices`. |
+| Business preconditions | The hard ticketing deadline is open, and AirPrice reservation validation is permitted for the scope, expanded to its pricing atoms (§7.4). |
+| External authority | AirPrice `BoundReservationValidation`; FlightFlow `CreateHold`. |
+| Local commit point | (1) Before the call: the `FulfillmentReservation` (`Pending`) with its `ReservationValidationEvidence`, the `ReserveInventory` task and the exact provider request. (2) After the call: units, provider references, the host `RecordLocator` (allocated once, on first positive coverage) and the Order summary. |
+| Resulting truth | Reservation and units are `Held` / `Confirmed` / `Waitlisted` / `Rejected` / `Mixed`. Provider references never replace the `RecordLocator`. |
+| Ambiguous outcome | Reservation and task stay `Unknown`; the Order is not failed. |
+| Retry / recovery | The same command replays the exact persisted `CreateHold` (same idempotency identity, same effect) for the same reservation identity. |
+| Terminal outcome | `Held` goes on to FC-3 or FC-4. A definitive negative result allows a new Reserve with a new reservation identity. |
+
+### FC-3 Confirm reserved capacity
+
+| Aspect | Contract |
+|---|---|
+| Starting state | A `Held` HoldThenConfirm reservation. |
+| Command sequence | `ConfirmReservedCapacity` or `ConfirmReservations`. |
+| Business preconditions | The hold has not lapsed; the hard ticketing deadline is open; `ReservationValidationEvidence` covers the reservation's Air services at the current `CommercialVersion`, otherwise it is refreshed through AirPrice first (§13.6). |
+| External authority | AirPrice (refresh); FlightFlow `ConfirmHold`. |
+| Local commit point | Task and exact request before the call; outcome and Order summary after. |
+| Resulting truth | Units `Confirmed`; the Order is `Confirmed` once all required coverage is Confirmed. |
+| Ambiguous outcome | `Unknown`; Issue stays blocked because the target unit is not `Confirmed`. |
+| Retry / recovery | Replay the exact persisted `ConfirmHold` (safe replay verified), regardless of a later deadline or stale validation. A refusal without observed state stays `Unknown`. |
+| Terminal outcome | `Confirmed`, or truthful provider state (`Expired` / `Released` / `Cancelled` / `Mixed`). |
+
+### FC-4 Release and deadline enforcement
+
+| Aspect | Contract |
+|---|---|
+| Starting state | A `Held` reservation, or an Order in a reservable status past its hard ticketing deadline. |
+| Command sequence | `ReleaseReservation`, or the deadline poller (`EnforceDeadlines`). |
+| Business preconditions | The reservation is `Held`. Expiry is recorded only under provider-clock expiry semantics. |
+| External authority | FlightFlow `ReleaseHold`. |
+| Local commit point | Task and request before the call; `Released` only after definitive release success. The Order becomes `Expired` only while in a reservable status. |
+| Resulting truth | Capacity `Released` / `Expired`; Order `ReserveFailed` / `Expired`. A ticketed Order is never expired. |
+| Ambiguous outcome | The reservation stays `Held`; the release task is resumable. |
+| Retry / recovery | Replay the persisted release; a release of an already-released hold succeeds with the same effect. |
+| Terminal outcome | `Released` / `Expired` history is kept; a new Reserve uses a new identity. |
+
+### FC-5 Issue local ETKT
+
+| Aspect | Contract |
+|---|---|
+| Starting state | Active ticketable Air services not documented by a surviving non-void coupon. |
+| Command sequence | `IssueOrder(documentStockId)`. |
+| Business preconditions | §27.3: exact latest target unit `Confirmed`; intact pricing atoms; current validation evidence; hard ticketing deadline open; stock and snapshot data complete; no overlapping unresolved effect. |
+| External authority | AirPrice validation-only refresh when evidence is not current. There is no provider document call (local document authority). |
+| Local commit point | One transaction: stock allocations, ETKTs, coupons, price links, the `IssueTicket` task, the Order summary and the `ElectronicTicketIssued` outbox message. |
+| Resulting truth | The Order is `Ticketed` when every remaining Active Air service is documented. The reservation root is left as it is (it may be `Mixed`). |
+| Ambiguous outcome | None beyond validation; a refused refresh leaves no effect. |
+| Retry / recovery | A repeated Issue returns the existing documents; no second number is allocated. |
+| Terminal outcome | `Ticketed`. |
+
+### FC-6 Cancel unissued commercial scope
+
+| Aspect | Contract |
+|---|---|
+| Starting state | Active services without surviving ETKT coverage. |
+| Command sequence | `CancelOrder` (all or selected services). |
+| Business preconditions | Dependency closure (lap infants, seats); no surviving document (2803); no competing unresolved effect (2778); no unresolved confirmed cancellation outside the scope (2778). |
+| External authority | FlightFlow `ReleaseHold` for Held capacity (whole operation; partial → 2805); FlightFlow `CancelConfirmed` for the selected Confirmed units. |
+| Local commit point | Provider settlement first. Then, in one commit and only when every settlement succeeded: `OrderChange(Cancel, ReasonCode, ReasonText)`, `EndedByChangeId`, `CommercialVersion` + 1. |
+| Resulting truth | Services and items `Cancelled`; no pricing, penalty or refund lines; the Order is `Cancelled` when no Active service remains. Pre-cancellation validation evidence becomes stale. |
+| Ambiguous outcome | Settlement `Unknown`: no commercial commit, and the services stay Active. |
+| Retry / recovery | The persisted `CancelConfirmed` request is replayed for exactly its persisted target units. A superset first recovers, then cancels the remainder under a new task. A repeated cancel of ended scope is a no-op. |
+| Terminal outcome | A fully or partially cancelled Order; FC-5 applies to the remainder. |
+
+### FC-7 Void local ETKT
+
+| Aspect | Contract |
+|---|---|
+| Starting state | An `Issued` ETKT under local document authority. |
+| Command sequence | `VoidDocuments(ticket, expectedDocumentVersion)`. |
+| Business preconditions | Matching document version; `now < VoidDeadline` (issuing office local midnight); caller office = issuing office; coupons open and locally controlled. |
+| External authority | None (external authority → 2817). |
+| Local commit point | One transaction: `DocumentVoidRecord`, coupons `Void`, ticket `Voided` (version + 1), `VoidTicket` task, `ElectronicTicketVoided` outbox message, Order summary. |
+| Resulting truth | The service stays Active and the capacity stays Confirmed; the Order is no longer `Ticketed`. |
+| Ambiguous outcome | None. |
+| Retry / recovery | An already-voided ticket is a no-op; a stale version is refused (2810). |
+| Terminal outcome | `Voided`; the services may then be cancelled through FC-6. |
+
+### FC-8 Partial cancellation, then Issue
+
+FC-6 on part of the scope may leave a truthful `Mixed` reservation root and a new `CommercialVersion`. FC-5 then:
+
+- issues the remainder only when its pricing atoms are intact (otherwise 2820, before any AirPrice call, stock allocation, task or document);
+- refreshes validation, because the old evidence is stale by version.
+
+## 27.7 Channel orchestration boundary
+
+- **Backoffice:** the only channel exposing the complete Stage 1–5 lifecycle (Create, Reserve, Confirm, Release, Issue, Cancel, Void, Get).
+- **OTA and OtaPanel:** Create, Get and Remarks only.
+- **Internal:** a maintenance subset (Reserve, Release); it is not a sell path.
+- **Service-to-Service:** exposes nothing yet.
+
+No authoritative channel or orchestrator product contract exists: **CHANNEL_ORCHESTRATION_CONTRACT = SOURCE_GATED**. When such a contract exists, orchestration belongs at the channel/application boundary, composing the existing commands. It is never a new domain aggregate. Agency issuance additionally depends on the Stage P financial gate.
 
 ---
 
@@ -3596,16 +3720,29 @@ If a proposed field cannot name a scenario and an owner/source, it is not author
 
 The following register intentionally distinguishes what Ordering currently sends from what an external provider actually guarantees.
 
+### Verified capability matrix (Stage 5 R2 flow conformance)
+
+Verified against provider source: AirAvail/AirOffer `3dd2c19`, AirPrice `1b41f08`, FlightFlow `d2180b2e`.
+
+| Operation | AcceptsIdempotencyIdentity | DuplicateMutationSemantics | SupportsAuthoritativeReadBack | SupportsSafeReplayAfterAmbiguousOutcome | ResultGranularity | ExpiryAuthority | Source evidence |
+|---|---|---|---|---|---|---|---|
+| AirOffer `FlightOffers/Details` (Create) | Not applicable — no mutation | Not applicable — every call re-prices | VerifiedNo — no persisted offer | VerifiedYes — side-effect free, but a replay may price differently | AtomicOperation | None: no offer TTL; `LastTicketingDate` = encoded `SalesDate` + minimum fare ticketing restriction | `ServiceFlightOfferDetailService`, `OfferPricePipeline`, `JourneyOfferIdCodec` |
+| AirPrice `BoundReservationValidation` | Not applicable — query | Not applicable | Not applicable | VerifiedYes — side-effect free | AtomicOperation — the first refused fare unit fails the request | Returns `TimeLimit` = minimum reservation time limit across all fare units | `AirFareBoundReservationValidationQueryHandler`, `BoundReservationValidationArgumentsFactory` |
+| FlightFlow CreateHold | VerifiedYes — `IdempotencyKey` | SameEffect — the existing hold returns the same HoldId / ExpiresAt | VerifiedNo — the read endpoint is not exposed | VerifiedYes | AtomicOperation | ProviderClockGuaranteed — hold status is evaluated on the provider clock | `HoldFlightSeatsCommandHandler`, `FlightSeatHold.StatusAt` |
+| FlightFlow ConfirmHold | VerifiedNo | SameEffect | VerifiedNo | VerifiedYes | AtomicOperation | ProviderClockGuaranteed — confirm-time expiry check | Stage 3 closure; `ConfirmHeldFlightSeats` |
+| FlightFlow ReleaseHold | VerifiedNo | SameEffect — all-Released returns success with zero mutation | VerifiedNo | VerifiedYes | AtomicOperation — a mixed or non-releasable state gets a structured refusal and nothing is partially released | ProviderClockGuaranteed | `FlightGuards.AvoidToReleaseSeatHoldsThatAreNotReleasable` |
+| FlightFlow CancelConfirmed | VerifiedNo | SameEffect for the exact already-cancelled selection | VerifiedNo | VerifiedYes | AtomicOperation over the selected units | Not applicable — confirmed capacity does not expire | Stage 5; `CancelConfirmedHeldFlightSeats` |
+| Local document authority (Issue / Void ETKT) | Not applicable — local transaction | Not applicable | Not applicable | Not applicable — no external effect | AtomicOperation | Not applicable | Stage 4 / Stage 5 |
+
+Rows still open:
+
 | Provider/operation | What is verified in reviewed Ordering source | What is **not** proven by that observation | Stage rule |
 |---|---|---|---|
-| FlightFlow CreateHold | Ordering persists/sends an idempotency key and validates echoed identity. | Server-side duplicate semantics/read-back guarantees beyond the current adapter are not established here. | Stage 2 closed behavior remains; if provider source contradicts it, raise explicit ADR. |
-| FlightFlow ConfirmHold | Current Ordering adapter sends `HoldId` to the confirm endpoint. | This does **not** prove lack of idempotency, resource-level duplicate protection, or confirm read-back. | Stage 3 must inspect actual FlightFlow contract/source and implement the verified branch. |
-| FlightFlow automatic expiry | Current Ordering capability currently marks it automatic. | Adapter configuration alone does not prove production provider guarantee/schedule. | Use provider source/event/read-back authority; otherwise expiry remains capability-conditional. |
 | FlightFlow INF wire shape | Ordering domain knows lap infant consumes no independent seat. | Whether INF appears in provider `Passengers[]` is provider-specific. | Verify provider contract; otherwise `BLOCKED_SOURCE`. |
 | FlightFlow request `Revenue` | Current adapter uses a neutral-looking local value. | Its business meaning is not established by generic airline standards. | Keep adapter-only only with provider authority; never derive from customer price by guess. |
-| Future document issuer mutations | Ordering final domain requires recoverable external effects. | Idempotency/read-back behavior differs by issuer/GDS/provider. | Stage 4 must build operation-specific capability matrix before retry policy. |
+| External document issuer mutations | Ordering refuses external-authority void (2817) and issues only under local document authority. | Idempotency/read-back behavior differs by issuer/GDS/provider. | Build the operation-specific capability matrix in the Stage that materializes an external issuer. |
 
-This table is not a permanent claim about FlightFlow internals. It is an evidence register for the reviewed source state and must be updated when authoritative provider contracts are available.
+This register records verified source states. It is updated whenever a provider contract changes or a new operation is used.
 
 ---
 

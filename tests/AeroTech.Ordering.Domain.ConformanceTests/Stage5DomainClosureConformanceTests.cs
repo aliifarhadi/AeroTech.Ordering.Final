@@ -59,6 +59,16 @@ public sealed class Stage5DomainClosureConformanceTests
     }
 
     [Fact]
+    public void Master_defines_the_implemented_flow_contracts_and_their_source_gated_boundaries()
+    {
+        Assert.Contains("## 27.6 Implemented Flow Contracts — Stage 1 through Stage 5", _master);
+        Assert.Contains("OFFER_CREATE_AUTHORITY = NOT_VERIFIED", _master);
+        Assert.Contains("**CHANNEL_ORCHESTRATION_CONTRACT = SOURCE_GATED**", _master);
+        Assert.Contains("### Verified capability matrix (Stage 5 R2 flow conformance)", _master);
+        Assert.Contains("There is no generic workflow, saga or process-manager aggregate.", _master);
+    }
+
+    [Fact]
     public void Source_materializes_the_stage5_closure_decisions()
     {
         Assert.Equal(typeof(string), FindDomainType("OrderChange")!.GetProperty("ReasonText")!.PropertyType);

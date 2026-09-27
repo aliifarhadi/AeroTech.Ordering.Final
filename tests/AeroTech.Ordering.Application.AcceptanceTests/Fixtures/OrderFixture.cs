@@ -71,7 +71,7 @@ public static class OrderFixture
     public static Order CreateFrom(OfferDetail offer, IIdGenerator ids, IClock clock, IReadOnlyList<TravellerSpec> travellers)
         => Order.Create(Args(travellers, []), offer, ids, clock);
 
-    private static CreateOrderArgs Args(IReadOnlyList<TravellerSpec> travellers, IReadOnlyList<SeatSpec> seats)
+    public static CreateOrderArgs Args(IReadOnlyList<TravellerSpec> travellers, IReadOnlyList<SeatSpec> seats)
         => new(
             "OFFER-1",
             42,

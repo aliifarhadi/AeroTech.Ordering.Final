@@ -1,4 +1,3 @@
-using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Ordering.Query.ElectronicTicketAggregate.Models;
 using AeroTech.Ordering.Query.OrderAggregate.Dto;
 using AeroTech.Ordering.Query.OrderAggregate.Models;
@@ -153,18 +152,13 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 service.FareBasis,
                 service.FareFamily,
                 service.FareType,
-                ToBaggageDto(service.CheckedBaggagePieces, service.CheckedBaggageWeight, service.CheckedBaggageUnit),
-                ToBaggageDto(service.CabinBaggagePieces, service.CabinBaggageWeight, service.CabinBaggageUnit),
+                BaggageAllowanceDto.Of(service.CheckedBaggagePieces, service.CheckedBaggageWeight, service.CheckedBaggageUnit),
+                BaggageAllowanceDto.Of(service.CabinBaggagePieces, service.CabinBaggageWeight, service.CabinBaggageUnit),
                 service.IsRefundable,
                 service.IsChangeable,
                 service.IsUpgradable,
                 service.SeatNumber,
                 service.EndedByChangeId);
-
-        private static BaggageAllowanceDto? ToBaggageDto(int? pieces, decimal? weight, WeightUnit? unit)
-            => pieces is null || weight is null || unit is null
-                ? null
-                : new BaggageAllowanceDto(pieces.Value, weight.Value, unit.Value);
 
         private static OrderPricingLineDto ToDto(OrderPricingLineReadModel line, IEnumerable<OrderPricingAllocationReadModel> allocations)
             => new(

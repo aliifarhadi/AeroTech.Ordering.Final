@@ -354,7 +354,7 @@ IATA benchmark: at Order time a Service occurrence should be passenger-specific 
 | `BookingClass` | `string?` | Yes | NOW |
 | `FareBasis` | `string?` | Yes | NOW |
 | `FareFamily` | `string?` | Yes | NOW |
-| `FareType` | `string?` | Yes | NOW |
+| `FareType` | `AirFareType?` | Yes | NOW |
 | `RbdId` | `long?` | Yes | NOW |
 | `CabinClassId` | `long?` | Yes | CURRENT-SOURCE-AVAILABLE / ADDITIVE CORRECTION |
 | `CheckedBaggageAllowance` | `BaggageAllowance?` | Yes | NOW |
@@ -366,6 +366,8 @@ IATA benchmark: at Order time a Service occurrence should be passenger-specific 
 The three boolean terms are accepted-sale snapshots only. Refund/exchange authority comes from the current AirPrice servicing decision.
 
 `CabinClassId` is a confirmed current-source preservation gap: the reviewed `FlightOfferDetailResponse.OfferFlight` carries it, while the current `OfferDetail/OrderAirTransportService` path does not persist it. Preserve it at the earliest next permitted additive schema change (no later than Issue Stage). Existing rows remain null; never infer a cabin from RBD/booking class.
+
+`FareType` is the source fare type as `AeroTech.Messages.AirPrice.Enums.AirFareType` (owner decision, 2026-10-27; it was previously kept as the raw source string). Create parses the offer's fare-type name: a blank value stays null and any other unrecognised value is rejected with 2823 (422), like every other unrecognised offer value.
 
 ---
 
@@ -395,7 +397,7 @@ Materialize in Ancillary Stage, not now.
 | `SubGroupCode` | `string?` | Yes | Optional Services subgroup. |
 | `CommercialName` | `string?` | Yes | Source commercial description. |
 | `SsrCode` | `string?` | Yes | Associated SSR code if service definition supplies it. |
-| `Quantity` | `decimal` | No | Purchased quantity; default source semantics, not guessed. |
+| `Quantity` | `int` | No | Purchased whole-unit count (owner decision, 2026-10-27); default source semantics, not guessed. |
 | `UnitCode` | `string?` | Yes | Unit if quantity is not count. |
 | `CoveredAirServiceIds` | `IReadOnlyCollection<long>` | No | 0..N air-service coverage; use only for service types that genuinely span more than one segment. |
 | `Refundability` | `RefundabilityRule?` | Yes | Accepted optional-service term snapshot. |
@@ -705,12 +707,14 @@ The current Ordering enum values `ThroughOneWay` and `SectorSum` are **not accep
 | `BookingClass` | `string?` | Yes | NOW |
 | `FareBasis` | `string?` | Yes | NOW |
 | `FareFamily` | `string?` | Yes | NOW |
-| `FareType` | `string?` | Yes | NOW |
+| `FareType` | `AirFareType?` | Yes | NOW |
 | `CoveredOrderServiceIds` | `IReadOnlyCollection<long>` | No | NOW |
 
 Fare Component is an occurrence, not the AirFare master identity. Two components using the same `AirFareId` remain distinct occurrences when source evidence distinguishes them.
 
 No tariff/rule/routing field is invented. Add such fields later only when an actual accepted AirPrice/AirOffer contract supplies them.
+
+`FareType` is `AirFareType?`, parsed exactly as `OrderAirTransportService.FareType` (§6.5; owner decision, 2026-10-27).
 
 ## 7.4 `FarePricingAtom` — derived pricing-integrity rule (Stage 5 R2)
 
@@ -2897,7 +2901,7 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `BookingClass` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
 | `FareBasis` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
 | `FareFamily` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
-| `FareType` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
+| `FareType` | `AirFareType?` | CURRENT-CODE-VERIFIED / OWNER-DECISION | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
 | `RbdId` | `long?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
 | `CabinClassId` | `long?` | AEROTECH-CONTRACT-VERIFIED source; additive persistence correction required | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
 | `CheckedBaggageAllowance` | `BaggageAllowance?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S29, S34-S40, S42-S57, S67-S84 |
@@ -2923,7 +2927,7 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `SubGroupCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `CommercialName` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `SsrCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
-| `Quantity` | `decimal` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `Quantity` | `int` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `UnitCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `CoveredAirServiceIds` | `IReadOnlyCollection<long>` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `Refundability` | `RefundabilityRule?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
@@ -3139,7 +3143,7 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `BookingClass` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S05, S11, S28, S46-S57, S79-S84 |
 | `FareBasis` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S05, S11, S28, S46-S57, S79-S84 |
 | `FareFamily` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S05, S11, S28, S46-S57, S79-S84 |
-| `FareType` | `string?` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S05, S11, S28, S46-S57, S79-S84 |
+| `FareType` | `AirFareType?` | CURRENT-CODE-VERIFIED / OWNER-DECISION | S01-S05, S11, S28, S46-S57, S79-S84 |
 | `CoveredOrderServiceIds` | `IReadOnlyCollection<long>` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S05, S11, S28, S46-S57, S79-S84 |
 ## 8.1 `PricingLine`
 

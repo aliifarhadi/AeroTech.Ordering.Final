@@ -91,7 +91,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         string? BookingClass,
         string? FareBasis,
         string? FareFamily,
-        string? FareType,
+        AirFareType? FareType,
         BaggageAllowanceDto? CheckedBaggage,
         BaggageAllowanceDto? CabinBaggage,
         bool IsRefundable,
@@ -100,7 +100,13 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         string? SeatNumber,
         long? EndedByChangeId);
 
-    public sealed record BaggageAllowanceDto(int Pieces, decimal Weight, WeightUnit Unit);
+    public sealed record BaggageAllowanceDto(int Pieces, decimal Weight, WeightUnit Unit)
+    {
+        public static BaggageAllowanceDto? Of(int? pieces, decimal? weight, WeightUnit? unit)
+            => pieces is null || weight is null || unit is null
+                ? null
+                : new BaggageAllowanceDto(pieces.Value, weight.Value, unit.Value);
+    }
 
     public sealed record OrderPricingLineDto(
         long Id,

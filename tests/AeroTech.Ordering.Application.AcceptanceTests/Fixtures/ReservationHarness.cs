@@ -156,14 +156,16 @@ public sealed class ReservationHarness
         return order;
     }
 
-    public async Task<Order> CreateFromOfferAsync(
+    public Task<Order> CreateFromOfferAsync(
         IReadOnlyList<TravellerSpec> travellers,
         IReadOnlyList<BoundSpec> bounds,
         IReadOnlyList<SeatSpec>? seats = null,
         DateTimeOffset? lastTicketingDate = null,
         IReadOnlyList<PricingUnitSpec>? pricingUnits = null)
+        => CreateFromOfferAsync(OrderFixture.Offer(Clock, travellers, bounds, pricingUnits, lastTicketingDate), travellers, seats);
+
+    public async Task<Order> CreateFromOfferAsync(OfferDetail offer, IReadOnlyList<TravellerSpec> travellers, IReadOnlyList<SeatSpec>? seats = null)
     {
-        var offer = OrderFixture.Offer(Clock, travellers, bounds, pricingUnits, lastTicketingDate);
         OfferProvider.Offers[offer.OfferId] = offer;
 
         var created = await _create.ExecuteAsync(OrderFixture.Args(travellers, seats ?? []));

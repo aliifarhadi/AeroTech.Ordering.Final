@@ -589,6 +589,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException ReservationValidationEvidenceIsInvalid(params object?[] args) =>
             new(2822, ExceptionMessages.ReservationValidationEvidenceIsInvalid, args) { HttpStatus = 500 };
 
+        public static BusinessException OfferFareTypeIsNotRecognised(params object?[] args) =>
+            new(2823, ExceptionMessages.OfferFareTypeIsNotRecognised, args) { HttpStatus = 422 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

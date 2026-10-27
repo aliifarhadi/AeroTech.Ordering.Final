@@ -15,7 +15,6 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.Property(component => component.BookingClass).HasMaxLength(16);
             builder.Property(component => component.FareBasis).HasMaxLength(64);
             builder.Property(component => component.FareFamily).HasMaxLength(128);
-            builder.Property(component => component.FareType).HasMaxLength(64);
 
             builder.PrimitiveCollection(component => component.CoveredOrderServiceIds)
                 .HasField("_coveredOrderServiceIds")

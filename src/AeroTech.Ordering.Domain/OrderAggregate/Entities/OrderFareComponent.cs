@@ -1,4 +1,5 @@
 using AeroTech.Framework.Core.Domain.Entities;
+using AeroTech.Messages.AirPrice.Enums;
 
 namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 {
@@ -18,7 +19,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             string? bookingClass,
             string? fareBasis,
             string? fareFamily,
-            string? fareType,
+            AirFareType? fareType,
             IReadOnlyCollection<long> coveredOrderServiceIds)
         {
             Id = id;
@@ -44,7 +45,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 
         public string? FareFamily { get; private set; }
 
-        public string? FareType { get; private set; }
+        public AirFareType? FareType { get; private set; }
 
         public IReadOnlyCollection<long> CoveredOrderServiceIds => _coveredOrderServiceIds.AsReadOnly();
     }

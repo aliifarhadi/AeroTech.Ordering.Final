@@ -1,4 +1,5 @@
 using AeroTech.Framework.Core.ServiceContracts;
+using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 using AeroTech.Ordering.Domain.OrderAggregate.DomainEvents;
@@ -7,6 +8,7 @@ using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.Providers;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain._Shared.Resources;
+using PassengerTypeCode = AeroTech.Messages.Ordering.Enums.PassengerTypeCode;
 
 namespace AeroTech.Ordering.Domain.OrderAggregate
 {
@@ -264,7 +266,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                             fareComponent?.BookingClass,
                             fareComponent?.FareBasis,
                             fareComponent?.FareFamily,
-                            fareComponent?.FareType,
+                            ToFareType(fareComponent?.FareType),
                             flight.RbdId,
                             flight.CabinClassId,
                             ToAllowance(coupon.CheckedBaggage),
@@ -353,7 +355,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                         component.BookingClass,
                         component.FareBasis,
                         component.FareFamily,
-                        component.FareType,
+                        ToFareType(component.FareType),
                         services.Select(service => service.Id).ToList()));
 
                 _farePricingUnits.Add(pricingUnit);
@@ -365,7 +367,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                && service.BookingClass == component.BookingClass
                && service.FareBasis == component.FareBasis
                && service.FareFamily == component.FareFamily
-               && service.FareType == component.FareType;
+               && service.FareType == ToFareType(component.FareType);
 
         private void BuildSeatServices(
             CreateOrderArgs args,
@@ -436,6 +438,13 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 
         private static BaggageAllowance? ToAllowance(OfferBaggage? baggage)
             => baggage is null ? null : BaggageAllowance.FromSource(baggage.Pieces, baggage.Weight, baggage.Unit);
+
+        private static AirFareType? ToFareType(string? fareType)
+            => string.IsNullOrWhiteSpace(fareType)
+                ? null
+                : Enum.TryParse<AirFareType>(fareType, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed)
+                    ? parsed
+                    : throw ExceptionFactory.OfferFareTypeIsNotRecognised(fareType);
 
         private OrderTraveller TravellerByIndex(int index)
             => _travellers.FirstOrDefault(traveller => traveller.Index == index)

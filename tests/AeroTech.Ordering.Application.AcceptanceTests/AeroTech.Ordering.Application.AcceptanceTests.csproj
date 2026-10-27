@@ -11,6 +11,7 @@
     <ProjectReference Include="../../src/AeroTech.Ordering.Providers/AeroTech.Ordering.Providers.csproj" />
     <ProjectReference Include="../../src/AeroTech.Ordering.Persistence/AeroTech.Ordering.Persistence.csproj" />
     <ProjectReference Include="../../src/AeroTech.Ordering.Synchronizer/AeroTech.Ordering.Synchronizer.csproj" />
+    <ProjectReference Include="../../Framework/AeroTech.Framework.Presentation/AeroTech.Framework.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

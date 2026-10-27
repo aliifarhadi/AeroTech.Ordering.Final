@@ -216,5 +216,6 @@
         public const string RepricingRequiredAfterPartialCancellation = "Fare pricing unit '{1}' of order '{0}' was partially cancelled, so its accepted pricing no longer authorizes issuing its remaining services; a source-authoritative repricing or servicing decision is required.";
         public const string OrderChangeReasonTextIsTooLong = "The reason text of a change to order '{0}' has {1} characters; at most {2} are allowed.";
         public const string ReservationValidationEvidenceIsInvalid = "Reservation validation evidence at commercial version {0} must name at least one distinct validated service.";
+        public const string OfferFareTypeIsNotRecognised = "Offer fare type {0} is not recognised.";
     }
 }

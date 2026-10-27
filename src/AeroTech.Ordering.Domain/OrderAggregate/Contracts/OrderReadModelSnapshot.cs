@@ -82,14 +82,30 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         long JourneyId,
         int Sequence,
         long FlightId,
+        int FlightVersion,
         string? FlightNumber,
         int MarketingAirlineId,
         int OperatingAirlineId,
         int OriginAirportId,
+        int? OriginAirportTerminalId,
         int DestinationAirportId,
+        int? DestinationAirportTerminalId,
         DateTimeOffset SoldDeparture,
         DateTimeOffset SoldArrival,
-        int Duration);
+        int Duration,
+        int? AircraftId)
+    {
+        public IReadOnlyList<OrderSegmentLegSnapshot> Legs { get; init; } = Array.Empty<OrderSegmentLegSnapshot>();
+    }
+
+    public sealed record OrderSegmentLegSnapshot(
+        long SegmentLegId,
+        int Sequence,
+        long LegId,
+        int OriginAirportId,
+        int DestinationAirportId,
+        DateTimeOffset DepartureDateTime,
+        DateTimeOffset ArrivalDateTime);
 
     public sealed record OrderItemSnapshot(
         long ItemId,
@@ -105,10 +121,14 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         long SegmentId,
         OrderServiceType ServiceType,
         OrderServiceCommercialState CommercialStatus,
+        long? FlightCapacityId,
+        long? AirFareId,
         string? BookingClass,
         string? FareBasis,
         string? FareFamily,
-        string? FareType,
+        AirFareType? FareType,
+        long? RbdId,
+        long? CabinClassId,
         BaggageAllowanceSnapshot? CheckedBaggage,
         BaggageAllowanceSnapshot? CabinBaggage,
         bool IsRefundable,

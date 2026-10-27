@@ -15,7 +15,6 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Configurations
             builder.Property(service => service.BookingClass).HasMaxLength(16);
             builder.Property(service => service.FareBasis).HasMaxLength(64);
             builder.Property(service => service.FareFamily).HasMaxLength(128);
-            builder.Property(service => service.FareType).HasMaxLength(64);
             builder.Property(service => service.SeatNumber).HasMaxLength(16);
 
             builder.HasIndex(service => new { service.OrderId, service.CommercialStatus });

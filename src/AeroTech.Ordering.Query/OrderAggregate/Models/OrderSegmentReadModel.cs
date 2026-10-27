@@ -12,6 +12,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
 
         public long FlightId { get; set; }
 
+        public int FlightVersion { get; set; }
+
         public string? FlightNumber { get; set; }
 
         public int MarketingAirlineId { get; set; }
@@ -20,12 +22,18 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
 
         public int OriginAirportId { get; set; }
 
+        public int? OriginAirportTerminalId { get; set; }
+
         public int DestinationAirportId { get; set; }
+
+        public int? DestinationAirportTerminalId { get; set; }
 
         public DateTimeOffset SoldDeparture { get; set; }
 
         public DateTimeOffset SoldArrival { get; set; }
 
         public int Duration { get; set; }
+
+        public int? AircraftId { get; set; }
     }
 }

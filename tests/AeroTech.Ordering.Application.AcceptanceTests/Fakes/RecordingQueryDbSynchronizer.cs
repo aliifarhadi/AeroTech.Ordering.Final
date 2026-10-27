@@ -6,6 +6,8 @@ namespace AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 
 public sealed class RecordingQueryDbSynchronizer : IOrderQueryDbSynchronizer, IElectronicTicketQueryDbSynchronizer, IDocumentStockQueryDbSynchronizer
 {
+    public List<OrderReadModelSnapshot> OrderProjections { get; } = [];
+
     public List<OrderReadModelSnapshot> ReservationProjections { get; } = [];
 
     public List<OrderReadModelSnapshot> IssueProjections { get; } = [];
@@ -19,27 +21,27 @@ public sealed class RecordingQueryDbSynchronizer : IOrderQueryDbSynchronizer, IE
     public List<DocumentStockReadModelSnapshot> StockProjections { get; } = [];
 
     public Task ProjectCreatedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+        => Record(snapshot);
 
     public Task ProjectRemarkedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+        => Record(snapshot);
 
     public Task ProjectReservationChangedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
     {
         ReservationProjections.Add(snapshot);
-        return Task.CompletedTask;
+        return Record(snapshot);
     }
 
     public Task ProjectIssuedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
     {
         IssueProjections.Add(snapshot);
-        return Task.CompletedTask;
+        return Record(snapshot);
     }
 
     public Task ProjectServicedAsync(OrderReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
     {
         ServicingProjections.Add(snapshot);
-        return Task.CompletedTask;
+        return Record(snapshot);
     }
 
     public Task ProjectIssuedAsync(IReadOnlyList<ElectronicTicketReadModelSnapshot> tickets, CancellationToken cancellationToken = default)
@@ -57,6 +59,12 @@ public sealed class RecordingQueryDbSynchronizer : IOrderQueryDbSynchronizer, IE
     public Task ProjectAsync(DocumentStockReadModelSnapshot snapshot, CancellationToken cancellationToken = default)
     {
         StockProjections.Add(snapshot);
+        return Task.CompletedTask;
+    }
+
+    private Task Record(OrderReadModelSnapshot snapshot)
+    {
+        OrderProjections.Add(snapshot);
         return Task.CompletedTask;
     }
 }

@@ -1,4 +1,5 @@
 using AeroTech.Framework.Core.Domain.Exceptions;
+using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fakes;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
@@ -212,6 +213,45 @@ public sealed class FareTopologyCreationTests
         Assert.DoesNotContain(
             typeof(OrderFarePricingUnit).GetProperties().Concat(typeof(OrderFareComponent).GetProperties()),
             property => property.PropertyType == typeof(decimal) || property.PropertyType == typeof(decimal?));
+    }
+
+    [Fact]
+    public void Source_fare_type_is_kept_as_one_air_fare_type_on_the_component_and_its_air_services()
+    {
+        var order = CreateWithFareType("Negotiated");
+
+        Assert.Equal(
+            [(AirFareType?)AirFareType.Negotiated],
+            order.FarePricingUnits
+                .SelectMany(unit => unit.FareComponents)
+                .Select(component => component.FareType)
+                .Concat(order.Services.OfType<OrderAirTransportService>().Select(service => service.FareType))
+                .Distinct());
+    }
+
+    [Fact]
+    public void Unrecognised_source_fare_type_is_rejected()
+    {
+        var exception = Assert.Throws<BusinessException>(() => CreateWithFareType("Promotional"));
+
+        Assert.Equal((2823, 422), (exception.Code, exception.HttpStatus));
+    }
+
+    private Order CreateWithFareType(string fareType)
+    {
+        TravellerSpec[] travellers = [TravellerSpec.Adult(1)];
+        var offer = OrderFixture.Offer(_clock, travellers, [new BoundSpec("OUT", 101)]);
+
+        return OrderFixture.CreateFrom(
+            offer with
+            {
+                PricingUnits = offer.PricingUnits
+                    .Select(unit => unit with { FareComponents = unit.FareComponents.Select(component => component with { FareType = fareType }).ToList() })
+                    .ToList()
+            },
+            _ids,
+            _clock,
+            travellers);
     }
 
     private Order Create(IReadOnlyList<BoundSpec> bounds, IReadOnlyList<PricingUnitSpec>? pricingUnits = null)

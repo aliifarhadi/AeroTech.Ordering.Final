@@ -13,7 +13,6 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
             builder.Property(service => service.BookingClass).HasMaxLength(16);
             builder.Property(service => service.FareBasis).HasMaxLength(64);
             builder.Property(service => service.FareFamily).HasMaxLength(128);
-            builder.Property(service => service.FareType).HasMaxLength(64);
 
             builder.OwnsOne(service => service.CheckedBaggageAllowance, allowance =>
             {

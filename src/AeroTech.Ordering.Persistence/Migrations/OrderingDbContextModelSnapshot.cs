@@ -847,9 +847,8 @@ namespace AeroTech.Ordering.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
-                    b.Property<string>("FareType")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                    b.Property<int?>("FareType")
+                        .HasColumnType("int");
 
                     b.Property<DateTimeOffset>("LastUpdateTime")
                         .HasColumnType("datetimeoffset");
@@ -1659,9 +1658,8 @@ namespace AeroTech.Ordering.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
-                    b.Property<string>("FareType")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                    b.Property<int?>("FareType")
+                        .HasColumnType("int");
 
                     b.Property<long>("FlightCapacityId")
                         .HasColumnType("bigint");

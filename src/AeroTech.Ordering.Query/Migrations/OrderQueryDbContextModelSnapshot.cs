@@ -626,12 +626,56 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.ToTable("OrderRemarks", "ReadModel");
                 });
 
+            modelBuilder.Entity("AeroTech.Ordering.Query.OrderAggregate.Models.OrderSegmentLegReadModel", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("ArrivalDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("DepartureDateTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DestinationAirportId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("LegId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("OrderSegmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("OriginAirportId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("OrderSegmentId");
+
+                    b.ToTable("OrderSegmentLegs", "ReadModel");
+                });
+
             modelBuilder.Entity("AeroTech.Ordering.Query.OrderAggregate.Models.OrderSegmentReadModel", b =>
                 {
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
+                    b.Property<int?>("AircraftId")
+                        .HasColumnType("int");
+
                     b.Property<int>("DestinationAirportId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DestinationAirportTerminalId")
                         .HasColumnType("int");
 
                     b.Property<int>("Duration")
@@ -643,6 +687,9 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.Property<string>("FlightNumber")
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
+
+                    b.Property<int>("FlightVersion")
+                        .HasColumnType("int");
 
                     b.Property<int>("MarketingAirlineId")
                         .HasColumnType("int");
@@ -657,6 +704,9 @@ namespace AeroTech.Ordering.Query.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<int>("OriginAirportId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OriginAirportTerminalId")
                         .HasColumnType("int");
 
                     b.Property<int>("Sequence")
@@ -684,6 +734,9 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("AirFareId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("BookingClass")
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
@@ -697,6 +750,9 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.Property<decimal?>("CabinBaggageWeight")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<long?>("CabinClassId")
+                        .HasColumnType("bigint");
 
                     b.Property<int?>("CheckedBaggagePieces")
                         .HasColumnType("int");
@@ -722,9 +778,11 @@ namespace AeroTech.Ordering.Query.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
-                    b.Property<string>("FareType")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                    b.Property<int?>("FareType")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("FlightCapacityId")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsChangeable")
                         .HasColumnType("bit");
@@ -739,6 +797,9 @@ namespace AeroTech.Ordering.Query.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<long>("OrderItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("RbdId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("SeatNumber")

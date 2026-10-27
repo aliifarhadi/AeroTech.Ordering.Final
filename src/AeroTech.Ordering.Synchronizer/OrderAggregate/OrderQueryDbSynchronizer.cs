@@ -42,6 +42,7 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             await ReconcileAsync(_dbContext.OrderTravellerDocuments, snapshot, Documents(snapshot), document => document.Document.DocumentId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderJourneys, snapshot, snapshot.Journeys, journey => journey.JourneyId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderSegments, snapshot, snapshot.Segments, segment => segment.SegmentId, Apply, cancellationToken);
+            await ReconcileAsync(_dbContext.OrderSegmentLegs, snapshot, Legs(snapshot), leg => leg.Leg.SegmentLegId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderItems, snapshot, snapshot.Items, item => item.ItemId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderServices, snapshot, snapshot.Services, service => service.ServiceId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderPricingLines, snapshot, snapshot.PricingLines, line => line.PricingLineId, Apply, cancellationToken);
@@ -90,6 +91,11 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         private static IReadOnlyList<OwnedDocument> Documents(OrderReadModelSnapshot snapshot)
             => snapshot.Travellers
                 .SelectMany(traveller => traveller.Documents.Select(document => new OwnedDocument(traveller.TravellerId, document)))
+                .ToList();
+
+        private static IReadOnlyList<OwnedLeg> Legs(OrderReadModelSnapshot snapshot)
+            => snapshot.Segments
+                .SelectMany(segment => segment.Legs.Select(leg => new OwnedLeg(segment.SegmentId, leg)))
                 .ToList();
 
         private static IReadOnlyList<OwnedAllocation> Allocations(OrderReadModelSnapshot snapshot)
@@ -162,14 +168,29 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             target.OrderJourneyId = source.JourneyId;
             target.Sequence = source.Sequence;
             target.FlightId = source.FlightId;
+            target.FlightVersion = source.FlightVersion;
             target.FlightNumber = source.FlightNumber;
             target.MarketingAirlineId = source.MarketingAirlineId;
             target.OperatingAirlineId = source.OperatingAirlineId;
             target.OriginAirportId = source.OriginAirportId;
+            target.OriginAirportTerminalId = source.OriginAirportTerminalId;
             target.DestinationAirportId = source.DestinationAirportId;
+            target.DestinationAirportTerminalId = source.DestinationAirportTerminalId;
             target.SoldDeparture = source.SoldDeparture;
             target.SoldArrival = source.SoldArrival;
             target.Duration = source.Duration;
+            target.AircraftId = source.AircraftId;
+        }
+
+        private static void Apply(OwnedLeg source, OrderSegmentLegReadModel target)
+        {
+            target.OrderSegmentId = source.SegmentId;
+            target.Sequence = source.Leg.Sequence;
+            target.LegId = source.Leg.LegId;
+            target.OriginAirportId = source.Leg.OriginAirportId;
+            target.DestinationAirportId = source.Leg.DestinationAirportId;
+            target.DepartureDateTime = source.Leg.DepartureDateTime;
+            target.ArrivalDateTime = source.Leg.ArrivalDateTime;
         }
 
         private static void Apply(OrderItemSnapshot source, OrderItemReadModel target)
@@ -187,10 +208,14 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             target.SegmentId = source.SegmentId;
             target.ServiceType = source.ServiceType;
             target.CommercialStatus = source.CommercialStatus;
+            target.FlightCapacityId = source.FlightCapacityId;
+            target.AirFareId = source.AirFareId;
             target.BookingClass = source.BookingClass;
             target.FareBasis = source.FareBasis;
             target.FareFamily = source.FareFamily;
             target.FareType = source.FareType;
+            target.RbdId = source.RbdId;
+            target.CabinClassId = source.CabinClassId;
             target.CheckedBaggagePieces = source.CheckedBaggage?.Pieces;
             target.CheckedBaggageWeight = source.CheckedBaggage?.Weight;
             target.CheckedBaggageUnit = source.CheckedBaggage?.Unit;
@@ -289,6 +314,8 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         }
 
         private sealed record OwnedDocument(long TravellerId, OrderTravellerDocumentSnapshot Document);
+
+        private sealed record OwnedLeg(long SegmentId, OrderSegmentLegSnapshot Leg);
 
         private sealed record OwnedAllocation(long PricingLineId, OrderPricingAllocationSnapshot Allocation);
 

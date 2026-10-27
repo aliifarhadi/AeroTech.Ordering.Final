@@ -1,3 +1,4 @@
+using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 
@@ -20,7 +21,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             string? bookingClass,
             string? fareBasis,
             string? fareFamily,
-            string? fareType,
+            AirFareType? fareType,
             long? rbdId,
             long? cabinClassId,
             BaggageAllowance? checkedBaggageAllowance,
@@ -61,7 +62,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 
         public string? FareFamily { get; private set; }
 
-        public string? FareType { get; private set; }
+        public AirFareType? FareType { get; private set; }
 
         public long? RbdId { get; private set; }
 

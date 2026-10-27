@@ -67,7 +67,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         string? BookingClass,
         string? FareBasis,
         string? FareFamily,
-        string? FareType,
+        EnumValueDto? FareType,
         BackofficeBaggageAllowanceDto? CheckedBaggage,
         BackofficeBaggageAllowanceDto? CabinBaggage,
         bool IsRefundable,

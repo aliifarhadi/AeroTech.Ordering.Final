@@ -21,13 +21,21 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
 
         public long? EndedByChangeId { get; set; }
 
+        public long? FlightCapacityId { get; set; }
+
+        public long? AirFareId { get; set; }
+
         public string? BookingClass { get; set; }
 
         public string? FareBasis { get; set; }
 
         public string? FareFamily { get; set; }
 
-        public string? FareType { get; set; }
+        public AirFareType? FareType { get; set; }
+
+        public long? RbdId { get; set; }
+
+        public long? CabinClassId { get; set; }
 
         public int? CheckedBaggagePieces { get; set; }
 

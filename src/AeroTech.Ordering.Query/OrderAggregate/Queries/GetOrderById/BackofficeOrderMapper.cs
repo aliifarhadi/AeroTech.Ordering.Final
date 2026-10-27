@@ -132,7 +132,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 service.BookingClass,
                 service.FareBasis,
                 service.FareFamily,
-                service.FareType,
+                EnumValueDto.OfNullable(service.FareType),
                 ToDto(service.CheckedBaggage),
                 ToDto(service.CabinBaggage),
                 service.IsRefundable,

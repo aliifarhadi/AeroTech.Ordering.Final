@@ -46,7 +46,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                     Money(order.CustomerTotal),
                     Money(order.CustomerTotal)),
                 new PricingOptionsDto(
-                    airServices.Select(service => service.FareType).OfType<string>().Distinct().ToList(),
+                    airServices.Select(service => service.FareType?.ToString()).OfType<string>().Distinct().ToList(),
                     airServices.Count > 0 && airServices.All(service => service.CheckedBaggage is not null)),
                 order.Travellers
                     .Select(traveller => ToTravelerPricing(traveller, services, customerLines, currency, travellerIndexes))
@@ -124,7 +124,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 service.BookingClass,
                 service.FareBasis,
                 service.FareFamily,
-                service.FareType,
+                service.FareType?.ToString(),
                 service.CheckedBaggage,
                 service.CabinBaggage,
                 seatsBySegment.GetValueOrDefault(service.SegmentId),

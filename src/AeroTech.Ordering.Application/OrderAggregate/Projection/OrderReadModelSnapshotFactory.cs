@@ -84,14 +84,31 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 segment.OrderJourneyId,
                 segment.Sequence,
                 segment.FlightId,
+                segment.FlightVersion,
                 segment.FlightNumber,
                 segment.MarketingAirlineId,
                 segment.OperatingAirlineId,
                 segment.OriginAirportId,
+                segment.OriginAirportTerminalId,
                 segment.DestinationAirportId,
+                segment.DestinationAirportTerminalId,
                 segment.SoldDeparture,
                 segment.SoldArrival,
-                segment.Duration);
+                segment.Duration,
+                segment.AircraftId)
+            {
+                Legs = segment.Legs.Select(ToSnapshot).ToList()
+            };
+
+        private static OrderSegmentLegSnapshot ToSnapshot(OrderSegmentLeg leg)
+            => new(
+                leg.Id,
+                leg.Sequence,
+                leg.LegId,
+                leg.OriginAirportId,
+                leg.DestinationAirportId,
+                leg.DepartureDateTime,
+                leg.ArrivalDateTime);
 
         private static OrderItemSnapshot ToSnapshot(OrderItem item)
             => new(item.Id, item.Kind, item.AcceptedTotal, item.CommercialStatus, item.EndedByChangeId);
@@ -122,10 +139,14 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 air.SegmentId,
                 air.ServiceType,
                 air.CommercialStatus,
+                air.FlightCapacityId,
+                air.AirFareId,
                 air.BookingClass,
                 air.FareBasis,
                 air.FareFamily,
                 air.FareType,
+                air.RbdId,
+                air.CabinClassId,
                 ToSnapshot(air.CheckedBaggageAllowance),
                 ToSnapshot(air.CabinBaggageAllowance),
                 air.IsRefundable,
@@ -141,10 +162,14 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 seat.SegmentId,
                 seat.ServiceType,
                 seat.CommercialStatus,
+                FlightCapacityId: null,
+                AirFareId: null,
                 BookingClass: null,
                 FareBasis: null,
                 FareFamily: null,
                 FareType: null,
+                RbdId: null,
+                CabinClassId: null,
                 CheckedBaggage: null,
                 CabinBaggage: null,
                 IsRefundable: false,

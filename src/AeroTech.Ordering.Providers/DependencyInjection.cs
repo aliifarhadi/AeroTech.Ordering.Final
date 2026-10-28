@@ -1,7 +1,9 @@
+using AeroTech.Ordering.Domain.Providers.Ancillary;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain.Providers.FlightFlow;
 using AeroTech.Ordering.Domain.Providers.Pricing;
 using AeroTech.Ordering.Domain.Providers.Reservation;
+using AeroTech.Ordering.Providers.Ancillary.Services;
 using AeroTech.Ordering.Providers.FlightFlow.Services;
 using AeroTech.Ordering.Providers.Offer.Services;
 using AeroTech.Ordering.Providers.Pricing.Services;
@@ -17,6 +19,7 @@ namespace AeroTech.Ordering.Providers
             var offerBaseUrl = configuration["Offer:BaseUrl"];
             var flightFlowBaseUrl = configuration["FlightFlow:BaseUrl"];
             var pricingBaseUrl = configuration["Pricing:BaseUrl"];
+            var ancillaryBaseUrl = configuration["Ancillary:BaseUrl"];
 
             services.AddHttpClient<IOfferProvider, OfferProvider>(client =>
             {
@@ -34,6 +37,12 @@ namespace AeroTech.Ordering.Providers
             {
                 if (!string.IsNullOrWhiteSpace(pricingBaseUrl))
                     client.BaseAddress = new Uri(pricingBaseUrl);
+            });
+
+            services.AddHttpClient<IAncillaryProvider, AncillaryProvider>(client =>
+            {
+                if (!string.IsNullOrWhiteSpace(ancillaryBaseUrl))
+                    client.BaseAddress = new Uri(ancillaryBaseUrl);
             });
 
             services.AddScoped<IAirFareReservationValidator, AirFareReservationValidator>();

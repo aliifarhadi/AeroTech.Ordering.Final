@@ -19,5 +19,8 @@ namespace AeroTech.Messages.Ordering.Enums
         [Display(Name = "Promo")]
         Promo = 5,
 
+        [Display(Name = "Ancillary Base")]
+        AncillaryBase = 6,
+
     }
 }

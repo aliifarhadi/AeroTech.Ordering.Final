@@ -26,6 +26,9 @@ namespace AeroTech.Messages.Ordering.Enums
         Void = 7,
 
         [Display(Name = "Cancel", Description = "Cancel")]
-        Cancel = 8
+        Cancel = 8,
+
+        [Display(Name = "Additional Sale", Description = "Additional Sale")]
+        AdditionalSale = 9
     }
 }

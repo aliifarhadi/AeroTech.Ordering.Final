@@ -406,7 +406,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                     _ => throw ExceptionFactory.NoFulfillmentAdapterRegistered(FulfillmentProviderKeys.FlightFlow, service.ServiceType)
                 };
 
-                if (_travellers[airService.TravellerId].InfantParentTravellerId is not { } parentTravellerId)
+                if (_travellers[airService.RequiredTravellerId].InfantParentTravellerId is not { } parentTravellerId)
                     return airService;
 
                 return _airServices.Values.FirstOrDefault(parent => parent.TravellerId == parentTravellerId
@@ -420,7 +420,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
 
                 var infantAirServiceIds = _airServices.Values
                     .Where(service => service.SegmentId == owner.SegmentId
-                                      && _travellers[service.TravellerId].InfantParentTravellerId == owner.TravellerId)
+                                      && _travellers[service.RequiredTravellerId].InfantParentTravellerId == owner.TravellerId)
                     .Select(service => service.Id)
                     .ToList();
 
@@ -430,7 +430,7 @@ namespace AeroTech.Ordering.Providers.FlightFlow.Services
                     .Where(seat => coveredAirServiceIds.Contains(seat.AssociatedAirServiceId))
                     .ToList();
 
-                var paxReference = owner.TravellerId.ToString(CultureInfo.InvariantCulture);
+                var paxReference = owner.RequiredTravellerId.ToString(CultureInfo.InvariantCulture);
 
                 return new ReservationUnitIntent(
                     UnitKey(segment.FlightId.ToString(CultureInfo.InvariantCulture), paxReference),

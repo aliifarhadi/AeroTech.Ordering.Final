@@ -4,6 +4,8 @@ namespace AeroTech.Ordering.Domain.Providers
     {
         public const string FlightFlow = "FlightFlow";
 
+        public const string Ancillary = "Ancillary";
+
         public const string LocalDocumentAuthority = "LocalDocumentAuthority";
     }
 }

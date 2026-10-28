@@ -46,6 +46,13 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderAncillaryContex
                 .ToList();
             var couponsByService = (await OwnedBy(_dbContext.TicketCoupons, orderId, cancellationToken))
                 .ToLookup(coupon => coupon.CurrentOrderServiceId);
+            var ancillaryServices = await (
+                    from service in _dbContext.OrderServices.AsNoTracking()
+                    join ancillary in _dbContext.OrderAncillaryServices.AsNoTracking() on service.Id equals ancillary.Id
+                    where service.OrderId == orderId && service.CommercialStatus == OrderServiceCommercialState.Active
+                    orderby service.Id
+                    select new { Service = service, Ancillary = ancillary })
+                .ToListAsync(cancellationToken);
             var ticketedAt = await _dbContext.ElectronicTickets.AsNoTracking()
                 .Where(ticket => ticket.OrderId == orderId && ticket.StatusSummary != ElectronicTicketStatus.Voided)
                 .Select(ticket => (DateTimeOffset?)ticket.IssuedAt)
@@ -63,7 +70,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderAncillaryContex
                 travellers.Select(ToDto).ToList(),
                 journeys.Select(journey => ToDto(journey, segmentsByJourney[journey.Id], legsBySegment)).ToList(),
                 airServices.Select(service => ToDto(service, couponsByService[service.Id])).ToList(),
-                []);
+                ancillaryServices.Select(row => ToDto(row.Service, row.Ancillary)).ToList());
         }
 
         private static Task<List<TReadModel>> OwnedBy<TReadModel>(
@@ -118,11 +125,26 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderAncillaryContex
                 leg.DepartureDateTime,
                 leg.ArrivalDateTime);
 
-        private static OrderAncillaryAirServiceDto ToDto(OrderServiceReadModel service, IEnumerable<TicketCouponReadModel> coupons)
+        private static OrderAncillaryServiceDto ToDto(OrderServiceReadModel service, OrderAncillaryServiceReadModel ancillary)
             => new(
                 service.Id,
                 service.TravellerId,
+                ancillary.ServiceDefinitionRef,
+                ancillary.VariantCode,
+                ancillary.Profile,
+                ancillary.SelectionScope,
+                ancillary.CoverageScope,
+                ancillary.CoveredAirServiceIds,
+                ancillary.Quantity,
+                service.CommercialStatus,
                 service.SegmentId,
+                service.SeatNumber);
+
+        private static OrderAncillaryAirServiceDto ToDto(OrderServiceReadModel service, IEnumerable<TicketCouponReadModel> coupons)
+            => new(
+                service.Id,
+                service.TravellerId ?? throw new InvalidOperationException($"Air service {service.Id} has no projected traveller."),
+                service.SegmentId ?? throw new InvalidOperationException($"Air service {service.Id} has no projected segment."),
                 service.FlightCapacityId ?? throw new InvalidOperationException($"Air service {service.Id} has no projected flight capacity."),
                 service.AirFareId,
                 service.FareBasis,

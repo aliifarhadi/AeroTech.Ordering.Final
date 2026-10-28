@@ -1,4 +1,5 @@
 using AeroTech.Messages.AirPrice.Enums;
+using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Messages.Shared.Enums;
 using PassengerTypeCode = AeroTech.Messages.Ordering.Enums.PassengerTypeCode;
@@ -80,9 +81,15 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
 
     public sealed record OrderAncillaryServiceDto(
         long OrderServiceId,
-        long TravellerId,
+        long? TravellerId,
         string? ServiceDefinitionRef,
+        string VariantCode,
+        AncillaryProfile Profile,
+        SelectionScope? SelectionScope,
+        ServiceCoverageScope? CoverageScope,
         IReadOnlyList<long> CoveredAirServiceIds,
         int Quantity,
-        OrderServiceCommercialState CommercialState);
+        OrderServiceCommercialState CommercialState,
+        long? SegmentId,
+        string? SeatNumber);
 }

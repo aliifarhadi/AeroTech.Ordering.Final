@@ -10,9 +10,13 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
     {
         public IReadOnlyList<OrderService> CancellationScopeOf(IReadOnlyCollection<long> requestedServiceIds)
         {
-            var requested = requestedServiceIds.Count == 0
+            var isWholeOrder = requestedServiceIds.Count == 0;
+            var requested = isWholeOrder
                 ? _services.Where(service => service.IsActive).ToList()
                 : requestedServiceIds.Distinct().Select(RequestedService).Where(service => service.IsActive).ToList();
+
+            if (!isWholeOrder && requested.OfType<OrderAncillaryService>().FirstOrDefault() is { } ancillaryOnly)
+                throw ExceptionFactory.AncillaryCancellationRequiresAirService(ancillaryOnly.Id);
 
             var airServices = requested
                 .OfType<OrderAirTransportService>()
@@ -29,7 +33,11 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 .OfType<OrderSeatService>()
                 .Where(seat => seat.IsActive && airServiceIds.Contains(seat.AssociatedAirServiceId));
 
-            return airServices.Concat<OrderService>(seats).ToList();
+            var ancillaries = _services
+                .OfType<OrderAncillaryService>()
+                .Where(ancillary => ancillary.IsActive && (isWholeOrder || EndsWith(ancillary, airServiceIds)));
+
+            return airServices.Concat<OrderService>(seats).Concat(ancillaries).ToList();
         }
 
         public OrderChange Cancel(
@@ -96,7 +104,26 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 .OfType<OrderAirTransportService>()
                 .Where(service => service.IsActive
                                   && service.SegmentId == airService.SegmentId
-                                  && infantTravellerIds.Contains(service.TravellerId));
+                                  && service.TravellerId is { } travellerId
+                                  && infantTravellerIds.Contains(travellerId));
+        }
+
+        private bool EndsWith(OrderAncillaryService ancillary, IReadOnlySet<long> endingAirServiceIds)
+        {
+            var dependency = ancillary.CoveredAirServiceIds.Count > 0
+                ? ancillary.CoveredAirServiceIds.ToHashSet()
+                : _services
+                    .OfType<OrderAirTransportService>()
+                    .Where(airService => airService.IsActive && (ancillary.TravellerId is null || airService.TravellerId == ancillary.TravellerId))
+                    .Select(airService => airService.Id)
+                    .ToHashSet();
+
+            if (!dependency.Overlaps(endingAirServiceIds))
+                return false;
+
+            return dependency.IsSubsetOf(endingAirServiceIds)
+                ? true
+                : throw ExceptionFactory.AncillaryPartialCancellationRequiresRequote(ancillary.Id);
         }
 
         private bool HasActiveService(OrderItem item)

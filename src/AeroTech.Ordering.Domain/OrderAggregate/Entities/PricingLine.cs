@@ -1,4 +1,5 @@
 using AeroTech.Framework.Core.Domain.Entities;
+using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 
@@ -31,6 +32,9 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             int equivalentCurrencyId,
             ExchangeRateSnapshot? exchangeRateSnapshot,
             RefundabilityRule? refundability,
+            TaxJurisdictionSnapshot? taxJurisdiction,
+            TaxTreatment? sourceTaxTreatment,
+            FeeApplicationUnit? sourceFeeApplicationUnit,
             DateTimeOffset createdAt)
         {
             Id = id;
@@ -51,6 +55,9 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             EquivalentCurrencyId = equivalentCurrencyId;
             ExchangeRateSnapshot = exchangeRateSnapshot;
             Refundability = refundability;
+            TaxJurisdiction = taxJurisdiction;
+            SourceTaxTreatment = sourceTaxTreatment;
+            SourceFeeApplicationUnit = sourceFeeApplicationUnit;
             CreatedAt = createdAt;
         }
 
@@ -87,6 +94,12 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
         public ExchangeRateSnapshot? ExchangeRateSnapshot { get; private set; }
 
         public RefundabilityRule? Refundability { get; private set; }
+
+        public TaxJurisdictionSnapshot? TaxJurisdiction { get; private set; }
+
+        public TaxTreatment? SourceTaxTreatment { get; private set; }
+
+        public FeeApplicationUnit? SourceFeeApplicationUnit { get; private set; }
 
         public DateTimeOffset CreatedAt { get; private set; }
 

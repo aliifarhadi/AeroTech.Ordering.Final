@@ -9,6 +9,7 @@ using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Con
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.AddAncillaries;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
@@ -23,6 +24,7 @@ using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
+using AeroTech.Ordering.Domain.Providers.Ancillary;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain.Providers.Reservation;
 using AeroTech.Ordering.Domain._Shared.Contracts;
@@ -42,6 +44,7 @@ public sealed class ReservationHarness
     private readonly IDefineDocumentStockService _stocks;
     private readonly ICancelOrderService _cancel;
     private readonly IVoidElectronicTicketsService _void;
+    private readonly IAddAncillariesService _addAncillaries;
 
     public const long IssueActorId = 77;
 
@@ -109,6 +112,7 @@ public sealed class ReservationHarness
             UnitOfWork,
             Ids,
             Clock);
+        _addAncillaries = new AddAncillariesService(Orders, Reservations, Tickets, Ancillaries, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
         _void = new VoidElectronicTicketsService(Orders, Reservations, Tasks, Tickets, summarizer, reservationLock, Synchronizer, Synchronizer, UnitOfWork, Ids, Clock);
     }
 
@@ -143,6 +147,8 @@ public sealed class ReservationHarness
     public StubAirlineOfficeTimeZoneResolver OfficeTimeZones { get; } = new();
 
     public StubOfferProvider OfferProvider { get; } = new();
+
+    public StubAncillaryProvider Ancillaries { get; } = new();
 
     public Order SeedOrder(
         IReadOnlyList<TravellerSpec> travellers,
@@ -201,6 +207,19 @@ public sealed class ReservationHarness
 
     public Task<IssueOrderResult> IssueAsync(Order order, long ticketDocumentStockId)
         => _issue.IssueAsync(order.Id, ticketDocumentStockId, UnrestrictedOrderAuthorization.Instance, IssueActorId);
+
+    public Task<AddAncillariesResult> AddAncillariesAsync(Order order, ResolvedAncillarySelection selection, int? expectedCommercialVersion = null)
+    {
+        Ancillaries.Selections[selection.SelectionId] = selection;
+
+        return _addAncillaries.AddAsync(
+            order.Id,
+            expectedCommercialVersion ?? order.CommercialVersion,
+            selection.SelectionId,
+            UnrestrictedOrderAuthorization.Instance,
+            CancellingActor,
+            CancellationToken.None);
+    }
 
     public Task<CancelOrderResult> CancelAsync(Order order, params long[] serviceIds)
         => _cancel.CancelAsync(order.Id, serviceIds, VoidReason.CustomerRequest, null, UnrestrictedOrderAuthorization.Instance, CancellingActor);

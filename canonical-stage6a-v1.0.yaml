@@ -1,0 +1,116 @@
+version: '1.0'
+authority: docs/Ordering-Ancillary-Operational-Integration-Pack-v2.0/12-ORDERING-CODING-AGENT-PROMPT.md
+note: >-
+  Thin guardrail. This file lists ONLY the Stage-6A type set, value-object set and the
+  numeric values of the enums Stage 6A amends. It deliberately does not describe
+  properties, SQL types, lengths, indexes, namespaces, assemblies, table names or
+  mapping strategy. Owner decisions D1-D10 are recorded in reports/STAGE6A-DECISIONS-AND-BLOCKERS.md.
+
+stage_file: .canonical-stage
+
+stage6a:
+  types:
+    - Order
+    - OrderItem
+    - OrderService
+    - OrderAirTransportService
+    - OrderSeatService
+    - OrderTraveller
+    - TravellerProfileRevision
+    - OrderTravellerDocument
+    - OrderContact
+    - OrderContactPoint
+    - OrderJourney
+    - OrderSegment
+    - OrderSegmentLeg
+    - OrderChange
+    - PricingLine
+    - PricingAllocation
+    - OrderRemark
+    - OrderFarePricingUnit
+    - OrderFareComponent
+    - FulfillmentReservation
+    - ReservationUnit
+    - FulfillmentTask
+    - FulfillmentTaskTarget
+    - FulfillmentTaskAttempt
+    - ProviderInteraction
+    - ElectronicTicket
+    - TicketCoupon
+    - TicketPriceLink
+    - DocumentStock
+    - DocumentStockAllocation
+    - OrderAncillaryService
+    - OrderBaggageService
+
+  abstract_types:
+    - OrderService
+
+  value_objects:
+    - SalesContext
+    - BaggageAllowance
+    - ExchangeRateSnapshot
+    - IssuedSegmentSnapshot
+    - DocumentIssuanceContext
+    - DocumentVoidRecord
+    - ReservationValidationEvidence
+    - AncillarySaleSource
+    - AncillaryDefinition
+    - AncillaryProvision
+    - AncillaryPricing
+    - ServiceDimensions
+    - BaggageChoice
+    - MealChoice
+    - PetChoice
+    - AssistanceChoice
+    - MedicalEquipmentChoice
+    - UnaccompaniedMinorChoice
+    - AirportServiceChoice
+    - PriorityChoice
+    - ConnectivityChoice
+    - UpgradeChoice
+    - ExtraSeatChoice
+    - TaxJurisdictionSnapshot
+
+  enums:
+    OrderServiceType:
+      AirTransportation: 1
+      SeatAssignment: 2
+      BaggageAllowance: 3
+      Meal: 4
+      LoungeAccess: 5
+      Cip: 6
+      SimCard: 7
+      HotelStay: 8
+      TransferRide: 9
+      InsurancePolicy: 10
+      Penalty: 11
+      ServiceFee: 12
+      Credit: 13
+      Voucher: 14
+      TaxAdjustment: 15
+      ManualAdjustment: 16
+      Notification: 17
+      Other: 18
+      GroundTransport: 19
+      Priority: 20
+      WiFi: 21
+      ExtraSeat: 22
+      Ancillary: 23
+    OrderPricingReason:
+      InitialSale: 1
+      Exchange: 2
+      Refund: 3
+      Upgrade: 4
+      Penalty: 5
+      ResidualIssuance: 6
+      Void: 7
+      Cancel: 8
+      AdditionalSale: 9
+    OrderPricingLineSubCategory:
+      BaseFare: 1
+      Tax: 2
+      VAT: 3
+      ServiceFee: 4
+      Promo: 5
+      AncillaryBase: 6

@@ -14,7 +14,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             long id,
             long orderId,
             long orderItemId,
-            long travellerId,
+            long? travellerId,
             OrderServiceType serviceType,
             string fulfillmentProviderKey,
             long createdByChangeId,
@@ -38,7 +38,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 
         public long OrderItemId { get; private set; }
 
-        public long TravellerId { get; private set; }
+        public long? TravellerId { get; private set; }
 
         public OrderServiceType ServiceType { get; private set; }
 
@@ -53,6 +53,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
         public DateTimeOffset CreatedAt { get; private set; }
 
         public bool IsActive => CommercialStatus == OrderServiceCommercialState.Active;
+
+        public long RequiredTravellerId => TravellerId ?? throw ExceptionFactory.OrderServiceHasNoTraveller(Id);
 
         internal void Cancel(long endedByChangeId)
         {

@@ -60,8 +60,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
 
     public sealed record BackofficeOrderServiceDto(
         long Id,
-        long TravellerId,
-        long SegmentId,
+        long? TravellerId,
+        long? SegmentId,
         EnumValueDto ServiceType,
         EnumValueDto CommercialStatus,
         string? BookingClass,

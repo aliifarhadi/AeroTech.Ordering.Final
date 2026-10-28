@@ -1,4 +1,5 @@
-﻿using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark.OtaPanel;
+﻿using AeroTech.Ordering.Application.OrderAggregate.Commands.AddAncillaries.OtaPanel;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark.OtaPanel;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer.OtaPanel;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById.OtaPanel;
@@ -60,6 +61,17 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate
             CancellationToken cancellationToken)
         {
             var command = new OtaPanelAddRemarkCommand(orderId, request.SupersedesRemarkId, request.Remark);
+
+            return Ok(await _mediator.Send(command, cancellationToken));
+        }
+
+        [HttpPost("{orderId:long}/Ancillaries")]
+        public async Task<IActionResult> AddAncillaries(
+            long orderId,
+            [FromBody] AgencyAddAncillariesRequest request,
+            CancellationToken cancellationToken)
+        {
+            var command = new OtaPanelAddAncillariesCommand(orderId, request.ExpectedCommercialVersion, request.Services);
 
             return Ok(await _mediator.Send(command, cancellationToken));
         }

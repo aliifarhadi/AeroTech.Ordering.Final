@@ -1,3 +1,4 @@
+using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
@@ -176,10 +177,77 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 IsChangeable: false,
                 IsUpgradable: false,
                 seat.SeatNumber,
-                seat.EndedByChangeId),
+                seat.EndedByChangeId)
+            {
+                Ancillary = seat.IsPricedSelection ? ToSnapshot(seat) : null
+            },
+
+            OrderAncillaryService ancillary => new OrderServiceSnapshot(
+                ancillary.Id,
+                ancillary.OrderItemId,
+                ancillary.TravellerId,
+                SegmentId: null,
+                ancillary.ServiceType,
+                ancillary.CommercialStatus,
+                FlightCapacityId: null,
+                AirFareId: null,
+                BookingClass: null,
+                FareBasis: null,
+                FareFamily: null,
+                FareType: null,
+                RbdId: null,
+                CabinClassId: null,
+                CheckedBaggage: null,
+                CabinBaggage: null,
+                IsRefundable: false,
+                IsChangeable: false,
+                IsUpgradable: false,
+                SeatNumber: null,
+                ancillary.EndedByChangeId)
+            {
+                Ancillary = ToSnapshot(ancillary)
+            },
 
             _ => throw new NotSupportedException($"{service.GetType().Name} has no read model projection.")
         };
+
+        private static OrderAncillarySnapshot ToSnapshot(OrderAncillaryService ancillary)
+            => new(
+                ancillary.VariantCode,
+                ancillary.Profile,
+                ancillary.Quantity,
+                ancillary.SelectionScope,
+                ancillary.CoverageScope,
+                ancillary.CoveredAirServiceIds.ToList(),
+                PointOfSaleId: null,
+                ancillary.Source,
+                ancillary.Definition,
+                ancillary.Provision,
+                ancillary.Pricing)
+            {
+                Baggage = (ancillary as OrderBaggageService)?.Baggage,
+                Meal = ancillary.Meal,
+                Pet = ancillary.Pet,
+                Assistance = ancillary.Assistance,
+                AirportService = ancillary.AirportService,
+                Priority = ancillary.Priority,
+                Connectivity = ancillary.Connectivity,
+                Upgrade = ancillary.Upgrade
+            };
+
+        private static OrderAncillarySnapshot ToSnapshot(OrderSeatService seat)
+            => new(
+                seat.VariantCode!,
+                AncillaryProfile.Seat,
+                Quantity: 1,
+                SelectionScope: null,
+                CoverageScope: null,
+                [seat.AssociatedAirServiceId],
+                seat.PointOfSaleId,
+                seat.Source!,
+                seat.Definition!,
+                seat.Provision!,
+                seat.Pricing!);
 
         private static BaggageAllowanceSnapshot? ToSnapshot(BaggageAllowance? allowance)
             => allowance is null ? null : new BaggageAllowanceSnapshot(allowance.Pieces, allowance.Weight, allowance.Unit);

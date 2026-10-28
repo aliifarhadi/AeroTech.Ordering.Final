@@ -33,6 +33,8 @@ namespace AeroTech.Ordering.Query._Shared.DbContexts
 
         public DbSet<OrderServiceReadModel> OrderServices => Set<OrderServiceReadModel>();
 
+        public DbSet<OrderAncillaryServiceReadModel> OrderAncillaryServices => Set<OrderAncillaryServiceReadModel>();
+
         public DbSet<OrderPricingLineReadModel> OrderPricingLines => Set<OrderPricingLineReadModel>();
 
         public DbSet<OrderPricingAllocationReadModel> OrderPricingAllocations => Set<OrderPricingAllocationReadModel>();

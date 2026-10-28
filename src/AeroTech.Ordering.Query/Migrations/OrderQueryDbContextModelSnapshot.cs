@@ -197,6 +197,323 @@ namespace AeroTech.Ordering.Query.Migrations
                     b.ToTable("TicketCoupons", "ReadModel");
                 });
 
+            modelBuilder.Entity("AeroTech.Ordering.Query.OrderAggregate.Models.OrderAncillaryServiceReadModel", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("AirportServiceAirportId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AirportServiceDirection")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("AirportServiceFacilityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("AirportServiceGuestCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AirportServiceKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AirportServiceTerminalRef")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("AirportServiceTimeWithOffset")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long?>("AssistanceGuardianTravellerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("AssistanceInfantTravellerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("AssistanceKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AssistanceSsrCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int?>("BaggageAllowanceConcept")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BaggageBagRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int?>("BaggageChargeKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BaggageEquipmentKind")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<decimal?>("BaggageHeightCm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BaggageLengthCm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BaggageMeasuredWeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BaggagePackageWeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BaggageWeightFromExclusiveKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BaggageWeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BaggageWeightToInclusiveKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("BaggageWidthCm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BookingMethod")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("BookingRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ConfirmationRequirement")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConnectivityDeliveryStage")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConnectivityDeviceCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConnectivityDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConnectivityIncludedDataMb")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConnectivityMaxDevices")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConnectivityPlanKind")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CoverageScope")
+                        .HasColumnType("int");
+
+                    b.PrimitiveCollection<string>("CoveredAirServiceIds")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("DefinitionVersionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("DocumentRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("DocumentRouting")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MealCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("MealDietaryCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("MealExclusiveFamilyCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int?>("MealKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MealMenuItemRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("PetAnimalAgeWeeks")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PetAnimalType")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("PetCarrierHeightCm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PetCarrierLengthCm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PetCarrierWidthCm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PetCombinedWeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.PrimitiveCollection<string>("PetDocumentAcknowledgements")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PetOtherAnimalCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("PetSizeBracket")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int?>("PetTransportMode")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("PointOfSaleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("PricingId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("PricingRateId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("PricingUnit")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PricingVersion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PriorityFareBenefitRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("PriorityGroupCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int?>("PriorityKind")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("PriorityOptIn")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PriorityZoneCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Profile")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProvisionFulfillmentProviderKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("ProvisionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("PurchaseStage")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RequiresCheckAtReserve")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Rfic")
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<string>("Rfisc")
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<int?>("SelectionScope")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ServiceDefinitionRef")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ServiceSubCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<string>("ServiceTypeCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<int>("SourceKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceOfferItemId")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<int?>("SourceOrderCommercialVersion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceReference")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("SourceSelectionId")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<string>("SsrCode")
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<int?>("UpgradeFromCabinId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpgradeKind")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("UpgradeRequiresTicketExchange")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("UpgradeToCabinId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VariantCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("OrderAncillaryServices", "ReadModel");
+                });
+
             modelBuilder.Entity("AeroTech.Ordering.Query.OrderAggregate.Models.OrderChangeReadModel", b =>
                 {
                     b.Property<long>("Id")
@@ -806,13 +1123,13 @@ namespace AeroTech.Ordering.Query.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
-                    b.Property<long>("SegmentId")
+                    b.Property<long?>("SegmentId")
                         .HasColumnType("bigint");
 
                     b.Property<int>("ServiceType")
                         .HasColumnType("int");
 
-                    b.Property<long>("TravellerId")
+                    b.Property<long?>("TravellerId")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");

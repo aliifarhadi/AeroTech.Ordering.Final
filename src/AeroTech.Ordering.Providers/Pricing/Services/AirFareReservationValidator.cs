@@ -186,7 +186,7 @@ namespace AeroTech.Ordering.Providers.Pricing.Services
                 var segment = _segments[service.SegmentId];
 
                 return service is { RbdId: { } rbdId } && segment is { FlightNumber: { } flightNumber, AircraftId: { } aircraftId }
-                    ? new PricedService(segment, _travellers[service.TravellerId], rbdId, flightNumber, aircraftId)
+                    ? new PricedService(segment, _travellers[service.RequiredTravellerId], rbdId, flightNumber, aircraftId)
                     : throw ExceptionFactory.AirServiceValidationFactsAreMissing(service.Id);
             }
         }

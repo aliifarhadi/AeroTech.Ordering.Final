@@ -92,7 +92,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
 
             var seatsBySegment = services
                 .Where(service => service.TravellerId == traveller.Id && service.ServiceType == OrderServiceType.SeatAssignment)
-                .ToDictionary(service => service.SegmentId, service => service.SeatNumber);
+                .ToDictionary(SegmentOf, service => service.SeatNumber);
 
             var taxes = travellerLines
                 .Where(pair => pair.line.Category == OrderPricingLineCategory.Tax)
@@ -120,17 +120,20 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
             OrderServiceDto service,
             IReadOnlyDictionary<long, string?> seatsBySegment)
             => new(
-                service.SegmentId.ToString(CultureInfo.InvariantCulture),
+                SegmentOf(service).ToString(CultureInfo.InvariantCulture),
                 service.BookingClass,
                 service.FareBasis,
                 service.FareFamily,
                 service.FareType?.ToString(),
                 service.CheckedBaggage,
                 service.CabinBaggage,
-                seatsBySegment.GetValueOrDefault(service.SegmentId),
+                seatsBySegment.GetValueOrDefault(SegmentOf(service)),
                 service.IsRefundable,
                 service.IsChangeable,
                 service.IsUpgradable);
+
+        private static long SegmentOf(OrderServiceDto service)
+            => service.SegmentId ?? throw new InvalidOperationException($"Order service {service.Id} has no projected segment.");
 
         private static FlightOrderTravelerDto ToTraveler(
             OrderTravellerDto traveller,

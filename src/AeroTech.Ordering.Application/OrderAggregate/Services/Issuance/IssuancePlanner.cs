@@ -67,7 +67,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Issuance
                 .ToLookup(attributed => attributed.Allocation.OrderServiceId!.Value);
 
             return scope.Services
-                .GroupBy(service => service.TravellerId)
+                .GroupBy(service => service.RequiredTravellerId)
                 .OrderBy(group => travellers[group.Key].Index)
                 .Select(group => new TicketPlan(
                     group.Key,
@@ -111,7 +111,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Services.Issuance
 
             return new IssueTicketCouponArgs(
                 service.Id,
-                service.TravellerId,
+                service.RequiredTravellerId,
                 service.SegmentId,
                 fareComponent.Id,
                 new IssuedSegmentSnapshot(

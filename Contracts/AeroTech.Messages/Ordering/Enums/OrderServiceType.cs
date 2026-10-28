@@ -25,7 +25,8 @@ namespace AeroTech.Messages.Ordering.Enums
         [Display(Name = "Ground Transport")] GroundTransport,
         [Display(Name = "Priority")] Priority,
         [Display(Name = "Wi-Fi")] WiFi,
-        [Display(Name = "Extra Seat")] ExtraSeat
+        [Display(Name = "Extra Seat")] ExtraSeat,
+        [Display(Name = "Ancillary")] Ancillary
 
     }
 

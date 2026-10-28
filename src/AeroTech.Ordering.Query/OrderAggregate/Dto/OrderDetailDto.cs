@@ -84,8 +84,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
 
     public sealed record OrderServiceDto(
         long Id,
-        long TravellerId,
-        long SegmentId,
+        long? TravellerId,
+        long? SegmentId,
         OrderServiceType ServiceType,
         OrderServiceCommercialState CommercialStatus,
         string? BookingClass,

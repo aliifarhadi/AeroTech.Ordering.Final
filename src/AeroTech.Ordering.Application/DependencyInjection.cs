@@ -6,6 +6,7 @@ using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Con
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.ReleaseReservation;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands.Reserve;
 using AeroTech.Ordering.Application.FulfillmentReservationAggregate.Services;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.AddAncillaries;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
@@ -45,6 +46,7 @@ namespace AeroTech.Ordering.Application
             services.AddScoped<AgencyCreateOrderArgsMapper>();
             services.AddScoped<ICreateOrderFromOfferService, CreateOrderFromOfferService>();
             services.AddScoped<IAddRemarkService, AddRemarkService>();
+            services.AddScoped<IAddAncillariesService, AddAncillariesService>();
 
             var fulfillment = configuration.GetSection(FulfillmentOptions.SectionName);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(

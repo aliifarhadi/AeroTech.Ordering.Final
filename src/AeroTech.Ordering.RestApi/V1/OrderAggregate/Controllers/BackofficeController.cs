@@ -1,4 +1,5 @@
 ﻿using AeroTech.Ordering.Application.ElectronicTicketAggregate.Commands.VoidElectronicTickets.Backoffice;
+using AeroTech.Ordering.Application.OrderAggregate.Commands.AddAncillaries.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.AddRemark.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CancelOrder.Backoffice;
 using AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer;
@@ -64,6 +65,17 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate
             CancellationToken cancellationToken)
         {
             var command = new BackofficeAddRemarkCommand(orderId, request.SupersedesRemarkId, request.Remark);
+
+            return Ok(await _mediator.Send(command, cancellationToken));
+        }
+
+        [HttpPost("{orderId:long}/Ancillaries")]
+        public async Task<IActionResult> AddAncillaries(
+            long orderId,
+            [FromBody] BackofficeAddAncillariesRequest request,
+            CancellationToken cancellationToken)
+        {
+            var command = new BackofficeAddAncillariesCommand(orderId, request.ExpectedCommercialVersion, request.SelectedAncillaries);
 
             return Ok(await _mediator.Send(command, cancellationToken));
         }

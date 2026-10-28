@@ -592,6 +592,132 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException OfferFareTypeIsNotRecognised(params object?[] args) =>
             new(2823, ExceptionMessages.OfferFareTypeIsNotRecognised, args) { HttpStatus = 422 };
 
+        public static BusinessException OrderDoesNotAcceptAncillariesInStatus(params object?[] args) =>
+            new(2824, ExceptionMessages.OrderDoesNotAcceptAncillariesInStatus, args) { HttpStatus = 409 };
+
+        public static BusinessException OrderCommercialVersionIsNotExpected(params object?[] args) =>
+            new(2825, ExceptionMessages.OrderCommercialVersionIsNotExpected, args) { HttpStatus = 409 };
+
+        public static BusinessException OrderHasFulfillmentHistory(params object?[] args) =>
+            new(2826, ExceptionMessages.OrderHasFulfillmentHistory, args) { HttpStatus = 409 };
+
+        public static BusinessException OrderDoesNotAcceptAncillariesAfterLastTicketingDate(params object?[] args) =>
+            new(2827, ExceptionMessages.OrderDoesNotAcceptAncillariesAfterLastTicketingDate, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillarySelectionHasExpired(params object?[] args) =>
+            new(2828, ExceptionMessages.AncillarySelectionHasExpired, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillarySelectionVersionIsStale(params object?[] args) =>
+            new(2829, ExceptionMessages.AncillarySelectionVersionIsStale, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillarySelectionBelongsToAnotherSource(params object?[] args) =>
+            new(2830, ExceptionMessages.AncillarySelectionBelongsToAnotherSource, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillarySelectionLineCountMismatch(params object?[] args) =>
+            new(2831, ExceptionMessages.AncillarySelectionLineCountMismatch, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillarySelectionIsEmpty(params object?[] args) =>
+            new(2832, ExceptionMessages.AncillarySelectionIsEmpty, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryOfferItemIsDuplicated(params object?[] args) =>
+            new(2833, ExceptionMessages.AncillaryOfferItemIsDuplicated, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryVariantIsNotRecognised(params object?[] args) =>
+            new(2834, ExceptionMessages.AncillaryVariantIsNotRecognised, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryVariantDoesNotMatchProfile(params object?[] args) =>
+            new(2835, ExceptionMessages.AncillaryVariantDoesNotMatchProfile, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryChoiceIsMissing(params object?[] args) =>
+            new(2836, ExceptionMessages.AncillaryChoiceIsMissing, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryChoiceIsInvalid(params object?[] args) =>
+            new(2837, ExceptionMessages.AncillaryChoiceIsInvalid, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryVariantSourceIsIncomplete(params object?[] args) =>
+            new(2838, ExceptionMessages.AncillaryVariantSourceIsIncomplete, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryUpgradeIsNotFixedPriced(params object?[] args) =>
+            new(2839, ExceptionMessages.AncillaryUpgradeIsNotFixedPriced, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryQuantityIsInvalid(params object?[] args) =>
+            new(2840, ExceptionMessages.AncillaryQuantityIsInvalid, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryScopeIsInconsistent(params object?[] args) =>
+            new(2841, ExceptionMessages.AncillaryScopeIsInconsistent, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryTravellerIsNotInOrder(params object?[] args) =>
+            new(2842, ExceptionMessages.AncillaryTravellerIsNotInOrder, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryFlightIsNotInOrder(params object?[] args) =>
+            new(2843, ExceptionMessages.AncillaryFlightIsNotInOrder, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryPortionIsNotInOrder(params object?[] args) =>
+            new(2844, ExceptionMessages.AncillaryPortionIsNotInOrder, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryCoverageIsNotSupported(params object?[] args) =>
+            new(2845, ExceptionMessages.AncillaryCoverageIsNotSupported, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryCoverageDoesNotMatchUnit(params object?[] args) =>
+            new(2846, ExceptionMessages.AncillaryCoverageDoesNotMatchUnit, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryPriceIsIncomplete(params object?[] args) =>
+            new(2847, ExceptionMessages.AncillaryPriceIsIncomplete, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryPriceCurrencyDoesNotMatchOrder(params object?[] args) =>
+            new(2848, ExceptionMessages.AncillaryPriceCurrencyDoesNotMatchOrder, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryTaxTreatmentIsNotAccepted(params object?[] args) =>
+            new(2849, ExceptionMessages.AncillaryTaxTreatmentIsNotAccepted, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryFeeIsNotAppliedPerItem(params object?[] args) =>
+            new(2850, ExceptionMessages.AncillaryFeeIsNotAppliedPerItem, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryPriceDoesNotReconcile(params object?[] args) =>
+            new(2851, ExceptionMessages.AncillaryPriceDoesNotReconcile, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryPriceAmountIsNegative(params object?[] args) =>
+            new(2852, ExceptionMessages.AncillaryPriceAmountIsNegative, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryPricingReferenceIsInvalid(params object?[] args) =>
+            new(2853, ExceptionMessages.AncillaryPricingReferenceIsInvalid, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillaryServiceIsNotFulfillable(params object?[] args) =>
+            new(2854, ExceptionMessages.AncillaryServiceIsNotFulfillable, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillaryPartialCancellationRequiresRequote(params object?[] args) =>
+            new(2855, ExceptionMessages.AncillaryPartialCancellationRequiresRequote, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillaryCancellationRequiresAirService(params object?[] args) =>
+            new(2856, ExceptionMessages.AncillaryCancellationRequiresAirService, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillarySelectionCouldNotBeResolved(string? detail, object? selectionId) =>
+            new(2857, Detail(detail, string.Format(ExceptionMessages.AncillarySelectionCouldNotBeResolved, selectionId))) { HttpStatus = 502 };
+
+        public static BusinessException AncillarySourceContractIsIncomplete(params object?[] args) =>
+            new(2858, ExceptionMessages.AncillarySourceContractIsIncomplete, args) { HttpStatus = 502 };
+
+        public static BusinessException AncillarySeatIsAlreadyAssigned(params object?[] args) =>
+            new(2859, ExceptionMessages.AncillarySeatIsAlreadyAssigned, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillarySeatIsTaken(params object?[] args) =>
+            new(2860, ExceptionMessages.AncillarySeatIsTaken, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillaryBasketIsEmpty(params object?[] args) =>
+            new(2861, ExceptionMessages.AncillaryBasketIsEmpty, args) { HttpStatus = 422 };
+
+        public static BusinessException OrderServiceHasNoTraveller(params object?[] args) =>
+            new(2862, ExceptionMessages.OrderServiceHasNoTraveller, args) { HttpStatus = 500 };
+
+        public static BusinessException AncillarySelectionIsNoLongerSellable(params object?[] args) =>
+            new(2863, ExceptionMessages.AncillarySelectionIsNoLongerSellable, args) { HttpStatus = 409 };
+
+        public static BusinessException AncillarySelectionIsNotFound(params object?[] args) =>
+            new(2864, ExceptionMessages.AncillarySelectionIsNotFound, args) { HttpStatus = 422 };
+
+        public static BusinessException AncillarySelectionExpiredAtSource(params object?[] args) =>
+            new(2865, ExceptionMessages.AncillarySelectionExpiredAtSource, args) { HttpStatus = 409 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

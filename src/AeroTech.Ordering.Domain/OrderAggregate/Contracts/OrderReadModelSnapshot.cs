@@ -1,6 +1,8 @@
 ﻿using AeroTech.Messages.AirPrice.Enums;
+using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Messages.Shared.Enums;
+using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Domain._Shared.Contracts;
 using PassengerTypeCode = AeroTech.Messages.Ordering.Enums.PassengerTypeCode;
 
@@ -117,8 +119,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
     public sealed record OrderServiceSnapshot(
         long ServiceId,
         long ItemId,
-        long TravellerId,
-        long SegmentId,
+        long? TravellerId,
+        long? SegmentId,
         OrderServiceType ServiceType,
         OrderServiceCommercialState CommercialStatus,
         long? FlightCapacityId,
@@ -135,7 +137,40 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         bool IsChangeable,
         bool IsUpgradable,
         string? SeatNumber,
-        long? EndedByChangeId);
+        long? EndedByChangeId)
+    {
+        public OrderAncillarySnapshot? Ancillary { get; init; }
+    }
+
+    public sealed record OrderAncillarySnapshot(
+        string VariantCode,
+        AncillaryProfile Profile,
+        int Quantity,
+        SelectionScope? SelectionScope,
+        ServiceCoverageScope? CoverageScope,
+        IReadOnlyList<long> CoveredAirServiceIds,
+        long? PointOfSaleId,
+        AncillarySaleSource Source,
+        AncillaryDefinition Definition,
+        AncillaryProvision Provision,
+        AncillaryPricing Pricing)
+    {
+        public BaggageChoice? Baggage { get; init; }
+
+        public MealChoice? Meal { get; init; }
+
+        public PetChoice? Pet { get; init; }
+
+        public AssistanceChoice? Assistance { get; init; }
+
+        public AirportServiceChoice? AirportService { get; init; }
+
+        public PriorityChoice? Priority { get; init; }
+
+        public ConnectivityChoice? Connectivity { get; init; }
+
+        public UpgradeChoice? Upgrade { get; init; }
+    }
 
     public sealed record OrderChangeSnapshot(
         long ChangeId,

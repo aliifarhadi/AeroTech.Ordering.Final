@@ -102,6 +102,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.IssueOrder
                         ?? throw ExceptionFactory.OrderNotFound(orderId);
 
             authorization.Ensure(order);
+            order.EnsureFulfillmentIsSupported();
 
             var tickets = await _tickets.ListByOrderAsync(orderId, cancellationToken);
             var services = _planner.OutstandingServices(order, tickets);

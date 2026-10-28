@@ -1,7 +1,9 @@
 using AeroTech.Framework.Core.ServiceContracts;
+using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
+using AeroTech.Ordering.Domain.Providers.Ancillary;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain._Shared.Resources;
 
@@ -121,8 +123,129 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 reader.EquivalentCurrencyId(source),
                 ToSnapshot(reader.Rate(source.RateOfExchangePeriodId)),
                 refundability: null,
+                taxJurisdiction: null,
+                sourceTaxTreatment: null,
+                sourceFeeApplicationUnit: null,
                 createdAt);
         }
+
+        private IReadOnlyList<AcceptedPriceComponent> AcceptedPriceComponents(string reference, ResolvedAncillaryPricing pricing)
+        {
+            var components = pricing.TaxLines.Concat(pricing.FeeLines).ToList();
+
+            if (pricing.PricingId <= 0 || pricing.PricingRateId <= 0 || pricing.PricingVersion <= 0)
+                throw ExceptionFactory.AncillaryPricingReferenceIsInvalid(reference);
+
+            if (!pricing.IsUnitTotalComplete)
+                throw ExceptionFactory.AncillaryPriceIsIncomplete(reference);
+
+            if (pricing.CurrencyId != CurrencyId)
+                throw ExceptionFactory.AncillaryPriceCurrencyDoesNotMatchOrder(reference, pricing.CurrencyId, CurrencyId);
+
+            if (components.FirstOrDefault(component => component.CurrencyId != pricing.CurrencyId) is { } foreign)
+                throw ExceptionFactory.AncillaryPriceCurrencyDoesNotMatchOrder(reference, foreign.CurrencyId, CurrencyId);
+
+            if (pricing.UnitAmount < 0 || pricing.TotalAmount < 0 || pricing.BaseAmount < 0 || components.Any(component => component.Amount < 0))
+                throw ExceptionFactory.AncillaryPriceAmountIsNegative(reference);
+
+            if (pricing.TaxLines.FirstOrDefault(tax => tax.TaxTreatment is not (TaxTreatment.IncludedInBase or TaxTreatment.AddedToBase)) is { } tax)
+                throw ExceptionFactory.AncillaryTaxTreatmentIsNotAccepted(reference, tax.Code, tax.TaxTreatment);
+
+            if (pricing.FeeLines.FirstOrDefault(fee => fee.FeeApplicationUnit != FeeApplicationUnit.Item) is { } fee)
+                throw ExceptionFactory.AncillaryFeeIsNotAppliedPerItem(reference, fee.Code, fee.FeeApplicationUnit);
+
+            var netBase = pricing.BaseAmount - pricing.TaxLines.Where(tax => tax.TaxTreatment == TaxTreatment.IncludedInBase).Sum(tax => tax.Amount);
+            var unitTotal = netBase + components.Sum(component => component.Amount);
+
+            if (netBase < 0 || unitTotal != pricing.UnitAmount)
+                throw ExceptionFactory.AncillaryPriceDoesNotReconcile(reference, unitTotal, pricing.UnitAmount);
+
+            if (pricing.UnitAmount * pricing.Quantity != pricing.TotalAmount)
+                throw ExceptionFactory.AncillaryPriceDoesNotReconcile(reference, pricing.UnitAmount * pricing.Quantity, pricing.TotalAmount);
+
+            var accepted = new List<AcceptedPriceComponent>
+            {
+                new(OrderPricingLineCategory.Ancillary, OrderPricingLineSubCategory.AncillaryBase, null, netBase * pricing.Quantity, null, null, null)
+            };
+
+            accepted.AddRange(pricing.TaxLines.Select(tax => AcceptedComponentOf(tax, OrderPricingLineCategory.Tax, OrderPricingLineSubCategory.Tax, pricing.Quantity)));
+            accepted.AddRange(pricing.FeeLines.Select(fee => AcceptedComponentOf(fee, OrderPricingLineCategory.Fee, OrderPricingLineSubCategory.ServiceFee, pricing.Quantity)));
+
+            return accepted.Where(component => component.Amount != 0).ToList();
+        }
+
+        private IReadOnlyList<PricingLine> PricingLinesFor(
+            IReadOnlyList<AcceptedPriceComponent> components,
+            OrderItem item,
+            OrderService service,
+            IReadOnlyList<OrderAirTransportService> coveredAirServices,
+            OrderPricingReason reason,
+            IIdGenerator idGenerator,
+            long changeId,
+            DateTimeOffset createdAt)
+        {
+            var segmentId = coveredAirServices.Count == 1 ? coveredAirServices[0].SegmentId : (long?)null;
+            var journeyId = segmentId is { } coveredSegmentId ? SegmentJourneyId(coveredSegmentId) : (long?)null;
+            var lines = new List<PricingLine>();
+
+            foreach (var component in components)
+            {
+                var line = new PricingLine(
+                    idGenerator.NewId(),
+                    Id,
+                    changeId,
+                    reason,
+                    PricingLineScope.OrderService,
+                    component.Category,
+                    component.SubCategory,
+                    OrderPricingLineDirection.Credit,
+                    PricingLineTreatment.CustomerPrice,
+                    component.Code,
+                    null,
+                    null,
+                    component.Amount,
+                    CurrencyId,
+                    component.Amount,
+                    CurrencyId,
+                    exchangeRateSnapshot: null,
+                    refundability: null,
+                    component.TaxJurisdiction,
+                    component.TaxTreatment,
+                    component.FeeApplicationUnit,
+                    createdAt);
+
+                line.AddAllocation(new PricingAllocation(
+                    idGenerator.NewId(),
+                    line.Id,
+                    item.Id,
+                    service.Id,
+                    journeyId,
+                    segmentId,
+                    service.TravellerId,
+                    component.Amount,
+                    CurrencyId,
+                    component.Amount,
+                    CurrencyId));
+
+                lines.Add(line);
+            }
+
+            return lines;
+        }
+
+        private static AcceptedPriceComponent AcceptedComponentOf(
+            ResolvedAncillaryPriceLine source,
+            OrderPricingLineCategory category,
+            OrderPricingLineSubCategory subCategory,
+            int quantity)
+            => new(
+                category,
+                subCategory,
+                source.Code,
+                source.Amount * quantity,
+                TaxJurisdictionSnapshot.Of(source.CountryId, source.StationAirportId),
+                source.TaxTreatment,
+                source.FeeApplicationUnit);
 
         private void ReconcileTotals()
         {
@@ -194,5 +317,14 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 
         private long SegmentJourneyId(long segmentId)
             => _segments.First(segment => segment.Id == segmentId).OrderJourneyId;
+
+        private sealed record AcceptedPriceComponent(
+            OrderPricingLineCategory Category,
+            OrderPricingLineSubCategory SubCategory,
+            string? Code,
+            decimal Amount,
+            TaxJurisdictionSnapshot? TaxJurisdiction,
+            TaxTreatment? TaxTreatment,
+            FeeApplicationUnit? FeeApplicationUnit);
     }
 }

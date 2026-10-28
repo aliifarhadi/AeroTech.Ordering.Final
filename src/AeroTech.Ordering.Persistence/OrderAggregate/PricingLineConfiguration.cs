@@ -27,6 +27,12 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
                 snapshot.Property(value => value.PeriodId).HasColumnName("ExchangePeriodId").HasMaxLength(64);
             });
 
+            builder.OwnsOne(line => line.TaxJurisdiction, jurisdiction =>
+            {
+                jurisdiction.Property(value => value.CountryId).HasColumnName("TaxCountryId");
+                jurisdiction.Property(value => value.StationId).HasColumnName("TaxStationId");
+            });
+
             builder.HasMany(line => line.Allocations)
                 .WithOne()
                 .HasForeignKey(allocation => allocation.PricingLineId)

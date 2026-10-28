@@ -11,9 +11,9 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Models
 
         public long OrderItemId { get; set; }
 
-        public long TravellerId { get; set; }
+        public long? TravellerId { get; set; }
 
-        public long SegmentId { get; set; }
+        public long? SegmentId { get; set; }
 
         public OrderServiceType ServiceType { get; set; }
 

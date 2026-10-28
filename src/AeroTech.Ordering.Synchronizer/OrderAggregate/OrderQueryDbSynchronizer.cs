@@ -45,6 +45,7 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             await ReconcileAsync(_dbContext.OrderSegmentLegs, snapshot, Legs(snapshot), leg => leg.Leg.SegmentLegId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderItems, snapshot, snapshot.Items, item => item.ItemId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderServices, snapshot, snapshot.Services, service => service.ServiceId, Apply, cancellationToken);
+            await ReconcileAsync(_dbContext.OrderAncillaryServices, snapshot, Ancillaries(snapshot), ancillary => ancillary.ServiceId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderPricingLines, snapshot, snapshot.PricingLines, line => line.PricingLineId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderPricingAllocations, snapshot, Allocations(snapshot), allocation => allocation.Allocation.AllocationId, Apply, cancellationToken);
             await ReconcileAsync(_dbContext.OrderContacts, snapshot, snapshot.Contacts, contact => contact.ContactId, Apply, cancellationToken);
@@ -91,6 +92,12 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         private static IReadOnlyList<OwnedDocument> Documents(OrderReadModelSnapshot snapshot)
             => snapshot.Travellers
                 .SelectMany(traveller => traveller.Documents.Select(document => new OwnedDocument(traveller.TravellerId, document)))
+                .ToList();
+
+        private static IReadOnlyList<OwnedAncillary> Ancillaries(OrderReadModelSnapshot snapshot)
+            => snapshot.Services
+                .Where(service => service.Ancillary is not null)
+                .Select(service => new OwnedAncillary(service.ServiceId, service.Ancillary!))
                 .ToList();
 
         private static IReadOnlyList<OwnedLeg> Legs(OrderReadModelSnapshot snapshot)
@@ -229,6 +236,96 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
             target.EndedByChangeId = source.EndedByChangeId;
         }
 
+        private static void Apply(OwnedAncillary source, OrderAncillaryServiceReadModel target)
+        {
+            target.VariantCode = source.Ancillary.VariantCode;
+            target.Profile = source.Ancillary.Profile;
+            target.Quantity = source.Ancillary.Quantity;
+            target.SelectionScope = source.Ancillary.SelectionScope;
+            target.CoverageScope = source.Ancillary.CoverageScope;
+            target.CoveredAirServiceIds = source.Ancillary.CoveredAirServiceIds.ToList();
+            target.PointOfSaleId = source.Ancillary.PointOfSaleId;
+            target.SourceKind = source.Ancillary.Source.Kind;
+            target.SourceReference = source.Ancillary.Source.Reference;
+            target.SourceOrderCommercialVersion = source.Ancillary.Source.OrderCommercialVersion;
+            target.SourceSelectionId = source.Ancillary.Source.SelectionId;
+            target.SourceOfferItemId = source.Ancillary.Source.OfferItemId;
+            target.DefinitionVersionId = source.Ancillary.Definition.DefinitionVersionId;
+            target.ServiceDefinitionRef = source.Ancillary.Definition.ServiceDefinitionRef;
+            target.ServiceTypeCode = source.Ancillary.Definition.ServiceTypeCode;
+            target.ServiceSubCode = source.Ancillary.Definition.ServiceSubCode;
+            target.Rfic = source.Ancillary.Definition.Rfic;
+            target.Rfisc = source.Ancillary.Definition.Rfisc;
+            target.SsrCode = source.Ancillary.Definition.SsrCode;
+            target.ProvisionId = source.Ancillary.Provision.ProvisionId;
+            target.PurchaseStage = source.Ancillary.Provision.PurchaseStage;
+            target.BookingMethod = source.Ancillary.Provision.BookingMethod;
+            target.BookingRequired = source.Ancillary.Provision.BookingRequired;
+            target.ConfirmationRequirement = source.Ancillary.Provision.ConfirmationRequirement;
+            target.ProvisionFulfillmentProviderKey = source.Ancillary.Provision.SourceFulfillmentProviderKey;
+            target.DocumentRouting = source.Ancillary.Provision.DocumentRouting;
+            target.DocumentType = source.Ancillary.Provision.DocumentType;
+            target.DocumentRequired = source.Ancillary.Provision.DocumentRequired;
+            target.RequiresCheckAtReserve = source.Ancillary.Provision.RequiresCheckAtReserve;
+            target.PricingId = source.Ancillary.Pricing.PricingId;
+            target.PricingRateId = source.Ancillary.Pricing.PricingRateId;
+            target.PricingVersion = source.Ancillary.Pricing.PricingVersion;
+            target.PricingUnit = source.Ancillary.Pricing.PricingUnit;
+            target.BaggageChargeKind = source.Ancillary.Baggage?.ChargeKind;
+            target.BaggageAllowanceConcept = source.Ancillary.Baggage?.AllowanceConcept;
+            target.BaggagePackageWeightKg = source.Ancillary.Baggage?.PackageWeightKg;
+            target.BaggageWeightFromExclusiveKg = source.Ancillary.Baggage?.WeightFromExclusiveKg;
+            target.BaggageWeightToInclusiveKg = source.Ancillary.Baggage?.WeightToInclusiveKg;
+            target.BaggageEquipmentKind = source.Ancillary.Baggage?.EquipmentKind;
+            target.BaggageBagRef = source.Ancillary.Baggage?.BagRef;
+            target.BaggageMeasuredWeightKg = source.Ancillary.Baggage?.MeasuredWeightKg;
+            target.BaggageLengthCm = source.Ancillary.Baggage?.Dimensions?.LengthCm;
+            target.BaggageWidthCm = source.Ancillary.Baggage?.Dimensions?.WidthCm;
+            target.BaggageHeightCm = source.Ancillary.Baggage?.Dimensions?.HeightCm;
+            target.BaggageWeightKg = source.Ancillary.Baggage?.WeightKg;
+            target.MealKind = source.Ancillary.Meal?.MealKind;
+            target.MealCode = source.Ancillary.Meal?.MealCode;
+            target.MealMenuItemRef = source.Ancillary.Meal?.MenuItemRef;
+            target.MealDietaryCode = source.Ancillary.Meal?.DietaryCode;
+            target.MealExclusiveFamilyCode = source.Ancillary.Meal?.ExclusiveMealFamilyCode;
+            target.PetTransportMode = source.Ancillary.Pet?.TransportMode;
+            target.PetAnimalType = source.Ancillary.Pet?.AnimalType;
+            target.PetOtherAnimalCode = source.Ancillary.Pet?.OtherAnimalCode;
+            target.PetAnimalAgeWeeks = source.Ancillary.Pet?.AnimalAgeWeeks;
+            target.PetCombinedWeightKg = source.Ancillary.Pet?.CombinedWeightKg;
+            target.PetCarrierLengthCm = source.Ancillary.Pet?.CarrierDimensions.LengthCm;
+            target.PetCarrierWidthCm = source.Ancillary.Pet?.CarrierDimensions.WidthCm;
+            target.PetCarrierHeightCm = source.Ancillary.Pet?.CarrierDimensions.HeightCm;
+            target.PetDocumentAcknowledgements = source.Ancillary.Pet?.DocumentAcknowledgements.ToList() ?? [];
+            target.PetSizeBracket = source.Ancillary.Pet?.SizeBracket;
+            target.AssistanceKind = source.Ancillary.Assistance?.AssistanceKind;
+            target.AssistanceSsrCode = source.Ancillary.Assistance?.AssistanceSsrCode;
+            target.AssistanceInfantTravellerId = source.Ancillary.Assistance?.InfantTravellerId;
+            target.AssistanceGuardianTravellerId = source.Ancillary.Assistance?.GuardianTravellerId;
+            target.AirportServiceKind = source.Ancillary.AirportService?.Kind;
+            target.AirportServiceAirportId = source.Ancillary.AirportService?.AirportId;
+            target.AirportServiceTerminalRef = source.Ancillary.AirportService?.TerminalRef;
+            target.AirportServiceFacilityId = source.Ancillary.AirportService?.FacilityId;
+            target.AirportServiceDirection = source.Ancillary.AirportService?.Direction;
+            target.AirportServiceTimeWithOffset = source.Ancillary.AirportService?.TimeWithOffset;
+            target.AirportServiceGuestCount = source.Ancillary.AirportService?.GuestCount;
+            target.PriorityKind = source.Ancillary.Priority?.Kind;
+            target.PriorityZoneCode = source.Ancillary.Priority?.PriorityZoneCode;
+            target.PriorityGroupCode = source.Ancillary.Priority?.PriorityGroupCode;
+            target.PriorityFareBenefitRef = source.Ancillary.Priority?.FareBenefitRef;
+            target.PriorityOptIn = source.Ancillary.Priority?.OptIn;
+            target.ConnectivityPlanKind = source.Ancillary.Connectivity?.PlanKind;
+            target.ConnectivityDurationMinutes = source.Ancillary.Connectivity?.DurationMinutes;
+            target.ConnectivityIncludedDataMb = source.Ancillary.Connectivity?.IncludedDataMb;
+            target.ConnectivityMaxDevices = source.Ancillary.Connectivity?.MaxDevices;
+            target.ConnectivityDeliveryStage = source.Ancillary.Connectivity?.DeliveryStage;
+            target.ConnectivityDeviceCount = source.Ancillary.Connectivity?.DeviceCount;
+            target.UpgradeFromCabinId = source.Ancillary.Upgrade?.FromCabinId;
+            target.UpgradeToCabinId = source.Ancillary.Upgrade?.ToCabinId;
+            target.UpgradeKind = source.Ancillary.Upgrade?.UpgradeKind;
+            target.UpgradeRequiresTicketExchange = source.Ancillary.Upgrade?.RequiresTicketExchange;
+        }
+
         private static void Apply(OrderPricingLineSnapshot source, OrderPricingLineReadModel target)
         {
             target.Reason = source.Reason;
@@ -316,6 +413,8 @@ namespace AeroTech.Ordering.Synchronizer.OrderAggregate
         private sealed record OwnedDocument(long TravellerId, OrderTravellerDocumentSnapshot Document);
 
         private sealed record OwnedLeg(long SegmentId, OrderSegmentLegSnapshot Leg);
+
+        private sealed record OwnedAncillary(long ServiceId, OrderAncillarySnapshot Ancillary);
 
         private sealed record OwnedAllocation(long PricingLineId, OrderPricingAllocationSnapshot Allocation);
 

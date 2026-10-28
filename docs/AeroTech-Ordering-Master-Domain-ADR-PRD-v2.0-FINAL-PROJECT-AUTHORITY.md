@@ -321,12 +321,14 @@ A group/closed-charter commercial item may exist before individual traveller ser
 
 IATA benchmark: at Order time a Service occurrence should be passenger-specific and, for air service, segment-specific. AeroTech keeps that grain.
 
+**Stage 6A amendment (owner decision, 2026-10-28).** There is one exception: an optional service that the source sells with `SelectionScope = PerOrder` and `CoverageScope = Order`, such as an order-wide Wi-Fi plan. Its beneficiary is the Order itself, so its `TravellerId` is null. Air transport, seats and every other optional service keep exactly one traveller. No traveller is invented for an order-level service.
+
 | Field | Type | Null | Stage | Meaning |
 |---|---|---:|---|---|
 | `Id` | `long` | No | NOW | Stable service occurrence identity. |
 | `OrderId` | `long` | No | NOW | Parent Order. |
 | `OrderItemId` | `long` | No | NOW | Commercial item. |
-| `TravellerId` | `long` | No | NOW | Exactly one beneficiary occurrence. Multi-beneficiary supplier units are represented by ReservationUnit covering multiple service IDs, not by a generic beneficiary graph. |
+| `TravellerId` | `long?` | Yes (PerOrder optional service only) | NOW | Exactly one beneficiary occurrence; null only for a `PerOrder`/`Order`-coverage optional service (Stage 6A). Air and Seat services always carry a traveller. Multi-beneficiary supplier units are represented by ReservationUnit covering multiple service IDs, not by a generic beneficiary graph. |
 | `ServiceType` | `OrderServiceType` | No | NOW | Concrete service category. |
 | `SourceServiceRef` | `string?` | Yes | FUTURE / SOURCE-GATED | Upstream Offer/Service identity if supplied. |
 | `FulfillmentProviderKey` | `string` | No | NOW | Provider/adapter responsible for reservation/fulfillment orchestration of this occurrence. Immutable for this occurrence. |
@@ -378,41 +380,76 @@ The three boolean terms are accepted-sale snapshots only. Refund/exchange author
 | `SegmentId` | `long` | No | NOW |
 | `AssociatedAirServiceId` | `long` | No | NOW |
 | `SeatNumber` | `string` | No | NOW |
+| `VariantCode` | `string?` | Yes | NOW (Stage 6A) — A07 or A08 for a priced seat; null for a legacy seat |
+| `PointOfSaleId` | `long?` | Yes | NOW (Stage 6A) — point of sale of the accepted seat quote, kept for the later seat hold |
+| `Source` | `AncillarySaleSource?` | Yes | NOW (Stage 6A) |
+| `Definition` | `AncillaryDefinition?` | Yes | NOW (Stage 6A) |
+| `Provision` | `AncillaryProvision?` | Yes | NOW (Stage 6A) |
+| `Pricing` | `AncillaryPricing?` | Yes | NOW (Stage 6A) |
 
 The sold/selected seat remains commercial history. A later DCS operational seat change is a delivery observation and does not overwrite `SeatNumber`.
 
+**Stage 6A priced seat (A07/A08).**
+- A priced seat is one traveller on one flight, linked to that traveller's active air service on that flight. It has its own `ProductType.Seat` item and its own price lines.
+- A traveller holds at most one active seat per flight, and one physical seat on a flight goes to at most one traveller of the Order.
+- `PointOfSaleId` comes from the accepted seat quote; it is never re-derived from the sales office.
+- A legacy seat from Create `seatSelections` keeps every quote field null.
+- The seat quote contract (Ancillary AC-03, handoff OR-005) does not exist yet, so live priced-seat acceptance is `BLOCKED_SOURCE`.
+
 ---
 
-## 6.7 `OrderAncillaryService` — future airline optional service
+## 6.7 `OrderAncillaryService` — airline optional service
 
-Materialize in Ancillary Stage, not now.
+**Materialized in Stage 6A (2026-10-28)** for every source variant A01–A24 except the regular seats A07/A08, which use `OrderSeatService` (§6.6). One source-priced line becomes exactly one `OrderItem` and one service, even when it covers several flights.
 
 | Field | Type | Null | Meaning |
 |---|---|---:|---|
-| base `OrderService` fields | — | — | One passenger occurrence. |
-| `ServiceDefinitionRef` | `string?` | Yes | Airline/offer service-definition identity. |
-| `ServiceSubCode` | `string?` | Yes | ATPCO/airline optional-service sub-code when provided. |
-| `ServiceTypeCode` | `string?` | Yes | ATPCO service type (flight/ticket/merchandise/reissue-refund/etc.) when supplied. |
-| `GroupCode` | `string?` | Yes | Optional Services group code. |
-| `SubGroupCode` | `string?` | Yes | Optional Services subgroup. |
-| `CommercialName` | `string?` | Yes | Source commercial description. |
-| `SsrCode` | `string?` | Yes | Associated SSR code if service definition supplies it. |
+| base `OrderService` fields | — | — | One beneficiary occurrence; `TravellerId` is null only for a `PerOrder` service (§6.4). `FulfillmentProviderKey = Ancillary`. |
+| `Profile` | `AncillaryProfile` | No | Source family (Stage 6A). |
+| `VariantCode` | `string` | No | Source variant A01–A24 (Stage 6A). |
+| `SelectionScope` | `SelectionScope` | No | Source selection scope (Stage 6A). It must agree with `CoverageScope`: PerOrder↔Order, PerTraveller↔Journey, PerTravellerPerPortion↔Portion, PerTravellerPerFlight↔Sector. |
+| `CoverageScope` | `ServiceCoverageScope` | No | Source provision coverage (Stage 6A). |
+| `Source` | `AncillarySaleSource` | No | Kind (Offer/Order), source reference, order commercial version at pricing, selection id, offer item id (Stage 6A). |
+| `Definition` | `AncillaryDefinition` | No | `DefinitionVersionId`, `ServiceDefinitionRef`, `ServiceTypeCode`, `ServiceSubCode`, `Rfic?`, `Rfisc?`, `SsrCode?` exactly as resolved (Stage 6A). It carries the definition rows of the earlier design (`ServiceDefinitionRef`, `ServiceSubCode`, `ServiceTypeCode`, `SsrCode`). |
+| `Provision` | `AncillaryProvision` | No | `ProvisionId`, purchase stage, booking method/required, confirmation requirement, source fulfillment provider key (informational), document routing/type/required, check-at-reserve (Stage 6A). No document is issued from these facts in Stage 6A. |
+| `Pricing` | `AncillaryPricing` | No | `PricingId`, `PricingRateId`, `PricingVersion`, `PricingUnit` (Stage 6A). Amounts live only in price lines (§8.1). |
+| family choice | `MealChoice?`, `PetChoice?`, `AssistanceChoice?`, `AirportServiceChoice?`, `PriorityChoice?`, `ConnectivityChoice?`, `UpgradeChoice?`, `ExtraSeatChoice?`, `MedicalEquipmentChoice?`, `UnaccompaniedMinorChoice?` | Yes | Exactly the choice of the variant's family (Stage 6A). It holds the scalar facts that identify what was sold plus every customer choice; catalog eligibility lists are not copied (owner decision D6). `ExtraSeatChoice` (A09), `MedicalEquipmentChoice` (A17) and `UnaccompaniedMinorChoice` (A19) are domain-only until the source supplies their data (owner decision D1). |
+| `GroupCode` | `string?` | Yes | Optional Services group code. SOURCE-GATED: not materialized. |
+| `SubGroupCode` | `string?` | Yes | Optional Services subgroup. SOURCE-GATED: not materialized. |
+| `CommercialName` | `string?` | Yes | Source commercial description. SOURCE-GATED: not materialized. |
 | `Quantity` | `int` | No | Purchased whole-unit count (owner decision, 2026-10-27); default source semantics, not guessed. |
-| `UnitCode` | `string?` | Yes | Unit if quantity is not count. |
-| `CoveredAirServiceIds` | `IReadOnlyCollection<long>` | No | 0..N air-service coverage; use only for service types that genuinely span more than one segment. |
-| `Refundability` | `RefundabilityRule?` | Yes | Accepted optional-service term snapshot. |
-| `Reusable` | `bool?` | Yes | ATPCO/source term when supplied. |
-| `FormOfRefundCode` | `string?` | Yes | Source disposition rule, e.g. original payment/e-voucher. |
-| `Commissionable` | `bool?` | Yes | Source Optional Services settlement term. |
-| `InterlineSettlementAllowed` | `bool?` | Yes | Source Optional Services settlement term. |
+| `UnitCode` | `string?` | Yes | Unit if quantity is not count. SOURCE-GATED: not materialized; the source pricing unit is kept in `Pricing.PricingUnit`. |
+| `CoveredAirServiceIds` | `IReadOnlyCollection<long>` | No | 0..N active air services of the same Order, mapped from the source coverage: Sector = one flight of the traveller, Portion = every flight of the bound in sequence, Journey = exactly the flights the source names (refused while the source names none), Order = none. |
+| `Refundability` | `RefundabilityRule?` | Yes | Accepted optional-service term snapshot. SOURCE-GATED: not materialized. |
+| `Reusable` | `bool?` | Yes | ATPCO/source term when supplied. SOURCE-GATED: not materialized. |
+| `FormOfRefundCode` | `string?` | Yes | Source disposition rule, e.g. original payment/e-voucher. SOURCE-GATED: not materialized. |
+| `Commissionable` | `bool?` | Yes | Source Optional Services settlement term. SOURCE-GATED: not materialized. |
+| `InterlineSettlementAllowed` | `bool?` | Yes | Source Optional Services settlement term. SOURCE-GATED: not materialized. |
 
 No ATPCO field is populated from a catalog guess. Source data is mandatory.
 
+**Stage 6A classification.** `OrderServiceType` reuses the existing member where one matches:
+- A11/A12 `Meal`, A20 `LoungeAccess`, A22 `Cip`, A23 `Priority`, A24 `WiFi`, A09 `ExtraSeat`;
+- the appended `Ancillary` member covers baggage, upgrades, pets, assisted travel and fast track. Purchased baggage is never `BaggageAllowance`.
+
+`ProductType` is `Baggage` for A01–A06, `Seat` for A07–A09, `Meal` for A11/A12 and `Ancillary` otherwise. The `VariantCode` stays authoritative for the exact product.
+
 ---
 
-## 6.8 `OrderBaggageService` — future specialization
+## 6.8 `OrderBaggageService` — purchased baggage specialization
 
 Baggage allowance already exists on Air service. This entity is for purchased/chargeable baggage occurrence.
+
+**Materialized in Stage 6A (2026-10-28)** for A01–A06 with `Baggage: BaggageChoice`:
+- the source charge kind and allowance concept;
+- the package weight;
+- the overweight band (`WeightFromExclusiveKg`, `WeightToInclusiveKg`);
+- the equipment kind;
+- the customer's `BagRef`, `MeasuredWeightKg`, `Dimensions` and `WeightKg`.
+
+A03 requires `BagRef` and `MeasuredWeightKg`, A04 requires `Dimensions`, and A06 requires `EquipmentKind`.
+
+The rows below stay SOURCE-GATED and are not materialized. The source states baggage through its charge kind and the customer's kilograms and dimensions, never as pieces and a unit. They are never derived from `Quantity`, which counts purchased units.
 
 | Field | Type | Null |
 |---|---|---:|
@@ -776,11 +813,52 @@ A reservation-validation request for a service scope expands that scope to every
 | `CreatedAt` | `DateTimeOffset` | No | NOW | Creation timestamp. |
 | `Allocations` | collection | No | NOW | Exact attribution of this line. |
 | `OwnerCarrierId` | `int?` | Yes | FUTURE / SOURCE-GATED | Carrier owning the line when supplied. |
-| `TaxJurisdiction` | `TaxJurisdictionSnapshot?` | Yes | FUTURE / SOURCE-GATED | Country/station tax attribution. |
+| `TaxJurisdiction` | `TaxJurisdictionSnapshot?` | Yes | NOW (Stage 6A, ancillary lines) / SOURCE-GATED otherwise | Country/station tax attribution. |
+| `SourceTaxTreatment` | `TaxTreatment?` | Yes | NOW (Stage 6A) | Source tax treatment of an ancillary tax line (`IncludedInBase` or `AddedToBase`). |
+| `SourceFeeApplicationUnit` | `FeeApplicationUnit?` | Yes | NOW (Stage 6A) | Source application unit of an ancillary fee line (always `Item` when accepted). |
 | `CommissionDetail` | `CommissionSnapshot?` | Yes | FUTURE / SOURCE-GATED | Recipient/rate/basis. |
 | `SourceAccountingReference` | `string?` | Yes | FUTURE / SOURCE-GATED | Accounting/settlement reference supplied by source. |
 
 `Code`/`Reference` remain the generic lossless source slots. Typed tax/commission structures add facts; they do not replace source values.
+
+### Stage 6A — accepted ancillary price (2026-10-28)
+
+An ancillary price is accepted only when every rule below holds.
+
+1. The source flags the unit total as complete.
+2. The price and each of its components are in the Order currency.
+3. No amount is negative.
+4. Every tax is `IncludedInBase` or `AddedToBase`.
+5. Every fee applies per `Item`.
+6. `UnitAmount = (BaseAmount − included taxes) + every tax + every fee`.
+7. `TotalAmount = UnitAmount × Quantity`.
+
+Otherwise the whole basket is refused.
+
+**Lines created**
+
+- **Base:** one line of category `Ancillary`, subcategory `AncillaryBase`, for the base net of the included taxes.
+- **Taxes and fees:** one line for each tax and each fee, with the source code, the jurisdiction and the source treatment.
+- **Quantity:** every line is per unit × quantity.
+- **Direction:** `Credit`, `CustomerPrice`, scope `OrderService`.
+
+**Reason**
+
+- `InitialSale` when accepted at Create.
+- `AdditionalSale` when added later.
+
+**Allocation**
+
+- Each line has one allocation to its item and service.
+- The traveller is set when the service has one.
+- The segment and journey are set only when exactly one air service is covered.
+- A multi-flight service is never split into per-flight prices.
+
+**What is never done**
+
+- A zero component creates no line.
+- An included tax is never added twice.
+- No exchange rate is guessed.
 
 ### `TaxJurisdictionSnapshot`
 
@@ -874,6 +952,16 @@ Ordering does not calculate proration when these values are absent.
 | `WaiverCode` | `string?` | Yes | FUTURE / SOURCE-GATED | Source-approved waiver. |
 
 `ReasonCode`, `ReasonText`, `SourceSystem`, `SourceReference`, `IsInvoluntary` and `WaiverCode` are separate facts; none is folded into another.
+
+**Stage 6A `AddProduct`.**
+- One accepted ancillary basket on an existing Order is one `OrderChange(AddProduct)`; `CommercialVersion` rises by one and `SourceReference` is the selection id.
+- The basket is validated completely before any change, item, service or price line is added, so a refused basket leaves the Order untouched.
+- Add is accepted only when all of these hold:
+  - the Order is `Created`;
+  - the caller's expected commercial version is current;
+  - the Order has no reservation or document history;
+  - the last ticketing date has not passed.
+- There is no client idempotency key. A retry with the old version is refused with 409 and the caller reads the Order again.
 
 ### `ReasonText` invariants
 
@@ -2484,6 +2572,20 @@ No authoritative channel or orchestrator product contract exists: **CHANNEL_ORCH
 
 ---
 
+## 27.8 Stage 6A commercial acceptance guards (2026-10-28)
+
+Commercial acceptance is not reservation, confirmation or documentation. Until the ancillary fulfillment stage (S6B) is closed, these rules keep an Order with accepted ancillaries consistent.
+
+- **Reserve, Confirm and Issue.** They are refused with 2854 (409) before any provider call, task or stock effect when the Order holds an active `OrderAncillaryService` or an active priced `OrderSeatService`. No placeholder provider is registered to get past this.
+- **Cancel the whole Order.** It ends every active service, ancillaries included, so a cancelled Order keeps no orphan active service.
+- **Cancel an air service.** It also ends:
+  - the seats on that service;
+  - every ancillary whose coverage is entirely inside the ending air services.
+
+  An ancillary whose coverage is only partly ending is refused with 2855 (409) until a source requote or servicing decision exists. This includes an order-level or traveller-level service while other air services of its scope stay active.
+- **Cancel an ancillary on its own.** Refused with 2856 (422) (owner decision D7).
+- **Price after cancellation.** Cancellation writes no price reversal, exactly as in Stage 5. `CustomerTotal` stays the last accepted sale total and is never read as an amount to refund.
+
 # 28. Canonical state ownership matrix
 
 | Aspect | State owner | Ordering writes |
@@ -2644,7 +2746,8 @@ The whole domain above is the design authority. Coding remains controlled by sta
 | **S3 Confirm Reserved Capacity** | First verify per-operation provider idempotency/read-back/result semantics; then `ConfirmReservedCapacity`, stale-validation refresh, `ConfirmInventory` FulfillmentTask/evidence and truthful Held→Confirmed/Unknown behavior using the verified recovery branch | ETKT/EMD, Payment/JetPay, invented provider retry semantics |
 | **S4 Issue** | ElectronicTicket, TicketCoupon, TicketPriceLink, ElectronicMiscDocument/EmdCoupon only for documentable current scope, DocumentStock, document-oriented FulfillmentTask target generalization | refund/exchange/group/DCS/payment |
 | **S5 Cancel / Void** | unissued commercial cancel, reservation cancellation/release, document void history/recovery | automated refund/exchange/payment rail |
-| **S6 Ancillary / EMD servicing** | optional-service subclasses needed by real offers, paid/chargeable baggage-seat-fee commercial/document behavior, EMD-A/S association | generic service catalog replication, payment rail |
+| **S6A Ancillary commercial acceptance — MATERIALIZED 2026-10-28** | `OrderAncillaryService`/`OrderBaggageService`, priced `OrderSeatService`, typed A01–A24 choices, accepted ancillary pricing, Add on Backoffice/Api/OtaPanel, Reserve/Confirm/Issue guard and ancillary-aware Cancel (§27.8). Live use waits for the Ancillary source contracts (handoff OR-005). | Hold/Confirm/EMD, Create with selections (6A.2, next), generic service catalog replication, payment rail |
+| **S6B Ancillary fulfillment / EMD servicing** | real Ancillary reservation provider, seat physical authority, EMD-A/S association | must be closed as domain and flows before coding (owner decision D4) |
 | **S7 Split** | OrderLineage, transferred service/item lineage, provider/document split servicing | group split unless group Stage arrived |
 | **S8 Refund** | RefundDecisionSnapshot, ETKT/EMD refund records, commercial/document refund history after AirPrice decision | actual money-return rail until JetPay Stage-P |
 | **S9 Exchange / Reissue / Revalidation** | successor commercial topology/pricing, document exchange/revalidation history, EMD reassociation, additional-collection/residual-value facts | actual payment collection/refund rail until JetPay Stage-P |
@@ -2774,6 +2877,14 @@ FarePricingUnitType = Unspecified | OneWay | RoundTrip | OpenJaw | CircleTrip | 
 BaggageWeightUnit = Kg | Lbs
 ```
 
+Stage 6A appended values (2026-10-28; earlier values unchanged):
+
+```text
+OrderServiceType.Ancillary = 23
+OrderPricingReason.AdditionalSale = 9
+OrderPricingLineSubCategory.AncillaryBase = 6
+```
+
 Future Master enums not yet materialized:
 
 ```text
@@ -2878,7 +2989,7 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `Id` | `long` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S84, S97-S100 |
 | `OrderId` | `long` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S84, S97-S100 |
 | `OrderItemId` | `long` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S84, S97-S100 |
-| `TravellerId` | `long` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S84, S97-S100 |
+| `TravellerId` | `long?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S01-S20, S28-S84, S97-S100 |
 | `ServiceType` | `OrderServiceType` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S84, S97-S100 |
 | `SourceServiceRef` | `string?` | SOURCE-GATED | S01-S20, S28-S84, S97-S100 |
 | `FulfillmentProviderKey` | `string` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S20, S28-S84, S97-S100 |
@@ -2916,10 +3027,22 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `SegmentId` | `long` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S10, S30, S40, S45, S68, S72 |
 | `AssociatedAirServiceId` | `long` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S10, S30, S40, S45, S68, S72 |
 | `SeatNumber` | `string` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S10, S30, S40, S45, S68, S72 |
-## 6.7 `OrderAncillaryService` — future airline optional service
+| `VariantCode` | `string?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S10, S30, S40, S45, S68, S72 |
+| `PointOfSaleId` | `long?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A); source quote BLOCKED_SOURCE (AC-03) | S10, S30, S40, S45, S68, S72 |
+| `Source` / `Definition` / `Provision` / `Pricing` | `Ancillary*?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S10, S30, S40, S45, S68, S72 |
+## 6.7 `OrderAncillaryService` — airline optional service
 
 | Field | Type | Evidence class | Minimum scenario coverage |
 |---|---|---|---|
+| `Profile` | `AncillaryProfile` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `VariantCode` | `string` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `SelectionScope` | `SelectionScope` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `CoverageScope` | `ServiceCoverageScope` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `Source` | `AncillarySaleSource` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `Definition` | `AncillaryDefinition` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `Provision` | `AncillaryProvision` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `Pricing` | `AncillaryPricing` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| family choice | `*Choice?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A); A09/A17/A19 domain-only (D1) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `ServiceDefinitionRef` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `ServiceSubCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `ServiceTypeCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
@@ -2935,10 +3058,11 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `FormOfRefundCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `Commissionable` | `bool?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `InterlineSettlementAllowed` | `bool?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
-## 6.8 `OrderBaggageService` — future specialization
+## 6.8 `OrderBaggageService` — purchased baggage specialization
 
 | Field | Type | Evidence class | Minimum scenario coverage |
 |---|---|---|---|
+| `Baggage` | `BaggageChoice` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S08, S30, S40, S48, S72 |
 | `Pieces` | `int?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S08, S30, S40, S48, S72 |
 | `Weight` | `decimal?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S08, S30, S40, S48, S72 |
 | `WeightUnit` | `BaggageWeightUnit?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S08, S30, S40, S48, S72 |
@@ -3170,7 +3294,9 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `CreatedAt` | `DateTimeOffset` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S08, S30-S31, S36-S57, S58-S66, S79-S84, S89-S91 |
 | `Allocations` | `collection` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S01-S08, S30-S31, S36-S57, S58-S66, S79-S84, S89-S91 |
 | `OwnerCarrierId` | `int?` | SOURCE-GATED | S01-S08, S30-S31, S36-S57, S58-S66, S79-S84, S89-S91 |
-| `TaxJurisdiction` | `TaxJurisdictionSnapshot?` | SOURCE-GATED | S01-S08, S30-S31, S36-S57, S58-S66, S79-S84, S89-S91 |
+| `TaxJurisdiction` | `TaxJurisdictionSnapshot?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) for ancillary lines; SOURCE-GATED otherwise | S01-S08, S30-S31, S36-S57, S58-S66, S79-S84, S89-S91 |
+| `SourceTaxTreatment` | `TaxTreatment?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `SourceFeeApplicationUnit` | `FeeApplicationUnit?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `CommissionDetail` | `CommissionSnapshot?` | SOURCE-GATED | S01-S08, S30-S31, S36-S57, S58-S66, S79-S84, S89-S91 |
 | `SourceAccountingReference` | `string?` | SOURCE-GATED | S01-S08, S30-S31, S36-S57, S58-S66, S79-S84, S89-S91 |
 ## `TaxJurisdictionSnapshot`

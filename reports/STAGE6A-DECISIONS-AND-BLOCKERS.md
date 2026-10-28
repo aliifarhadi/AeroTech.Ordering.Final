@@ -53,6 +53,8 @@
 | 6A.1 domain | `OrderService.TravellerId: long?`, abstract `OrderAncillaryService` with nine sealed family entities (D12), 8 value objects, `AncillaryVariant` registry, two-phase plan-then-commit acceptance in `Order.AddAncillaries`, price normalization (included tax once, item fees only, same currency), codes 2824–2865 | Done, tested |
 | 6A.1 persistence and read side | Command migrations `AddAncillaryServices` and `SplitAncillaryFamilies` (D12), query migration `ProjectAncillaryServices`, the `OrderAncillaryServices` read model, snapshot projection, `AncillaryContext.ancillaryServices[]` | Done, tested. `acceptsChanges` stays `false`, because the read side has no reservation-history fact yet. |
 | 6A.1 application, providers and API | `IAncillaryProvider` Resolve adapter (fails closed while AC-01 and AC-02 are missing), `AddAncillariesService`, three surface commands, `POST .../{orderId}/Ancillaries` on Backoffice, Api and OtaPanel | Done. Live use is `BLOCKED_SOURCE` (AC-01, AC-02). |
+| G0 family-split verification | `SplitAncillaryFamilies` refuses to drop anything unless every row lands in exactly one family table matching its `VariantCode`; real old→new upgrade from data written by the `372a1e4` model; TPT load profile (`reports/Stage6A-G0-G1-Evidence-2026-10-28.md`) | Done, tested |
+| G1 typed order detail | `GetOrderById` and the Backoffice order detail carry each accepted ancillary's variant, quantity, coverage, definition and typed customer choices. OTA/OtaPanel (Amadeus shape) are unchanged. | Done, tested. Priced seats cannot reach the read side yet (no seat flow before AC-03). |
 | 6A.2 Create with selections | | Not started |
 | 6A.3 Seats | Domain done (D10): per traveller × flight, quote snapshot with `PointOfSaleId`, its own Seat item, duplicate guards. The port and adapter wait for AC-03. | Domain done, tested |
 | Guardrails | `canonical-stage6a-v1.0.yaml`, `Stage6ATypeSetConformanceTests`, `.canonical-stage = 6`, CLAUDE.md authority switch, Master v2.0 amended in place (§6.4, §6.6–§6.8 with §6.7.1, §8.1, §9.1, §27.8, §30, §34.1, §35) | Done |
@@ -62,8 +64,11 @@
 
 | Check | Result |
 |---|---|
-| Clean solution build (`--no-incremental`) | 0 errors, 53 warnings (same as the Stage 5 baseline) |
+| Run | 2026-10-28 19:04–19:06, working tree on `48f53d9` plus the G0/G1 changes, SQL Server `AL-FARHADI-L\SQLEXPRESS` 15.0.2200.2 Express |
+| Clean solution build (`--no-incremental`) | 0 errors, 53 warnings (same as the Stage 5 baseline), 30 s |
 | Conformance tests | 27/27 passed |
-| Acceptance tests (real SQL Server, fresh database per class, both migration sets) | 608/608 passed: the 554 existing tests plus 54 new Stage 6A tests |
+| Acceptance tests (real SQL Server: one migrated database per run, plus a fresh database per migration test) | 612/612 passed in 30 s |
 | SQL command round trip | Every persisted variant (19), two priced seats and a whole-order service reload unchanged |
+| Family split upgrade | Rows written by the `372a1e4` model upgrade to exactly what the current model persists; a row without its family data stops the migration and leaves the schema and rows unchanged |
+| Dev database | `DotAirOrdering` at `20261028125838_SplitAncillaryFamilies`; 15 orders, 58 services, 189 price lines unchanged |
 | A09, A17, A19 | Domain tests only (D1). SQL round trip is `BLOCKED_SOURCE`. |

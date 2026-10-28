@@ -34,6 +34,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
             var segments = await OwnedBy(_dbContext.OrderSegments, orderId, cancellationToken);
             var items = await OwnedBy(_dbContext.OrderItems, orderId, cancellationToken);
             var services = await OwnedBy(_dbContext.OrderServices, orderId, cancellationToken);
+            var ancillaries = await OwnedBy(_dbContext.OrderAncillaryServices, orderId, cancellationToken);
             var pricingLines = await OwnedBy(_dbContext.OrderPricingLines, orderId, cancellationToken);
             var allocations = await OwnedBy(_dbContext.OrderPricingAllocations, orderId, cancellationToken);
             var contacts = await OwnedBy(_dbContext.OrderContacts, orderId, cancellationToken);
@@ -46,6 +47,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
             var documentsByTraveller = documents.ToLookup(document => document.TravellerId);
             var segmentsByJourney = segments.ToLookup(segment => segment.OrderJourneyId);
             var servicesByItem = services.ToLookup(service => service.OrderItemId);
+            var ancillariesByService = ancillaries.ToDictionary(ancillary => ancillary.Id);
             var allocationsByLine = allocations.ToLookup(allocation => allocation.PricingLineId);
             var pointsByContact = contactPoints.ToLookup(point => point.OrderContactId);
             var couponsByTicket = coupons.ToLookup(coupon => coupon.ElectronicTicketId);
@@ -67,7 +69,7 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 order.CreatedAt,
                 travellers.OrderBy(traveller => traveller.Index).Select(traveller => ToDto(traveller, documentsByTraveller[traveller.Id])).ToList(),
                 journeys.OrderBy(journey => journey.Sequence).Select(journey => ToDto(journey, segmentsByJourney[journey.Id])).ToList(),
-                items.Select(item => ToDto(item, servicesByItem[item.Id])).ToList(),
+                items.Select(item => ToDto(item, servicesByItem[item.Id], ancillariesByService)).ToList(),
                 pricingLines.Select(line => ToDto(line, allocationsByLine[line.Id])).ToList(),
                 contacts.OrderBy(contact => contact.Sequence).Select(contact => ToDto(contact, pointsByContact[contact.Id])).ToList(),
                 remarks.OrderBy(remark => remark.CreatedAt).Select(ToDto).ToList(),
@@ -132,16 +134,19 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 segment.SoldArrival,
                 segment.Duration);
 
-        private static OrderItemDto ToDto(OrderItemReadModel item, IEnumerable<OrderServiceReadModel> services)
+        private static OrderItemDto ToDto(
+            OrderItemReadModel item,
+            IEnumerable<OrderServiceReadModel> services,
+            IReadOnlyDictionary<long, OrderAncillaryServiceReadModel> ancillaries)
             => new(
                 item.Id,
                 item.Kind,
                 item.AcceptedTotal,
                 item.CommercialStatus,
                 item.EndedByChangeId,
-                services.Select(ToDto).ToList());
+                services.Select(service => ToDto(service, ancillaries.GetValueOrDefault(service.Id))).ToList());
 
-        private static OrderServiceDto ToDto(OrderServiceReadModel service)
+        private static OrderServiceDto ToDto(OrderServiceReadModel service, OrderAncillaryServiceReadModel? ancillary)
             => new(
                 service.Id,
                 service.TravellerId,
@@ -158,7 +163,103 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 service.IsChangeable,
                 service.IsUpgradable,
                 service.SeatNumber,
-                service.EndedByChangeId);
+                service.EndedByChangeId,
+                ancillary is null ? null : ToDto(ancillary));
+
+        private static OrderAncillaryDto ToDto(OrderAncillaryServiceReadModel ancillary)
+            => new(
+                ancillary.VariantCode,
+                ancillary.Profile,
+                ancillary.Quantity,
+                ancillary.SelectionScope,
+                ancillary.CoverageScope,
+                ancillary.CoveredAirServiceIds,
+                ancillary.ServiceDefinitionRef,
+                ancillary.ServiceTypeCode,
+                ancillary.ServiceSubCode,
+                ancillary.Rfic,
+                ancillary.Rfisc,
+                ancillary.SsrCode,
+                BaggageOf(ancillary),
+                MealOf(ancillary),
+                PetOf(ancillary),
+                AssistanceOf(ancillary),
+                AirportServiceOf(ancillary),
+                PriorityOf(ancillary),
+                ConnectivityOf(ancillary),
+                UpgradeOf(ancillary));
+
+        private static OrderAncillaryBaggageDto? BaggageOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary.BaggageChargeKind is { } chargeKind
+                ? new OrderAncillaryBaggageDto(
+                    chargeKind,
+                    ancillary.BaggageAllowanceConcept,
+                    ancillary.BaggagePackageWeightKg,
+                    ancillary.BaggageWeightFromExclusiveKg,
+                    ancillary.BaggageWeightToInclusiveKg,
+                    ancillary.BaggageEquipmentKind,
+                    ancillary.BaggageBagRef,
+                    ancillary.BaggageMeasuredWeightKg,
+                    OrderAncillaryDimensionsDto.Of(ancillary.BaggageLengthCm, ancillary.BaggageWidthCm, ancillary.BaggageHeightCm),
+                    ancillary.BaggageWeightKg)
+                : null;
+
+        private static OrderAncillaryMealDto? MealOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary.MealKind is { } mealKind
+                ? new OrderAncillaryMealDto(mealKind, ancillary.MealCode, ancillary.MealMenuItemRef, ancillary.MealDietaryCode, ancillary.MealExclusiveFamilyCode)
+                : null;
+
+        private static OrderAncillaryPetDto? PetOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary is { PetTransportMode: { } transportMode, PetAnimalType: { } animalType, PetCombinedWeightKg: { } combinedWeightKg }
+               && OrderAncillaryDimensionsDto.Of(ancillary.PetCarrierLengthCm, ancillary.PetCarrierWidthCm, ancillary.PetCarrierHeightCm) is { } carrierDimensions
+                ? new OrderAncillaryPetDto(
+                    transportMode,
+                    animalType,
+                    ancillary.PetOtherAnimalCode,
+                    ancillary.PetAnimalAgeWeeks,
+                    combinedWeightKg,
+                    carrierDimensions,
+                    ancillary.PetDocumentAcknowledgements,
+                    ancillary.PetSizeBracket)
+                : null;
+
+        private static OrderAncillaryAssistanceDto? AssistanceOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary.AssistanceKind is { } assistanceKind
+                ? new OrderAncillaryAssistanceDto(assistanceKind, ancillary.AssistanceSsrCode, ancillary.AssistanceInfantTravellerId, ancillary.AssistanceGuardianTravellerId)
+                : null;
+
+        private static OrderAncillaryAirportServiceDto? AirportServiceOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary is { AirportServiceKind: { } kind, AirportServiceAirportId: { } airportId, AirportServiceDirection: { } direction }
+                ? new OrderAncillaryAirportServiceDto(
+                    kind,
+                    airportId,
+                    ancillary.AirportServiceTerminalRef,
+                    ancillary.AirportServiceFacilityId,
+                    direction,
+                    ancillary.AirportServiceTimeWithOffset,
+                    ancillary.AirportServiceGuestCount)
+                : null;
+
+        private static OrderAncillaryPriorityDto? PriorityOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary is { PriorityKind: { } kind, PriorityOptIn: { } optIn }
+                ? new OrderAncillaryPriorityDto(kind, ancillary.PriorityZoneCode, ancillary.PriorityGroupCode, ancillary.PriorityFareBenefitRef, optIn)
+                : null;
+
+        private static OrderAncillaryConnectivityDto? ConnectivityOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary is { ConnectivityPlanKind: { } planKind, ConnectivityDeliveryStage: { } deliveryStage }
+                ? new OrderAncillaryConnectivityDto(
+                    planKind,
+                    ancillary.ConnectivityDurationMinutes,
+                    ancillary.ConnectivityIncludedDataMb,
+                    ancillary.ConnectivityMaxDevices,
+                    deliveryStage,
+                    ancillary.ConnectivityDeviceCount)
+                : null;
+
+        private static OrderAncillaryUpgradeDto? UpgradeOf(OrderAncillaryServiceReadModel ancillary)
+            => ancillary is { UpgradeFromCabinId: { } fromCabinId, UpgradeToCabinId: { } toCabinId, UpgradeKind: { } upgradeKind, UpgradeRequiresTicketExchange: { } requiresTicketExchange }
+                ? new OrderAncillaryUpgradeDto(fromCabinId, toCabinId, upgradeKind, requiresTicketExchange)
+                : null;
 
         private static OrderPricingLineDto ToDto(OrderPricingLineReadModel line, IEnumerable<OrderPricingAllocationReadModel> allocations)
             => new(

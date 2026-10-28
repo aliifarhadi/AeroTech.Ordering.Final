@@ -1,7 +1,13 @@
+using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
+using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Persistence.OrderAggregate;
+using AeroTech.Ordering.Query.OrderAggregate.Dto;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderAncillaryContext;
+using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById;
+using AeroTech.Ordering.Query._Shared.Enums;
+using AeroTech.Ordering.Query._Shared.ReferenceCodes;
 using AeroTech.Ordering.Synchronizer.OrderAggregate;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -44,7 +50,7 @@ public sealed class AncillaryPersistenceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Every_persisted_variant_and_priced_seat_is_projected_to_the_read_model()
+    public async Task Every_accepted_variant_is_projected_to_the_read_model()
     {
         var order = await OrderWithEveryPersistedVariantAsync(_harness);
         var snapshot = _harness.Synchronizer.OrderProjections.Last();
@@ -91,4 +97,87 @@ public sealed class AncillaryPersistenceTests : IAsyncLifetime
         Assert.Contains(context.AncillaryServices, service => service.TravellerId is null && service.Profile == AeroTech.Messages.Ancillary.Enums.AncillaryProfile.Connectivity);
         Assert.False(context.AcceptsChanges);
     }
+
+    [Fact]
+    public async Task The_backoffice_order_detail_carries_every_accepted_ancillary_with_its_customer_choices()
+    {
+        var order = await OrderWithEveryPersistedVariantAsync(_harness);
+
+        await using (var writer = _database.NewQueryContext())
+        {
+            await new OrderQueryDbSynchronizer(writer).ProjectServicedAsync(_harness.Synchronizer.OrderProjections.Last());
+            await writer.SaveChangesAsync();
+        }
+
+        await using var reader = _database.NewQueryContext();
+        var detail = (await new GetBackofficeOrderByIdService(new GetOrderByIdService(reader), new ReferenceCodeReader(reader)).ExecuteAsync(order.Id))!;
+        var services = detail.Items.SelectMany(item => item.Services).ToList();
+
+        Assert.Equal(
+            order.Services.OfType<OrderAncillaryService>()
+                .OrderBy(service => service.Id)
+                .Select(service => (service.Id, service.VariantCode, service.Quantity, service.CoverageScope.ToString(), string.Join(",", service.CoveredAirServiceIds), Comparable(ChoicesOf(service)))),
+            services.Where(service => service.Ancillary?.SelectionScope is not null)
+                .OrderBy(service => service.Id)
+                .Select(service => (service.Id, service.Ancillary!.VariantCode, service.Ancillary.Quantity, service.Ancillary.CoverageScope!.Name, string.Join(",", service.Ancillary.CoveredAirServiceIds), Comparable(Assert.Single(ChoicesOf(service.Ancillary))))));
+        Assert.All(services.Where(service => service.Ancillary is null), service => Assert.Contains(service.ServiceType.Name, new[] { nameof(OrderServiceType.AirTransportation), nameof(OrderServiceType.SeatAssignment) }));
+    }
+
+    private static object ChoicesOf(OrderAncillaryService service)
+        => service switch
+        {
+            OrderBaggageService baggage => new BackofficeAncillaryBaggageDto(
+                EnumValueDto.Of(baggage.ChargeKind),
+                EnumValueDto.OfNullable(baggage.AllowanceConcept),
+                baggage.PackageWeightKg,
+                baggage.WeightFromExclusiveKg,
+                baggage.WeightToInclusiveKg,
+                baggage.EquipmentKind,
+                baggage.BagRef,
+                baggage.MeasuredWeightKg,
+                DimensionsOf(baggage.Dimensions),
+                baggage.WeightKg),
+            OrderMealService meal => new BackofficeAncillaryMealDto(EnumValueDto.Of(meal.MealKind), meal.MealCode, meal.MenuItemRef, meal.DietaryCode, meal.ExclusiveMealFamilyCode),
+            OrderPetService pet => new BackofficeAncillaryPetDto(
+                EnumValueDto.Of(pet.TransportMode),
+                EnumValueDto.Of(pet.AnimalType),
+                pet.OtherAnimalCode,
+                pet.AnimalAgeWeeks,
+                pet.CombinedWeightKg,
+                DimensionsOf(pet.CarrierDimensions)!,
+                pet.DocumentAcknowledgements.ToList(),
+                pet.SizeBracket),
+            OrderAssistedTravelService assistance => new BackofficeAncillaryAssistanceDto(EnumValueDto.Of(assistance.AssistanceKind), assistance.AssistanceSsrCode, assistance.InfantTravellerId, assistance.GuardianTravellerId),
+            OrderAirportService airport => new BackofficeAncillaryAirportServiceDto(
+                EnumValueDto.Of(airport.Kind),
+                airport.AirportId,
+                airport.TerminalRef,
+                airport.FacilityId,
+                EnumValueDto.Of(airport.Direction),
+                airport.TimeWithOffset,
+                airport.GuestCount),
+            OrderPriorityService priority => new BackofficeAncillaryPriorityDto(EnumValueDto.Of(priority.Kind), priority.PriorityZoneCode, priority.PriorityGroupCode, priority.FareBenefitRef, priority.OptIn),
+            OrderConnectivityService connectivity => new BackofficeAncillaryConnectivityDto(
+                EnumValueDto.Of(connectivity.PlanKind),
+                connectivity.DurationMinutes,
+                connectivity.IncludedDataMb,
+                connectivity.MaxDevices,
+                EnumValueDto.Of(connectivity.DeliveryStage),
+                connectivity.DeviceCount),
+            OrderUpgradeService upgrade => new BackofficeAncillaryUpgradeDto(upgrade.FromCabinId, upgrade.ToCabinId, EnumValueDto.Of(upgrade.UpgradeKind), upgrade.RequiresTicketExchange),
+            _ => throw new InvalidOperationException(service.GetType().Name)
+        };
+
+    private static IReadOnlyList<object> ChoicesOf(BackofficeOrderAncillaryDto ancillary)
+        => new object?[] { ancillary.Baggage, ancillary.Meal, ancillary.Pet, ancillary.Assistance, ancillary.AirportService, ancillary.Priority, ancillary.Connectivity, ancillary.Upgrade }
+            .OfType<object>()
+            .ToList();
+
+    private static object Comparable(object choices)
+        => choices is BackofficeAncillaryPetDto pet
+            ? (pet with { DocumentAcknowledgements = [] }, string.Join(",", pet.DocumentAcknowledgements))
+            : choices;
+
+    private static OrderAncillaryDimensionsDto? DimensionsOf(ServiceDimensions? dimensions)
+        => dimensions is null ? null : new OrderAncillaryDimensionsDto(dimensions.LengthCm, dimensions.WidthCm, dimensions.HeightCm);
 }

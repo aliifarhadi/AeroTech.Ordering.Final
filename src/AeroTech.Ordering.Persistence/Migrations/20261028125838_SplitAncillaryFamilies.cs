@@ -223,6 +223,49 @@ namespace AeroTech.Ordering.Persistence.Migrations
                 WHERE [UpgradeFromCabinId] IS NOT NULL;
                 """);
 
+            migrationBuilder.Sql(
+                """
+                DECLARE @unmatched int;
+
+                WITH ExpectedFamilies AS
+                (
+                    SELECT [Id],
+                        CASE
+                            WHEN [VariantCode] IN (N'A01', N'A02', N'A03', N'A04', N'A05', N'A06') THEN N'OrderBaggageServices'
+                            WHEN [VariantCode] = N'A10' THEN N'OrderUpgradeServices'
+                            WHEN [VariantCode] IN (N'A11', N'A12') THEN N'OrderMealServices'
+                            WHEN [VariantCode] IN (N'A13', N'A14') THEN N'OrderPetServices'
+                            WHEN [VariantCode] IN (N'A15', N'A16', N'A17', N'A18', N'A19') THEN N'OrderAssistedTravelServices'
+                            WHEN [VariantCode] IN (N'A20', N'A21', N'A22') THEN N'OrderAirportServices'
+                            WHEN [VariantCode] = N'A23' THEN N'OrderPriorityServices'
+                            WHEN [VariantCode] = N'A24' THEN N'OrderConnectivityServices'
+                        END AS [FamilyTable]
+                    FROM [Order].[OrderAncillaryServices]
+                ),
+                FamilyRows AS
+                (
+                    SELECT [Id], N'OrderBaggageServices' AS [FamilyTable] FROM [Order].[OrderBaggageServices]
+                    UNION ALL SELECT [Id], N'OrderUpgradeServices' FROM [Order].[OrderUpgradeServices]
+                    UNION ALL SELECT [Id], N'OrderMealServices' FROM [Order].[OrderMealServices]
+                    UNION ALL SELECT [Id], N'OrderPetServices' FROM [Order].[OrderPetServices]
+                    UNION ALL SELECT [Id], N'OrderAssistedTravelServices' FROM [Order].[OrderAssistedTravelServices]
+                    UNION ALL SELECT [Id], N'OrderAirportServices' FROM [Order].[OrderAirportServices]
+                    UNION ALL SELECT [Id], N'OrderPriorityServices' FROM [Order].[OrderPriorityServices]
+                    UNION ALL SELECT [Id], N'OrderConnectivityServices' FROM [Order].[OrderConnectivityServices]
+                )
+                SELECT @unmatched = COUNT(*)
+                FROM ExpectedFamilies AS expected
+                WHERE expected.[FamilyTable] IS NULL
+                    OR (SELECT COUNT(*) FROM FamilyRows AS family WHERE family.[Id] = expected.[Id]) <> 1
+                    OR NOT EXISTS (SELECT 1 FROM FamilyRows AS family WHERE family.[Id] = expected.[Id] AND family.[FamilyTable] = expected.[FamilyTable]);
+
+                IF @unmatched > 0
+                BEGIN
+                    DECLARE @message nvarchar(2048) = CONCAT(N'SplitAncillaryFamilies stopped before dropping any column: ', @unmatched, N' ancillary service row(s) do not map to exactly one family table matching their VariantCode.');
+                    THROW 50000, @message, 1;
+                END;
+                """);
+
             migrationBuilder.DropColumn(
                 name: "AirportServiceAirportId",
                 schema: "Order",

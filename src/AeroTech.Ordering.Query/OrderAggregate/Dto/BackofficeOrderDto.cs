@@ -74,9 +74,97 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         bool IsChangeable,
         bool IsUpgradable,
         string? SeatNumber,
-        long? EndedByChangeId);
+        long? EndedByChangeId,
+        BackofficeOrderAncillaryDto? Ancillary);
 
     public sealed record BackofficeBaggageAllowanceDto(int Pieces, decimal Weight, EnumValueDto Unit);
+
+    public sealed record BackofficeOrderAncillaryDto(
+        string VariantCode,
+        EnumValueDto Profile,
+        int Quantity,
+        EnumValueDto? SelectionScope,
+        EnumValueDto? CoverageScope,
+        IReadOnlyList<long> CoveredAirServiceIds,
+        string ServiceDefinitionRef,
+        string ServiceTypeCode,
+        string ServiceSubCode,
+        string? Rfic,
+        string? Rfisc,
+        string? SsrCode,
+        BackofficeAncillaryBaggageDto? Baggage,
+        BackofficeAncillaryMealDto? Meal,
+        BackofficeAncillaryPetDto? Pet,
+        BackofficeAncillaryAssistanceDto? Assistance,
+        BackofficeAncillaryAirportServiceDto? AirportService,
+        BackofficeAncillaryPriorityDto? Priority,
+        BackofficeAncillaryConnectivityDto? Connectivity,
+        BackofficeAncillaryUpgradeDto? Upgrade);
+
+    public sealed record BackofficeAncillaryBaggageDto(
+        EnumValueDto ChargeKind,
+        EnumValueDto? AllowanceConcept,
+        decimal? PackageWeightKg,
+        decimal? WeightFromExclusiveKg,
+        decimal? WeightToInclusiveKg,
+        string? EquipmentKind,
+        string? BagRef,
+        decimal? MeasuredWeightKg,
+        OrderAncillaryDimensionsDto? Dimensions,
+        decimal? WeightKg);
+
+    public sealed record BackofficeAncillaryMealDto(
+        EnumValueDto MealKind,
+        string? MealCode,
+        string? MenuItemRef,
+        string? DietaryCode,
+        string? ExclusiveMealFamilyCode);
+
+    public sealed record BackofficeAncillaryPetDto(
+        EnumValueDto TransportMode,
+        EnumValueDto AnimalType,
+        string? OtherAnimalCode,
+        int? AnimalAgeWeeks,
+        decimal CombinedWeightKg,
+        OrderAncillaryDimensionsDto CarrierDimensions,
+        IReadOnlyList<string> DocumentAcknowledgements,
+        string? SizeBracket);
+
+    public sealed record BackofficeAncillaryAssistanceDto(
+        EnumValueDto AssistanceKind,
+        string? AssistanceSsrCode,
+        long? InfantTravellerId,
+        long? GuardianTravellerId);
+
+    public sealed record BackofficeAncillaryAirportServiceDto(
+        EnumValueDto Kind,
+        int AirportId,
+        string? TerminalRef,
+        long? FacilityId,
+        EnumValueDto Direction,
+        DateTimeOffset? TimeWithOffset,
+        int? GuestCount);
+
+    public sealed record BackofficeAncillaryPriorityDto(
+        EnumValueDto Kind,
+        string? PriorityZoneCode,
+        string? PriorityGroupCode,
+        string? FareBenefitRef,
+        bool OptIn);
+
+    public sealed record BackofficeAncillaryConnectivityDto(
+        EnumValueDto PlanKind,
+        int? DurationMinutes,
+        int? IncludedDataMb,
+        int? MaxDevices,
+        EnumValueDto DeliveryStage,
+        int? DeviceCount);
+
+    public sealed record BackofficeAncillaryUpgradeDto(
+        int FromCabinId,
+        int ToCabinId,
+        EnumValueDto UpgradeKind,
+        bool RequiresTicketExchange);
 
     public sealed record BackofficeOrderPricingLineDto(
         long Id,

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <None Include="Offer\Payloads\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Ancillaries\Payloads\*.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

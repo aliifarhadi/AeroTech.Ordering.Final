@@ -1,4 +1,5 @@
 ﻿using AeroTech.Messages.AirPrice.Enums;
+using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Messages.Shared.Enums;
 using AeroTech.Ordering.Domain._Shared.Contracts;
@@ -98,7 +99,8 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
         bool IsChangeable,
         bool IsUpgradable,
         string? SeatNumber,
-        long? EndedByChangeId);
+        long? EndedByChangeId,
+        OrderAncillaryDto? Ancillary);
 
     public sealed record BaggageAllowanceDto(int Pieces, decimal Weight, WeightUnit Unit)
     {
@@ -107,6 +109,101 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Dto
                 ? null
                 : new BaggageAllowanceDto(pieces.Value, weight.Value, unit.Value);
     }
+
+    public sealed record OrderAncillaryDto(
+        string VariantCode,
+        AncillaryProfile Profile,
+        int Quantity,
+        SelectionScope? SelectionScope,
+        ServiceCoverageScope? CoverageScope,
+        IReadOnlyList<long> CoveredAirServiceIds,
+        string ServiceDefinitionRef,
+        string ServiceTypeCode,
+        string ServiceSubCode,
+        string? Rfic,
+        string? Rfisc,
+        string? SsrCode,
+        OrderAncillaryBaggageDto? Baggage,
+        OrderAncillaryMealDto? Meal,
+        OrderAncillaryPetDto? Pet,
+        OrderAncillaryAssistanceDto? Assistance,
+        OrderAncillaryAirportServiceDto? AirportService,
+        OrderAncillaryPriorityDto? Priority,
+        OrderAncillaryConnectivityDto? Connectivity,
+        OrderAncillaryUpgradeDto? Upgrade);
+
+    public sealed record OrderAncillaryDimensionsDto(decimal LengthCm, decimal WidthCm, decimal HeightCm)
+    {
+        public static OrderAncillaryDimensionsDto? Of(decimal? lengthCm, decimal? widthCm, decimal? heightCm)
+            => lengthCm is null || widthCm is null || heightCm is null
+                ? null
+                : new OrderAncillaryDimensionsDto(lengthCm.Value, widthCm.Value, heightCm.Value);
+    }
+
+    public sealed record OrderAncillaryBaggageDto(
+        BaggageChargeKind ChargeKind,
+        BaggageAllowanceConcept? AllowanceConcept,
+        decimal? PackageWeightKg,
+        decimal? WeightFromExclusiveKg,
+        decimal? WeightToInclusiveKg,
+        string? EquipmentKind,
+        string? BagRef,
+        decimal? MeasuredWeightKg,
+        OrderAncillaryDimensionsDto? Dimensions,
+        decimal? WeightKg);
+
+    public sealed record OrderAncillaryMealDto(
+        MealKind MealKind,
+        string? MealCode,
+        string? MenuItemRef,
+        string? DietaryCode,
+        string? ExclusiveMealFamilyCode);
+
+    public sealed record OrderAncillaryPetDto(
+        PetTransportMode TransportMode,
+        PetAnimalType AnimalType,
+        string? OtherAnimalCode,
+        int? AnimalAgeWeeks,
+        decimal CombinedWeightKg,
+        OrderAncillaryDimensionsDto CarrierDimensions,
+        IReadOnlyList<string> DocumentAcknowledgements,
+        string? SizeBracket);
+
+    public sealed record OrderAncillaryAssistanceDto(
+        AssistanceKind AssistanceKind,
+        string? AssistanceSsrCode,
+        long? InfantTravellerId,
+        long? GuardianTravellerId);
+
+    public sealed record OrderAncillaryAirportServiceDto(
+        AirportServiceKind Kind,
+        int AirportId,
+        string? TerminalRef,
+        long? FacilityId,
+        AirportServiceDirection Direction,
+        DateTimeOffset? TimeWithOffset,
+        int? GuestCount);
+
+    public sealed record OrderAncillaryPriorityDto(
+        PriorityKind Kind,
+        string? PriorityZoneCode,
+        string? PriorityGroupCode,
+        string? FareBenefitRef,
+        bool OptIn);
+
+    public sealed record OrderAncillaryConnectivityDto(
+        ConnectivityPlanKind PlanKind,
+        int? DurationMinutes,
+        int? IncludedDataMb,
+        int? MaxDevices,
+        PurchaseStage DeliveryStage,
+        int? DeviceCount);
+
+    public sealed record OrderAncillaryUpgradeDto(
+        int FromCabinId,
+        int ToCabinId,
+        UpgradeKind UpgradeKind,
+        bool RequiresTicketExchange);
 
     public sealed record OrderPricingLineDto(
         long Id,

@@ -139,7 +139,78 @@ namespace AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderById
                 service.IsChangeable,
                 service.IsUpgradable,
                 service.SeatNumber,
-                service.EndedByChangeId);
+                service.EndedByChangeId,
+                service.Ancillary is null ? null : ToDto(service.Ancillary));
+
+        private static BackofficeOrderAncillaryDto ToDto(OrderAncillaryDto ancillary)
+            => new(
+                ancillary.VariantCode,
+                EnumValueDto.Of(ancillary.Profile),
+                ancillary.Quantity,
+                EnumValueDto.OfNullable(ancillary.SelectionScope),
+                EnumValueDto.OfNullable(ancillary.CoverageScope),
+                ancillary.CoveredAirServiceIds,
+                ancillary.ServiceDefinitionRef,
+                ancillary.ServiceTypeCode,
+                ancillary.ServiceSubCode,
+                ancillary.Rfic,
+                ancillary.Rfisc,
+                ancillary.SsrCode,
+                ancillary.Baggage is { } baggage
+                    ? new BackofficeAncillaryBaggageDto(
+                        EnumValueDto.Of(baggage.ChargeKind),
+                        EnumValueDto.OfNullable(baggage.AllowanceConcept),
+                        baggage.PackageWeightKg,
+                        baggage.WeightFromExclusiveKg,
+                        baggage.WeightToInclusiveKg,
+                        baggage.EquipmentKind,
+                        baggage.BagRef,
+                        baggage.MeasuredWeightKg,
+                        baggage.Dimensions,
+                        baggage.WeightKg)
+                    : null,
+                ancillary.Meal is { } meal
+                    ? new BackofficeAncillaryMealDto(EnumValueDto.Of(meal.MealKind), meal.MealCode, meal.MenuItemRef, meal.DietaryCode, meal.ExclusiveMealFamilyCode)
+                    : null,
+                ancillary.Pet is { } pet
+                    ? new BackofficeAncillaryPetDto(
+                        EnumValueDto.Of(pet.TransportMode),
+                        EnumValueDto.Of(pet.AnimalType),
+                        pet.OtherAnimalCode,
+                        pet.AnimalAgeWeeks,
+                        pet.CombinedWeightKg,
+                        pet.CarrierDimensions,
+                        pet.DocumentAcknowledgements,
+                        pet.SizeBracket)
+                    : null,
+                ancillary.Assistance is { } assistance
+                    ? new BackofficeAncillaryAssistanceDto(EnumValueDto.Of(assistance.AssistanceKind), assistance.AssistanceSsrCode, assistance.InfantTravellerId, assistance.GuardianTravellerId)
+                    : null,
+                ancillary.AirportService is { } airport
+                    ? new BackofficeAncillaryAirportServiceDto(
+                        EnumValueDto.Of(airport.Kind),
+                        airport.AirportId,
+                        airport.TerminalRef,
+                        airport.FacilityId,
+                        EnumValueDto.Of(airport.Direction),
+                        airport.TimeWithOffset,
+                        airport.GuestCount)
+                    : null,
+                ancillary.Priority is { } priority
+                    ? new BackofficeAncillaryPriorityDto(EnumValueDto.Of(priority.Kind), priority.PriorityZoneCode, priority.PriorityGroupCode, priority.FareBenefitRef, priority.OptIn)
+                    : null,
+                ancillary.Connectivity is { } connectivity
+                    ? new BackofficeAncillaryConnectivityDto(
+                        EnumValueDto.Of(connectivity.PlanKind),
+                        connectivity.DurationMinutes,
+                        connectivity.IncludedDataMb,
+                        connectivity.MaxDevices,
+                        EnumValueDto.Of(connectivity.DeliveryStage),
+                        connectivity.DeviceCount)
+                    : null,
+                ancillary.Upgrade is { } upgrade
+                    ? new BackofficeAncillaryUpgradeDto(upgrade.FromCabinId, upgrade.ToCabinId, EnumValueDto.Of(upgrade.UpgradeKind), upgrade.RequiresTicketExchange)
+                    : null);
 
         private static BackofficeBaggageAllowanceDto? ToDto(BaggageAllowanceDto? baggage)
             => baggage is null

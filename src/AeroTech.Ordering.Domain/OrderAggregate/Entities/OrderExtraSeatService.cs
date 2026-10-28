@@ -1,24 +1,28 @@
-using AeroTech.Framework.Core.Domain.ValueObjects;
 using AeroTech.Messages.Ancillary.Enums;
+using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
+namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 {
-    public sealed class ExtraSeatChoice : ValueObject
+    public sealed class OrderExtraSeatService : OrderAncillaryService
     {
-        private ExtraSeatChoice()
+        private OrderExtraSeatService()
         {
         }
 
-        public ExtraSeatChoice(
+        public OrderExtraSeatService(
+            OrderAncillaryServiceArgs args,
             SeatPurpose seatPurpose,
             ExtraSeatPurpose? extraSeatPurpose,
             int? extraOccupiedSeatCount,
-            string seatNumber)
+            string? seatNumber)
+            : base(args, AncillaryProfile.Seat)
         {
+            EnsureValid(extraOccupiedSeatCount is null or > 0, nameof(ExtraOccupiedSeatCount));
+
             SeatPurpose = seatPurpose;
             ExtraSeatPurpose = extraSeatPurpose;
             ExtraOccupiedSeatCount = extraOccupiedSeatCount;
-            SeatNumber = seatNumber;
+            SeatNumber = string.IsNullOrWhiteSpace(seatNumber) ? throw MissingChoice(nameof(SeatNumber)) : seatNumber;
         }
 
         public SeatPurpose SeatPurpose { get; private set; }
@@ -28,13 +32,5 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
         public int? ExtraOccupiedSeatCount { get; private set; }
 
         public string SeatNumber { get; private set; } = default!;
-
-        protected override IEnumerable<object?> GetEqualityComponents()
-        {
-            yield return SeatPurpose;
-            yield return ExtraSeatPurpose;
-            yield return ExtraOccupiedSeatCount;
-            yield return SeatNumber;
-        }
     }
 }

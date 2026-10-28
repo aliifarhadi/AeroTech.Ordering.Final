@@ -1747,11 +1747,221 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.ToTable("OrderSeatServices", "Order");
                 });
 
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAirportService", b =>
+                {
+                    b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
+
+                    b.Property<int>("AirportId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("FacilityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("GuestCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TerminalRef")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("TimeWithOffset")
+                        .HasColumnType("datetimeoffset");
+
+                    b.ToTable("OrderAirportServices", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAssistedTravelService", b =>
+                {
+                    b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
+
+                    b.Property<int>("AssistanceKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AssistanceSsrCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<long?>("GuardianTravellerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("InfantTravellerId")
+                        .HasColumnType("bigint");
+
+                    b.ToTable("OrderAssistedTravelServices", "Order");
+                });
+
             modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderBaggageService", b =>
                 {
                     b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
 
+                    b.Property<int?>("AllowanceConcept")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BagRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("ChargeKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EquipmentKind")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<decimal?>("MeasuredWeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PackageWeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("WeightFromExclusiveKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("WeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("WeightToInclusiveKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.ToTable("OrderBaggageServices", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderConnectivityService", b =>
+                {
+                    b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
+
+                    b.Property<int>("DeliveryStage")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DeviceCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IncludedDataMb")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxDevices")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlanKind")
+                        .HasColumnType("int");
+
+                    b.ToTable("OrderConnectivityServices", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderMealService", b =>
+                {
+                    b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
+
+                    b.Property<string>("DietaryCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("ExclusiveMealFamilyCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("MealCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int>("MealKind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MenuItemRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.ToTable("OrderMealServices", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderPetService", b =>
+                {
+                    b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
+
+                    b.Property<int?>("AnimalAgeWeeks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AnimalType")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("CombinedWeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.PrimitiveCollection<string>("DocumentAcknowledgements")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OtherAnimalCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("SizeBracket")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("TransportMode")
+                        .HasColumnType("int");
+
+                    b.ToTable("OrderPetServices", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderPriorityService", b =>
+                {
+                    b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
+
+                    b.Property<string>("FareBenefitRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("OptIn")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PriorityGroupCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("PriorityZoneCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.ToTable("OrderPriorityServices", "Order");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderUpgradeService", b =>
+                {
+                    b.HasBaseType("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService");
+
+                    b.Property<int>("FromCabinId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RequiresTicketExchange")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ToCabinId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UpgradeKind")
+                        .HasColumnType("int");
+
+                    b.ToTable("OrderUpgradeServices", "Order");
                 });
 
             modelBuilder.Entity("AeroTech.Ordering.Domain.DocumentStockAggregate.Entities.DocumentStockAllocation", b =>
@@ -2616,318 +2826,17 @@ namespace AeroTech.Ordering.Persistence.Migrations
                                 .HasForeignKey("OrderAncillaryServiceId");
                         });
 
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.AirportServiceChoice", "AirportService", b1 =>
-                        {
-                            b1.Property<long>("OrderAncillaryServiceId")
-                                .HasColumnType("bigint");
-
-                            b1.Property<int>("AirportId")
-                                .HasColumnType("int")
-                                .HasColumnName("AirportServiceAirportId");
-
-                            b1.Property<int>("Direction")
-                                .HasColumnType("int")
-                                .HasColumnName("AirportServiceDirection");
-
-                            b1.Property<long?>("FacilityId")
-                                .HasColumnType("bigint")
-                                .HasColumnName("AirportServiceFacilityId");
-
-                            b1.Property<int?>("GuestCount")
-                                .HasColumnType("int")
-                                .HasColumnName("AirportServiceGuestCount");
-
-                            b1.Property<int>("Kind")
-                                .HasColumnType("int")
-                                .HasColumnName("AirportServiceKind");
-
-                            b1.Property<string>("TerminalRef")
-                                .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)")
-                                .HasColumnName("AirportServiceTerminalRef");
-
-                            b1.Property<DateTimeOffset?>("TimeWithOffset")
-                                .HasColumnType("datetimeoffset")
-                                .HasColumnName("AirportServiceTimeWithOffset");
-
-                            b1.HasKey("OrderAncillaryServiceId");
-
-                            b1.ToTable("OrderAncillaryServices", "Order");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderAncillaryServiceId");
-                        });
-
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.AssistanceChoice", "Assistance", b1 =>
-                        {
-                            b1.Property<long>("OrderAncillaryServiceId")
-                                .HasColumnType("bigint");
-
-                            b1.Property<int>("AssistanceKind")
-                                .HasColumnType("int")
-                                .HasColumnName("AssistanceKind");
-
-                            b1.Property<string>("AssistanceSsrCode")
-                                .HasMaxLength(16)
-                                .HasColumnType("nvarchar(16)")
-                                .HasColumnName("AssistanceSsrCode");
-
-                            b1.Property<long?>("GuardianTravellerId")
-                                .HasColumnType("bigint")
-                                .HasColumnName("AssistanceGuardianTravellerId");
-
-                            b1.Property<long?>("InfantTravellerId")
-                                .HasColumnType("bigint")
-                                .HasColumnName("AssistanceInfantTravellerId");
-
-                            b1.HasKey("OrderAncillaryServiceId");
-
-                            b1.ToTable("OrderAncillaryServices", "Order");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderAncillaryServiceId");
-                        });
-
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.ConnectivityChoice", "Connectivity", b1 =>
-                        {
-                            b1.Property<long>("OrderAncillaryServiceId")
-                                .HasColumnType("bigint");
-
-                            b1.Property<int>("DeliveryStage")
-                                .HasColumnType("int")
-                                .HasColumnName("ConnectivityDeliveryStage");
-
-                            b1.Property<int?>("DeviceCount")
-                                .HasColumnType("int")
-                                .HasColumnName("ConnectivityDeviceCount");
-
-                            b1.Property<int?>("DurationMinutes")
-                                .HasColumnType("int")
-                                .HasColumnName("ConnectivityDurationMinutes");
-
-                            b1.Property<int?>("IncludedDataMb")
-                                .HasColumnType("int")
-                                .HasColumnName("ConnectivityIncludedDataMb");
-
-                            b1.Property<int?>("MaxDevices")
-                                .HasColumnType("int")
-                                .HasColumnName("ConnectivityMaxDevices");
-
-                            b1.Property<int>("PlanKind")
-                                .HasColumnType("int")
-                                .HasColumnName("ConnectivityPlanKind");
-
-                            b1.HasKey("OrderAncillaryServiceId");
-
-                            b1.ToTable("OrderAncillaryServices", "Order");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderAncillaryServiceId");
-                        });
-
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.MealChoice", "Meal", b1 =>
-                        {
-                            b1.Property<long>("OrderAncillaryServiceId")
-                                .HasColumnType("bigint");
-
-                            b1.Property<string>("DietaryCode")
-                                .HasMaxLength(16)
-                                .HasColumnType("nvarchar(16)")
-                                .HasColumnName("MealDietaryCode");
-
-                            b1.Property<string>("ExclusiveMealFamilyCode")
-                                .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)")
-                                .HasColumnName("MealExclusiveFamilyCode");
-
-                            b1.Property<string>("MealCode")
-                                .HasMaxLength(16)
-                                .HasColumnType("nvarchar(16)")
-                                .HasColumnName("MealCode");
-
-                            b1.Property<int>("MealKind")
-                                .HasColumnType("int")
-                                .HasColumnName("MealKind");
-
-                            b1.Property<string>("MenuItemRef")
-                                .HasMaxLength(128)
-                                .HasColumnType("nvarchar(128)")
-                                .HasColumnName("MealMenuItemRef");
-
-                            b1.HasKey("OrderAncillaryServiceId");
-
-                            b1.ToTable("OrderAncillaryServices", "Order");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderAncillaryServiceId");
-                        });
-
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.PetChoice", "Pet", b1 =>
-                        {
-                            b1.Property<long>("OrderAncillaryServiceId")
-                                .HasColumnType("bigint");
-
-                            b1.Property<int?>("AnimalAgeWeeks")
-                                .HasColumnType("int")
-                                .HasColumnName("PetAnimalAgeWeeks");
-
-                            b1.Property<int>("AnimalType")
-                                .HasColumnType("int")
-                                .HasColumnName("PetAnimalType");
-
-                            b1.Property<decimal>("CombinedWeightKg")
-                                .HasPrecision(18, 2)
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("PetCombinedWeightKg");
-
-                            b1.PrimitiveCollection<string>("DocumentAcknowledgements")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)")
-                                .HasColumnName("PetDocumentAcknowledgements");
-
-                            b1.Property<string>("OtherAnimalCode")
-                                .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)")
-                                .HasColumnName("PetOtherAnimalCode");
-
-                            b1.Property<string>("SizeBracket")
-                                .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)")
-                                .HasColumnName("PetSizeBracket");
-
-                            b1.Property<int>("TransportMode")
-                                .HasColumnType("int")
-                                .HasColumnName("PetTransportMode");
-
-                            b1.HasKey("OrderAncillaryServiceId");
-
-                            b1.ToTable("OrderAncillaryServices", "Order");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderAncillaryServiceId");
-
-                            b1.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.ServiceDimensions", "CarrierDimensions", b2 =>
-                                {
-                                    b2.Property<long>("PetChoiceOrderAncillaryServiceId")
-                                        .HasColumnType("bigint");
-
-                                    b2.Property<decimal>("HeightCm")
-                                        .HasPrecision(18, 2)
-                                        .HasColumnType("decimal(18,2)")
-                                        .HasColumnName("PetCarrierHeightCm");
-
-                                    b2.Property<decimal>("LengthCm")
-                                        .HasPrecision(18, 2)
-                                        .HasColumnType("decimal(18,2)")
-                                        .HasColumnName("PetCarrierLengthCm");
-
-                                    b2.Property<decimal>("WidthCm")
-                                        .HasPrecision(18, 2)
-                                        .HasColumnType("decimal(18,2)")
-                                        .HasColumnName("PetCarrierWidthCm");
-
-                                    b2.HasKey("PetChoiceOrderAncillaryServiceId");
-
-                                    b2.ToTable("OrderAncillaryServices", "Order");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("PetChoiceOrderAncillaryServiceId");
-                                });
-
-                            b1.Navigation("CarrierDimensions")
-                                .IsRequired();
-                        });
-
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.PriorityChoice", "Priority", b1 =>
-                        {
-                            b1.Property<long>("OrderAncillaryServiceId")
-                                .HasColumnType("bigint");
-
-                            b1.Property<string>("FareBenefitRef")
-                                .HasMaxLength(128)
-                                .HasColumnType("nvarchar(128)")
-                                .HasColumnName("PriorityFareBenefitRef");
-
-                            b1.Property<int>("Kind")
-                                .HasColumnType("int")
-                                .HasColumnName("PriorityKind");
-
-                            b1.Property<bool?>("OptIn")
-                                .HasColumnType("bit")
-                                .HasColumnName("PriorityOptIn");
-
-                            b1.Property<string>("PriorityGroupCode")
-                                .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)")
-                                .HasColumnName("PriorityGroupCode");
-
-                            b1.Property<string>("PriorityZoneCode")
-                                .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)")
-                                .HasColumnName("PriorityZoneCode");
-
-                            b1.HasKey("OrderAncillaryServiceId");
-
-                            b1.ToTable("OrderAncillaryServices", "Order");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderAncillaryServiceId");
-                        });
-
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.UpgradeChoice", "Upgrade", b1 =>
-                        {
-                            b1.Property<long>("OrderAncillaryServiceId")
-                                .HasColumnType("bigint");
-
-                            b1.Property<int>("FromCabinId")
-                                .HasColumnType("int")
-                                .HasColumnName("UpgradeFromCabinId");
-
-                            b1.Property<bool>("RequiresTicketExchange")
-                                .HasColumnType("bit")
-                                .HasColumnName("UpgradeRequiresTicketExchange");
-
-                            b1.Property<int>("ToCabinId")
-                                .HasColumnType("int")
-                                .HasColumnName("UpgradeToCabinId");
-
-                            b1.Property<int>("UpgradeKind")
-                                .HasColumnType("int")
-                                .HasColumnName("UpgradeKind");
-
-                            b1.HasKey("OrderAncillaryServiceId");
-
-                            b1.ToTable("OrderAncillaryServices", "Order");
-
-                            b1.WithOwner()
-                                .HasForeignKey("OrderAncillaryServiceId");
-                        });
-
-                    b.Navigation("AirportService");
-
-                    b.Navigation("Assistance");
-
-                    b.Navigation("Connectivity");
-
                     b.Navigation("Definition")
                         .IsRequired();
 
-                    b.Navigation("Meal");
-
-                    b.Navigation("Pet");
-
                     b.Navigation("Pricing")
                         .IsRequired();
-
-                    b.Navigation("Priority");
 
                     b.Navigation("Provision")
                         .IsRequired();
 
                     b.Navigation("Source")
                         .IsRequired();
-
-                    b.Navigation("Upgrade");
                 });
 
             modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderSeatService", b =>
@@ -3118,6 +3027,24 @@ namespace AeroTech.Ordering.Persistence.Migrations
                     b.Navigation("Source");
                 });
 
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAirportService", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
+                        .WithOne()
+                        .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAirportService", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAssistedTravelService", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
+                        .WithOne()
+                        .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAssistedTravelService", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderBaggageService", b =>
                 {
                     b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
@@ -3126,53 +3053,25 @@ namespace AeroTech.Ordering.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.BaggageChoice", "Baggage", b1 =>
+                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.ServiceDimensions", "Dimensions", b1 =>
                         {
                             b1.Property<long>("OrderBaggageServiceId")
                                 .HasColumnType("bigint");
 
-                            b1.Property<int?>("AllowanceConcept")
-                                .HasColumnType("int")
-                                .HasColumnName("AllowanceConcept");
-
-                            b1.Property<string>("BagRef")
-                                .HasMaxLength(128)
-                                .HasColumnType("nvarchar(128)")
-                                .HasColumnName("BagRef");
-
-                            b1.Property<int>("ChargeKind")
-                                .HasColumnType("int")
-                                .HasColumnName("ChargeKind");
-
-                            b1.Property<string>("EquipmentKind")
-                                .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)")
-                                .HasColumnName("EquipmentKind");
-
-                            b1.Property<decimal?>("MeasuredWeightKg")
+                            b1.Property<decimal>("HeightCm")
                                 .HasPrecision(18, 2)
                                 .HasColumnType("decimal(18,2)")
-                                .HasColumnName("MeasuredWeightKg");
+                                .HasColumnName("HeightCm");
 
-                            b1.Property<decimal?>("PackageWeightKg")
+                            b1.Property<decimal>("LengthCm")
                                 .HasPrecision(18, 2)
                                 .HasColumnType("decimal(18,2)")
-                                .HasColumnName("PackageWeightKg");
+                                .HasColumnName("LengthCm");
 
-                            b1.Property<decimal?>("WeightFromExclusiveKg")
+                            b1.Property<decimal>("WidthCm")
                                 .HasPrecision(18, 2)
                                 .HasColumnType("decimal(18,2)")
-                                .HasColumnName("WeightFromExclusiveKg");
-
-                            b1.Property<decimal?>("WeightKg")
-                                .HasPrecision(18, 2)
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("WeightKg");
-
-                            b1.Property<decimal?>("WeightToInclusiveKg")
-                                .HasPrecision(18, 2)
-                                .HasColumnType("decimal(18,2)")
-                                .HasColumnName("WeightToInclusiveKg");
+                                .HasColumnName("WidthCm");
 
                             b1.HasKey("OrderBaggageServiceId");
 
@@ -3180,39 +3079,84 @@ namespace AeroTech.Ordering.Persistence.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("OrderBaggageServiceId");
-
-                            b1.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.ServiceDimensions", "Dimensions", b2 =>
-                                {
-                                    b2.Property<long>("BaggageChoiceOrderBaggageServiceId")
-                                        .HasColumnType("bigint");
-
-                                    b2.Property<decimal>("HeightCm")
-                                        .HasPrecision(18, 2)
-                                        .HasColumnType("decimal(18,2)")
-                                        .HasColumnName("HeightCm");
-
-                                    b2.Property<decimal>("LengthCm")
-                                        .HasPrecision(18, 2)
-                                        .HasColumnType("decimal(18,2)")
-                                        .HasColumnName("LengthCm");
-
-                                    b2.Property<decimal>("WidthCm")
-                                        .HasPrecision(18, 2)
-                                        .HasColumnType("decimal(18,2)")
-                                        .HasColumnName("WidthCm");
-
-                                    b2.HasKey("BaggageChoiceOrderBaggageServiceId");
-
-                                    b2.ToTable("OrderBaggageServices", "Order");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("BaggageChoiceOrderBaggageServiceId");
-                                });
-
-                            b1.Navigation("Dimensions");
                         });
 
-                    b.Navigation("Baggage")
+                    b.Navigation("Dimensions");
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderConnectivityService", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
+                        .WithOne()
+                        .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderConnectivityService", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderMealService", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
+                        .WithOne()
+                        .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderMealService", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderPetService", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
+                        .WithOne()
+                        .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderPetService", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("AeroTech.Ordering.Domain.OrderAggregate.ValueObjects.ServiceDimensions", "CarrierDimensions", b1 =>
+                        {
+                            b1.Property<long>("OrderPetServiceId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<decimal>("HeightCm")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("CarrierHeightCm");
+
+                            b1.Property<decimal>("LengthCm")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("CarrierLengthCm");
+
+                            b1.Property<decimal>("WidthCm")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("CarrierWidthCm");
+
+                            b1.HasKey("OrderPetServiceId");
+
+                            b1.ToTable("OrderPetServices", "Order");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrderPetServiceId");
+                        });
+
+                    b.Navigation("CarrierDimensions")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderPriorityService", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
+                        .WithOne()
+                        .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderPriorityService", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderUpgradeService", b =>
+                {
+                    b.HasOne("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderAncillaryService", null)
+                        .WithOne()
+                        .HasForeignKey("AeroTech.Ordering.Domain.OrderAggregate.Entities.OrderUpgradeService", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

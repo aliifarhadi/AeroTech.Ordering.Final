@@ -9,20 +9,17 @@ using Xunit;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Offer;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class CabinClassPreservationTests : IAsyncLifetime
 {
     private readonly FixedClock _clock = new();
     private readonly TestDatabase _database;
 
-    public CabinClassPreservationTests() => _database = new TestDatabase(_clock);
+    public CabinClassPreservationTests(MigratedDatabaseFixture database) => _database = database.For(_clock);
 
-    public async Task InitializeAsync()
-    {
-        await using var context = _database.NewContext();
-        await context.Database.MigrateAsync();
-    }
+    public Task InitializeAsync() => _database.ClearAsync();
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public void Sold_cabin_class_is_preserved_from_the_offer_on_every_air_service()

@@ -12,17 +12,23 @@ using Microsoft.Extensions.Options;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 
-public sealed class TestDatabase(IClock clock) : IAsyncDisposable
+public sealed class TestDatabase(IClock clock, string connectionString)
 {
-    private readonly string _connectionString = new SqlConnectionStringBuilder(DevelopmentConnectionString())
+    public TestDatabase(IClock clock)
+        : this(clock, NewConnectionString())
     {
-        InitialCatalog = $"DotAirOrdering_Tests_{Guid.NewGuid():N}"
-    }.ConnectionString;
+    }
+
+    public static string NewConnectionString()
+        => new SqlConnectionStringBuilder(DevelopmentConnectionString())
+        {
+            InitialCatalog = $"DotAirOrdering_Tests_{Guid.NewGuid():N}"
+        }.ConnectionString;
 
     public OrderingDbContext NewContext(IDomainEventDispatcher? domainEventDispatcher = null)
         => new(
             new DbContextOptionsBuilder<OrderingDbContext>()
-                .UseSqlServer(_connectionString, sql => sql.MigrationsHistoryTable(OrderingDbContext.MigrationsHistoryTable, OrderingDbContext.MigrationsHistorySchema))
+                .UseSqlServer(connectionString, sql => sql.MigrationsHistoryTable(OrderingDbContext.MigrationsHistoryTable, OrderingDbContext.MigrationsHistorySchema))
                 .Options,
             new AnonymousActorResolver(),
             clock,
@@ -31,7 +37,7 @@ public sealed class TestDatabase(IClock clock) : IAsyncDisposable
     public OrderQueryDbContext NewQueryContext()
         => new(
             new DbContextOptionsBuilder<OrderQueryDbContext>()
-                .UseSqlServer(_connectionString, sql => sql.MigrationsHistoryTable(OrderQueryDbContext.MigrationsHistoryTable, OrderQueryDbContext.MigrationsHistorySchema))
+                .UseSqlServer(connectionString, sql => sql.MigrationsHistoryTable(OrderQueryDbContext.MigrationsHistoryTable, OrderQueryDbContext.MigrationsHistorySchema))
                 .Options);
 
     public ServiceProvider NewOutboxServices()
@@ -49,7 +55,36 @@ public sealed class TestDatabase(IClock clock) : IAsyncDisposable
         return services.BuildServiceProvider();
     }
 
-    public async ValueTask DisposeAsync()
+    public async Task MigrateAsync()
+    {
+        await using var commands = NewContext();
+        await commands.Database.MigrateAsync();
+
+        await using var queries = NewQueryContext();
+        await queries.Database.MigrateAsync();
+    }
+
+    public async Task ClearAsync()
+    {
+        await using var context = NewContext();
+        await context.Database.ExecuteSqlAsync($"""
+            DECLARE @tables TABLE ([Name] nvarchar(300) NOT NULL);
+
+            INSERT INTO @tables ([Name])
+            SELECT QUOTENAME(SCHEMA_NAME([schema_id])) + N'.' + QUOTENAME([name])
+            FROM sys.tables
+            WHERE [name] NOT IN ({OrderingDbContext.MigrationsHistoryTable}, {OrderQueryDbContext.MigrationsHistoryTable});
+
+            DECLARE @statements nvarchar(max) =
+                (SELECT STRING_AGG(CAST(N'ALTER TABLE ' + [Name] + N' NOCHECK CONSTRAINT ALL;' AS nvarchar(max)), N' ') FROM @tables) + N' ' +
+                (SELECT STRING_AGG(CAST(N'DELETE FROM ' + [Name] + N';' AS nvarchar(max)), N' ') FROM @tables) + N' ' +
+                (SELECT STRING_AGG(CAST(N'ALTER TABLE ' + [Name] + N' WITH CHECK CHECK CONSTRAINT ALL;' AS nvarchar(max)), N' ') FROM @tables);
+
+            EXEC sp_executesql @statements;
+            """);
+    }
+
+    public async Task DropAsync()
     {
         await using var context = NewContext();
         await context.Database.EnsureDeletedAsync();

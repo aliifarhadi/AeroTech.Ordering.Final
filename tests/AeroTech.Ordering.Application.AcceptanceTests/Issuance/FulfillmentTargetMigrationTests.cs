@@ -20,7 +20,7 @@ public sealed class FulfillmentTargetMigrationTests : IAsyncLifetime
 
     public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => _database.DropAsync();
 
     [Fact]
     public async Task Legacy_reservation_unit_targets_become_typed_targets_with_the_same_identity()

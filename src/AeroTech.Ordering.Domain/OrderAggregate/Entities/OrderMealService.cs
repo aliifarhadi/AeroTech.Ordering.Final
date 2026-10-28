@@ -1,21 +1,26 @@
-using AeroTech.Framework.Core.Domain.ValueObjects;
 using AeroTech.Messages.Ancillary.Enums;
+using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
+namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 {
-    public sealed class MealChoice : ValueObject
+    public sealed class OrderMealService : OrderAncillaryService
     {
-        private MealChoice()
+        private OrderMealService()
         {
         }
 
-        public MealChoice(
+        public OrderMealService(
+            OrderAncillaryServiceArgs args,
             MealKind mealKind,
             string? mealCode,
             string? menuItemRef,
             string? dietaryCode,
             string? exclusiveMealFamilyCode)
+            : base(args, AncillaryProfile.Meal)
         {
+            EnsurePresent(VariantCode != AncillaryVariant.FreeSpecialMeal || !string.IsNullOrWhiteSpace(mealCode), nameof(MealCode));
+            EnsurePresent(VariantCode != AncillaryVariant.PaidPreorderMeal || !string.IsNullOrWhiteSpace(menuItemRef), nameof(MenuItemRef));
+
             MealKind = mealKind;
             MealCode = mealCode;
             MenuItemRef = menuItemRef;
@@ -32,14 +37,5 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
         public string? DietaryCode { get; private set; }
 
         public string? ExclusiveMealFamilyCode { get; private set; }
-
-        protected override IEnumerable<object?> GetEqualityComponents()
-        {
-            yield return MealKind;
-            yield return MealCode;
-            yield return MenuItemRef;
-            yield return DietaryCode;
-            yield return ExclusiveMealFamilyCode;
-        }
     }
 }

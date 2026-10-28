@@ -8,20 +8,17 @@ using Xunit;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.FareTopology;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class FareTopologyPersistenceTests : IAsyncLifetime
 {
     private readonly FixedClock _clock = new();
     private readonly TestDatabase _database;
 
-    public FareTopologyPersistenceTests() => _database = new TestDatabase(_clock);
+    public FareTopologyPersistenceTests(MigratedDatabaseFixture database) => _database = database.For(_clock);
 
-    public async Task InitializeAsync()
-    {
-        await using var context = _database.NewContext();
-        await context.Database.MigrateAsync();
-    }
+    public Task InitializeAsync() => _database.ClearAsync();
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Round_trip_topology_survives_persistence_and_reload()

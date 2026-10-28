@@ -33,7 +33,7 @@ public sealed class AddAncillariesTests
 
         Assert.Equal((OrderChangeType.AddProduct, 2, 2), (change.ChangeType, change.CommercialVersion, order.CommercialVersion));
         Assert.Equal((variant.ProductType, variant.ServiceType, variantCode, variant.Profile), (item.Kind, service.ServiceType, service.VariantCode, service.Profile));
-        Assert.Equal(variant.Profile == AncillaryProfile.Baggage, service is OrderBaggageService);
+        Assert.IsType(FamilyEntityOf(variant.Profile), service);
         Assert.Equal(line.Definition.DefinitionVersionId, service.Definition.DefinitionVersionId);
         Assert.Equal(line.Provision.ProvisionId, service.Provision.ProvisionId);
         Assert.Equal((line.Pricing.PricingId, line.Pricing.PricingRateId), (service.Pricing.PricingId, service.Pricing.PricingRateId));
@@ -387,6 +387,20 @@ public sealed class AddAncillariesTests
             ? line with { Details = new ResolvedAncillaryDetails { Assistance = line.Details.Assistance! with { InfantRef = Ref(Traveller(order, 2)), GuardianRef = Ref(adult) } } }
             : line;
     }
+
+    private static Type FamilyEntityOf(AncillaryProfile profile)
+        => profile switch
+        {
+            AncillaryProfile.Baggage => typeof(OrderBaggageService),
+            AncillaryProfile.Meal => typeof(OrderMealService),
+            AncillaryProfile.Pet => typeof(OrderPetService),
+            AncillaryProfile.AssistedTravel => typeof(OrderAssistedTravelService),
+            AncillaryProfile.AirportService => typeof(OrderAirportService),
+            AncillaryProfile.Priority => typeof(OrderPriorityService),
+            AncillaryProfile.Connectivity => typeof(OrderConnectivityService),
+            AncillaryProfile.Upgrade => typeof(OrderUpgradeService),
+            _ => typeof(OrderExtraSeatService)
+        };
 
     private static OrderTraveller Traveller(Order order, int index) => order.Travellers.Single(traveller => traveller.Index == index);
 

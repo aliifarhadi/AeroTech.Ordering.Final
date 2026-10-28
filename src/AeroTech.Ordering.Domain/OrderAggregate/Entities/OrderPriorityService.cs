@@ -1,26 +1,32 @@
-using AeroTech.Framework.Core.Domain.ValueObjects;
 using AeroTech.Messages.Ancillary.Enums;
+using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
+namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 {
-    public sealed class PriorityChoice : ValueObject
+    public sealed class OrderPriorityService : OrderAncillaryService
     {
-        private PriorityChoice()
+        private OrderPriorityService()
         {
         }
 
-        public PriorityChoice(
+        public OrderPriorityService(
+            OrderAncillaryServiceArgs args,
             PriorityKind kind,
             string? priorityZoneCode,
             string? priorityGroupCode,
             string? fareBenefitRef,
             bool? optIn)
+            : base(args, AncillaryProfile.Priority)
         {
+            var acceptedOptIn = optIn ?? throw MissingChoice(nameof(OptIn));
+
+            EnsureValid(acceptedOptIn, nameof(OptIn));
+
             Kind = kind;
             PriorityZoneCode = priorityZoneCode;
             PriorityGroupCode = priorityGroupCode;
             FareBenefitRef = fareBenefitRef;
-            OptIn = optIn;
+            OptIn = acceptedOptIn;
         }
 
         public PriorityKind Kind { get; private set; }
@@ -31,15 +37,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
 
         public string? FareBenefitRef { get; private set; }
 
-        public bool? OptIn { get; private set; }
-
-        protected override IEnumerable<object?> GetEqualityComponents()
-        {
-            yield return Kind;
-            yield return PriorityZoneCode;
-            yield return PriorityGroupCode;
-            yield return FareBenefitRef;
-            yield return OptIn;
-        }
+        public bool OptIn { get; private set; }
     }
 }

@@ -19,21 +19,18 @@ using IssuedV1 = AeroTech.Messages.Ordering.IntegrationEvents.V1.ElectronicTicke
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Issuance;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class IssuancePersistenceTests : IAsyncLifetime
 {
     private readonly FixedClock _clock = new();
     private readonly SequentialIdGenerator _ids = new();
     private readonly TestDatabase _database;
 
-    public IssuancePersistenceTests() => _database = new TestDatabase(_clock);
+    public IssuancePersistenceTests(MigratedDatabaseFixture database) => _database = database.For(_clock);
 
-    public async Task InitializeAsync()
-    {
-        await using var context = _database.NewContext();
-        await context.Database.MigrateAsync();
-    }
+    public Task InitializeAsync() => _database.ClearAsync();
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Ticket_coupons_and_price_links_survive_persistence_and_reload()

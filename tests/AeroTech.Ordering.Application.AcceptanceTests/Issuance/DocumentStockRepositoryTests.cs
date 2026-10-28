@@ -11,6 +11,7 @@ using Xunit;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Issuance;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class DocumentStockRepositoryTests : IAsyncLifetime
 {
     private const long TaskId = 9;
@@ -20,15 +21,11 @@ public sealed class DocumentStockRepositoryTests : IAsyncLifetime
     private readonly SequentialIdGenerator _ids = new();
     private readonly TestDatabase _database;
 
-    public DocumentStockRepositoryTests() => _database = new TestDatabase(_clock);
+    public DocumentStockRepositoryTests(MigratedDatabaseFixture database) => _database = database.For(_clock);
 
-    public async Task InitializeAsync()
-    {
-        await using var context = _database.NewContext();
-        await context.Database.MigrateAsync();
-    }
+    public Task InitializeAsync() => _database.ClearAsync();
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Stock_is_loaded_with_its_persisted_allocations()

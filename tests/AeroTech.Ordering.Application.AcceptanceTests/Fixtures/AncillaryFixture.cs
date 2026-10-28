@@ -1,6 +1,7 @@
 using System.Globalization;
 using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate;
+using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.Providers.Ancillary;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
@@ -14,6 +15,13 @@ public static class AncillaryFixture
         .Select(variant => variant.Code)
         .OrderBy(code => code, StringComparer.Ordinal)
         .ToList();
+
+    private static readonly IReadOnlyCollection<string> SourceGatedVariants =
+    [
+        AncillaryVariant.ExtraSeat,
+        AncillaryVariant.MedicalEquipment,
+        AncillaryVariant.UnaccompaniedMinor
+    ];
 
     public static ResolvedAncillarySelection Selection(Order order, DateTimeOffset now, params ResolvedAncillaryLine[] lines)
         => new(
@@ -174,7 +182,86 @@ public static class AncillaryFixture
 
     public static string FlightRef(string boundId, int sequence) => $"{boundId}:F{sequence}";
 
+    public static async Task<Order> OrderWithEveryPersistedVariantAsync(ReservationHarness harness)
+    {
+        var order = await harness.CreateFromOfferAsync(
+            [TravellerSpec.Adult(1), TravellerSpec.Adult(2)],
+            [new BoundSpec("OUT", 101, 102), new BoundSpec("RET", 201)]);
+        var adult = order.Travellers.Single(traveller => traveller.Index == 1);
+        var other = order.Travellers.Single(traveller => traveller.Index == 2);
+
+        var lines = GeneralVariants
+            .Where(code => !SourceGatedVariants.Contains(code))
+            .Select(code => code == AncillaryVariant.Bassinet
+                ? WithBassinetRefs(Sector(code, adult.Id, FlightRef("OUT", 1)), other, adult)
+                : Sector(code, adult.Id, FlightRef("OUT", 1)))
+            .Append(Portion(AncillaryVariant.ExtraCheckedBag, other.Id, "OUT"))
+            .Append(WholeOrder(AncillaryVariant.OnboardWifi))
+            .ToArray();
+
+        await harness.AddAncillariesAsync(order, Selection(order, harness.Clock.GetDateTime(), lines));
+
+        order.AddAncillaries(
+            null,
+            SeatQuote(order, harness.Clock.GetDateTime(), Seat(adult.Id, 101, "12A"), Seat(adult.Id, 102, "18C", AncillaryVariant.PreferredSeat, 40m)),
+            order.CommercialVersion,
+            false,
+            ReservationHarness.CancellingActor,
+            harness.Ids,
+            harness.Clock.GetDateTime());
+
+        return order;
+    }
+
+    public static IReadOnlyList<object> PersistedPurchases(Order order)
+        => order.Services
+            .Where(service => service is OrderAncillaryService or OrderSeatService { IsPricedSelection: true })
+            .OrderBy(service => service.Id)
+            .Select<OrderService, object>(service => service switch
+            {
+                OrderAncillaryService ancillary => (CommonFacts(ancillary), ancillary.GetType().Name, FamilyFacts(ancillary)),
+                OrderSeatService seat => (seat.Id, seat.OrderItemId, seat.TravellerId, seat.SegmentId, seat.AssociatedAirServiceId, seat.SeatNumber, seat.VariantCode, seat.PointOfSaleId, seat.Source, seat.Definition, seat.Provision, seat.Pricing),
+                _ => throw new InvalidOperationException()
+            })
+            .ToList();
+
+    public static IReadOnlyList<object> PersistedPricing(Order order)
+        => order.PricingLines
+            .OrderBy(line => line.Id)
+            .Select(line => (object)(line.Id, line.Reason, line.Category, line.SubCategory, line.Direction, line.Code, line.Amount, line.TaxJurisdiction, line.SourceTaxTreatment, line.SourceFeeApplicationUnit, string.Join(",", line.Allocations.Select(allocation => $"{allocation.OrderItemId}/{allocation.OrderServiceId}/{allocation.OrderSegmentId}/{allocation.TravellerId}/{allocation.Amount.ToString("0.####", CultureInfo.InvariantCulture)}"))))
+            .ToList();
+
     private static string Ref(long travellerId) => travellerId.ToString(CultureInfo.InvariantCulture);
+
+    private static ResolvedAncillaryLine WithBassinetRefs(ResolvedAncillaryLine line, OrderTraveller infant, OrderTraveller guardian)
+        => line with
+        {
+            Details = new ResolvedAncillaryDetails
+            {
+                Assistance = line.Details.Assistance! with
+                {
+                    InfantRef = Ref(infant.Id),
+                    GuardianRef = Ref(guardian.Id)
+                }
+            }
+        };
+
+    private static object CommonFacts(OrderAncillaryService service)
+        => (service.Id, service.OrderItemId, service.TravellerId, service.ServiceType, service.Profile, service.VariantCode, service.Quantity, service.SelectionScope, service.CoverageScope, string.Join(",", service.CoveredAirServiceIds), service.Source, service.Definition, service.Provision, service.Pricing, service.FulfillmentProviderKey);
+
+    private static object FamilyFacts(OrderAncillaryService service)
+        => service switch
+        {
+            OrderBaggageService baggage => (baggage.ChargeKind, baggage.AllowanceConcept, baggage.PackageWeightKg, baggage.WeightFromExclusiveKg, baggage.WeightToInclusiveKg, baggage.EquipmentKind, baggage.BagRef, baggage.MeasuredWeightKg, baggage.Dimensions, baggage.WeightKg),
+            OrderMealService meal => (meal.MealKind, meal.MealCode, meal.MenuItemRef, meal.DietaryCode, meal.ExclusiveMealFamilyCode),
+            OrderPetService pet => (pet.TransportMode, pet.AnimalType, pet.OtherAnimalCode, pet.AnimalAgeWeeks, pet.CombinedWeightKg, pet.CarrierDimensions, string.Join(",", pet.DocumentAcknowledgements), pet.SizeBracket),
+            OrderAssistedTravelService assistance => (assistance.AssistanceKind, assistance.AssistanceSsrCode, assistance.InfantTravellerId, assistance.GuardianTravellerId),
+            OrderAirportService airport => (airport.Kind, airport.AirportId, airport.TerminalRef, airport.FacilityId, airport.Direction, airport.TimeWithOffset, airport.GuestCount),
+            OrderPriorityService priority => (priority.Kind, priority.PriorityZoneCode, priority.PriorityGroupCode, priority.FareBenefitRef, priority.OptIn),
+            OrderConnectivityService connectivity => (connectivity.PlanKind, connectivity.DurationMinutes, connectivity.IncludedDataMb, connectivity.MaxDevices, connectivity.DeliveryStage, connectivity.DeviceCount),
+            OrderUpgradeService upgrade => (upgrade.FromCabinId, upgrade.ToCabinId, upgrade.UpgradeKind, upgrade.RequiresTicketExchange),
+            _ => throw new InvalidOperationException(service.GetType().Name)
+        };
 
     private static ServiceCoverageScope CoverageOf(SelectionScope selectionScope)
         => selectionScope switch

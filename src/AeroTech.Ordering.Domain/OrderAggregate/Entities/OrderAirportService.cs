@@ -1,15 +1,16 @@
-using AeroTech.Framework.Core.Domain.ValueObjects;
 using AeroTech.Messages.Ancillary.Enums;
+using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
+namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 {
-    public sealed class AirportServiceChoice : ValueObject
+    public sealed class OrderAirportService : OrderAncillaryService
     {
-        private AirportServiceChoice()
+        private OrderAirportService()
         {
         }
 
-        public AirportServiceChoice(
+        public OrderAirportService(
+            OrderAncillaryServiceArgs args,
             AirportServiceKind kind,
             int airportId,
             string? terminalRef,
@@ -17,7 +18,11 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
             AirportServiceDirection direction,
             DateTimeOffset? timeWithOffset,
             int? guestCount)
+            : base(args, AncillaryProfile.AirportService)
         {
+            EnsureValid(airportId > 0, nameof(AirportId));
+            EnsureValid(guestCount is null or >= 0, nameof(GuestCount));
+
             Kind = kind;
             AirportId = airportId;
             TerminalRef = terminalRef;
@@ -40,16 +45,5 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
         public DateTimeOffset? TimeWithOffset { get; private set; }
 
         public int? GuestCount { get; private set; }
-
-        protected override IEnumerable<object?> GetEqualityComponents()
-        {
-            yield return Kind;
-            yield return AirportId;
-            yield return TerminalRef;
-            yield return FacilityId;
-            yield return Direction;
-            yield return TimeWithOffset;
-            yield return GuestCount;
-        }
     }
 }

@@ -22,6 +22,7 @@ using Xunit;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Servicing;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class ScopeSafeCancellationRecoveryPersistenceTests : IAsyncLifetime
 {
     private readonly FixedClock _clock = new();
@@ -33,20 +34,16 @@ public sealed class ScopeSafeCancellationRecoveryPersistenceTests : IAsyncLifeti
     private readonly StubAirFareReservationValidator _airFareValidator;
     private readonly TestDatabase _database;
 
-    public ScopeSafeCancellationRecoveryPersistenceTests()
+    public ScopeSafeCancellationRecoveryPersistenceTests(MigratedDatabaseFixture database)
     {
-        _database = new TestDatabase(_clock);
+        _database = database.For(_clock);
         _flightFlow = new ScriptedFlightFlowProvider(OrderFixture.FlightIdOfCapacity, new InMemoryUnitOfWork());
         _airFareValidator = new StubAirFareReservationValidator(_clock);
     }
 
-    public async Task InitializeAsync()
-    {
-        await using var context = _database.NewContext();
-        await context.Database.MigrateAsync();
-    }
+    public Task InitializeAsync() => _database.ClearAsync();
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Persisted_unresolved_effect_governs_recovery_after_a_restart()

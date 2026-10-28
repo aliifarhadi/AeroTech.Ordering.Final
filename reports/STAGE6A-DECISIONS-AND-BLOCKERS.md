@@ -11,7 +11,7 @@
 
 | # | Decision | Effect |
 |---|---|---|
-| D1 | A09, A17 and A19 exist as typed domain value objects with in-memory tests only. They get no SQL mapping until Ancillary delivers AC-06. | The ACL rejects these variants as source-incomplete. `OrderAncillaryService` keeps their value objects unmapped (`Ignore`), and their SQL roundtrip is `BLOCKED_SOURCE`. |
+| D1 | A09, A17 and A19 exist in the domain with in-memory tests only. They get no SQL mapping until Ancillary delivers AC-06. | The ACL rejects these variants as source-incomplete. `OrderExtraSeatService` has no table, `OrderAssistedTravelService` keeps `MedicalEquipment` and `UnaccompaniedMinor` unmapped (`Ignore`), and their SQL round trip is `BLOCKED_SOURCE`. |
 | D2 | Stage 6A stays on `k8s-stg` and is not promoted to production until 6B is verified for at least one product. | No feature flag in code. |
 | D3 | No new priced seat is reservable in 6A. | The Reserve guard rejects every Order holding one, with no exception rule. |
 | D4 | 6B is removed from this coding scope. | It needs a separate domain and flow closure first. |
@@ -19,9 +19,10 @@
 | D6 | Ordering stores only the scalar facts that identify what was sold, plus every customer choice. | Catalog eligibility lists are not copied: allowed SSRs, allowed animals, eligible aircraft, eligible fare families, compatible seat groups, airports and cabins. |
 | D7 | An ancillary cannot be cancelled on its own in 6A. | It ends only with the Air service its coverage depends on, or with a whole-order cancel. A request for the ancillary alone gets a typed rejection. |
 | D8 | The Api/OtaPanel Add response carries `services[]` with `orderServiceId`, `serviceType` and `variantCode` per accepted service. | Internal pricing and provision ids are not exposed. |
-| D9 | Families are modelled as Master §6.8 and pack doc 03 define them. | `OrderBaggageService : OrderAncillaryService` for A01–A06. The other families are `OrderAncillaryService` with one typed choice value object each, so there is no TPT table per family. |
-| D11 | Tax jurisdiction on an ancillary price line uses Master §8.1 `TaxJurisdictionSnapshot` (CountryId, StationId). The source treatment and fee unit are two scalar fields on `PricingLine`. | The invented `PriceComponentSource` was removed and the command migration was regenerated. |
+| D9 | Superseded by D12. Families were first modelled with one typed choice value object each, and only baggage had its own entity. | — |
 | D10 | The A07/A08 seat domain is built now, with fixtures. | Only the adapter and the live test wait for AC-03. Seats extend `OrderSeatService`: one per traveller × flight, with a quote snapshot that includes `PointOfSaleId` and its own `ProductType.Seat` item. |
+| D11 | Tax jurisdiction on an ancillary price line uses Master §8.1 `TaxJurisdictionSnapshot` (CountryId, StationId). The source treatment and fee unit are two scalar fields on `PricingLine`. | The invented `PriceComponentSource` was removed and the command migration was regenerated. |
+| D12 | Each family is a sealed entity under an abstract `OrderAncillaryService` (owner diagram). | The base holds source, definition, provision, pricing, coverage and quantity. Nine family entities hold their variant's own facts and rules: Baggage, ExtraSeat, Upgrade, Meal, Pet, AssistedTravel, Airport, Priority and Connectivity (Master §6.7.1). The nine choice value objects were removed; `MedicalEquipmentChoice` and `UnaccompaniedMinorChoice` stay inside `OrderAssistedTravelService`. Command migration `SplitAncillaryFamilies` creates one TPT table per persisted family, copies existing rows, then drops the 41 old columns; `Down` copies back before dropping the tables. The read model stays one ancillary table. |
 
 ## 2. Repository conventions that override the pack (CLAUDE.md governs layering, placement and EF mapping)
 
@@ -49,12 +50,12 @@
 | Increment | Scope | Status |
 |---|---|---|
 | 6A.0 safety | Reserve, Confirm and Issue are refused (2854) before any provider or stock effect when an active ancillary or a new priced seat exists. A whole cancel ends every active service; an ancillary-only cancel is refused (2856); a partial cancel that ends only part of a multi-flight coverage is refused (2855). | Done, tested |
-| 6A.1 domain | `OrderService.TravellerId: long?`, `OrderAncillaryService`, `OrderBaggageService`, 17 value objects, `AncillaryVariant` registry, two-phase plan-then-commit acceptance in `Order.AddAncillaries`, price normalization (included tax once, item fees only, same currency), codes 2824–2865 | Done, tested |
-| 6A.1 persistence and read side | Command migration `AddAncillaryServices`, query migration `ProjectAncillaryServices`, the `OrderAncillaryServices` read model, snapshot projection, `AncillaryContext.ancillaryServices[]` | Done, tested. `acceptsChanges` stays `false`, because the read side has no reservation-history fact yet. |
+| 6A.1 domain | `OrderService.TravellerId: long?`, abstract `OrderAncillaryService` with nine sealed family entities (D12), 8 value objects, `AncillaryVariant` registry, two-phase plan-then-commit acceptance in `Order.AddAncillaries`, price normalization (included tax once, item fees only, same currency), codes 2824–2865 | Done, tested |
+| 6A.1 persistence and read side | Command migrations `AddAncillaryServices` and `SplitAncillaryFamilies` (D12), query migration `ProjectAncillaryServices`, the `OrderAncillaryServices` read model, snapshot projection, `AncillaryContext.ancillaryServices[]` | Done, tested. `acceptsChanges` stays `false`, because the read side has no reservation-history fact yet. |
 | 6A.1 application, providers and API | `IAncillaryProvider` Resolve adapter (fails closed while AC-01 and AC-02 are missing), `AddAncillariesService`, three surface commands, `POST .../{orderId}/Ancillaries` on Backoffice, Api and OtaPanel | Done. Live use is `BLOCKED_SOURCE` (AC-01, AC-02). |
 | 6A.2 Create with selections | | Not started |
 | 6A.3 Seats | Domain done (D10): per traveller × flight, quote snapshot with `PointOfSaleId`, its own Seat item, duplicate guards. The port and adapter wait for AC-03. | Domain done, tested |
-| Guardrails | `canonical-stage6a-v1.0.yaml`, `Stage6ATypeSetConformanceTests`, `.canonical-stage = 6`, CLAUDE.md authority switch, Master v2.0 amended in place (§6.4, §6.6–§6.8, §8.1, §9.1, §27.8, §30, §34.1, §35) | Done |
+| Guardrails | `canonical-stage6a-v1.0.yaml`, `Stage6ATypeSetConformanceTests`, `.canonical-stage = 6`, CLAUDE.md authority switch, Master v2.0 amended in place (§6.4, §6.6–§6.8 with §6.7.1, §8.1, §9.1, §27.8, §30, §34.1, §35) | Done |
 | Handoff | AC-01…AC-06 filed as `E:\Projects\DotAir\handoffs\OR-005-ancillary-source-contracts-for-commercial-acceptance.md`, listed in the ledger index | Requested |
 
 ## 5. Verification evidence (2026-10-28)

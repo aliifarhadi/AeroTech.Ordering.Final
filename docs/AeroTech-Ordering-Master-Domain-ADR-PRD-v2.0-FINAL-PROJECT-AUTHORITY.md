@@ -398,9 +398,11 @@ The sold/selected seat remains commercial history. A later DCS operational seat 
 
 ---
 
-## 6.7 `OrderAncillaryService` — airline optional service
+## 6.7 Abstract `OrderAncillaryService` — airline optional service
 
 **Materialized in Stage 6A (2026-10-28)** for every source variant A01–A24 except the regular seats A07/A08, which use `OrderSeatService` (§6.6). One source-priced line becomes exactly one `OrderItem` and one service, even when it covers several flights.
+
+`OrderAncillaryService` is abstract (owner decision D12, 2026-10-28). It holds what every optional service shares: source, definition, provision, pricing, coverage and quantity. Each accepted variant is exactly one sealed family entity (§6.7.1) that holds that variant's own facts.
 
 | Field | Type | Null | Meaning |
 |---|---|---:|---|
@@ -413,7 +415,6 @@ The sold/selected seat remains commercial history. A later DCS operational seat 
 | `Definition` | `AncillaryDefinition` | No | `DefinitionVersionId`, `ServiceDefinitionRef`, `ServiceTypeCode`, `ServiceSubCode`, `Rfic?`, `Rfisc?`, `SsrCode?` exactly as resolved (Stage 6A). It carries the definition rows of the earlier design (`ServiceDefinitionRef`, `ServiceSubCode`, `ServiceTypeCode`, `SsrCode`). |
 | `Provision` | `AncillaryProvision` | No | `ProvisionId`, purchase stage, booking method/required, confirmation requirement, source fulfillment provider key (informational), document routing/type/required, check-at-reserve (Stage 6A). No document is issued from these facts in Stage 6A. |
 | `Pricing` | `AncillaryPricing` | No | `PricingId`, `PricingRateId`, `PricingVersion`, `PricingUnit` (Stage 6A). Amounts live only in price lines (§8.1). |
-| family choice | `MealChoice?`, `PetChoice?`, `AssistanceChoice?`, `AirportServiceChoice?`, `PriorityChoice?`, `ConnectivityChoice?`, `UpgradeChoice?`, `ExtraSeatChoice?`, `MedicalEquipmentChoice?`, `UnaccompaniedMinorChoice?` | Yes | Exactly the choice of the variant's family (Stage 6A). It holds the scalar facts that identify what was sold plus every customer choice; catalog eligibility lists are not copied (owner decision D6). `ExtraSeatChoice` (A09), `MedicalEquipmentChoice` (A17) and `UnaccompaniedMinorChoice` (A19) are domain-only until the source supplies their data (owner decision D1). |
 | `GroupCode` | `string?` | Yes | Optional Services group code. SOURCE-GATED: not materialized. |
 | `SubGroupCode` | `string?` | Yes | Optional Services subgroup. SOURCE-GATED: not materialized. |
 | `CommercialName` | `string?` | Yes | Source commercial description. SOURCE-GATED: not materialized. |
@@ -434,13 +435,31 @@ No ATPCO field is populated from a catalog guess. Source data is mandatory.
 
 `ProductType` is `Baggage` for A01–A06, `Seat` for A07–A09, `Meal` for A11/A12 and `Ancillary` otherwise. The `VariantCode` stays authoritative for the exact product.
 
+### 6.7.1 Family entities
+
+Each family entity is a sealed subclass of `OrderAncillaryService`. The variant's `Profile` selects it, and its constructor enforces that variant's rules. It holds the scalar facts that identify what was sold plus every customer choice. Catalog eligibility lists are not copied (owner decision D6).
+
+| Entity | Variants | Own fields | Variant rules |
+|---|---|---|---|
+| `OrderBaggageService` | A01–A06 | §6.8 | §6.8 |
+| `OrderExtraSeatService` | A09 | `SeatPurpose`, `ExtraSeatPurpose?`, `ExtraOccupiedSeatCount?`, `SeatNumber` | `SeatNumber` required; occupied seat count positive. Domain-only (D1). |
+| `OrderUpgradeService` | A10 | `FromCabinId`, `ToCabinId`, `UpgradeKind`, `RequiresTicketExchange` | Only a fixed-priced ancillary upgrade is accepted (2839); cabin ids positive. |
+| `OrderMealService` | A11–A12 | `MealKind`, `MealCode?`, `MenuItemRef?`, `DietaryCode?`, `ExclusiveMealFamilyCode?` | A11 requires `MealCode`; A12 requires `MenuItemRef`. |
+| `OrderPetService` | A13–A14 | `TransportMode`, `AnimalType`, `OtherAnimalCode?`, `AnimalAgeWeeks?`, `CombinedWeightKg`, `CarrierDimensions: ServiceDimensions`, `DocumentAcknowledgements`, `SizeBracket?` | A13 is `Cabin` and A14 is `Hold`. Animal type, combined weight and carrier dimensions are required; weight and dimensions are positive and the age is not negative. |
+| `OrderAssistedTravelService` | A15–A19 | `AssistanceKind`, `AssistanceSsrCode?`, `InfantTravellerId?`, `GuardianTravellerId?`, `MedicalEquipment: MedicalEquipmentChoice?`, `UnaccompaniedMinor: UnaccompaniedMinorChoice?` | The kind matches the variant. A15/A16 require the SSR code; A18 requires the infant and the guardian. `MedicalEquipment` is required on A17 and forbidden otherwise; `UnaccompaniedMinor` is required on A19 and forbidden otherwise. A17 and A19 are domain-only (D1). |
+| `OrderAirportService` | A20–A22 | `Kind`, `AirportId`, `TerminalRef?`, `FacilityId?`, `Direction`, `TimeWithOffset?`, `GuestCount?` | Airport id positive; guest count not negative. |
+| `OrderPriorityService` | A23 | `Kind`, `PriorityZoneCode?`, `PriorityGroupCode?`, `FareBenefitRef?`, `OptIn` | The customer's opt-in is required and must be true. |
+| `OrderConnectivityService` | A24 | `PlanKind`, `DurationMinutes?`, `IncludedDataMb?`, `MaxDevices?`, `DeliveryStage`, `DeviceCount?` | Device count positive. |
+
+A missing customer choice is refused with 2836 and an invalid one with 2837 (both 422), naming the offer item, the variant and the choice. Each persisted family has its own table keyed by the base service id. `OrderExtraSeatService` and the `MedicalEquipment` / `UnaccompaniedMinor` choices have no table or column until the source supplies their data (D1).
+
 ---
 
 ## 6.8 `OrderBaggageService` — purchased baggage specialization
 
 Baggage allowance already exists on Air service. This entity is for purchased/chargeable baggage occurrence.
 
-**Materialized in Stage 6A (2026-10-28)** for A01–A06 with `Baggage: BaggageChoice`:
+**Materialized in Stage 6A (2026-10-28)** for A01–A06 as the sealed family entity `OrderBaggageService : OrderAncillaryService` (§6.7.1). It holds directly:
 - the source charge kind and allowance concept;
 - the package weight;
 - the overweight band (`WeightFromExclusiveKg`, `WeightToInclusiveKg`);
@@ -2746,7 +2765,7 @@ The whole domain above is the design authority. Coding remains controlled by sta
 | **S3 Confirm Reserved Capacity** | First verify per-operation provider idempotency/read-back/result semantics; then `ConfirmReservedCapacity`, stale-validation refresh, `ConfirmInventory` FulfillmentTask/evidence and truthful Held→Confirmed/Unknown behavior using the verified recovery branch | ETKT/EMD, Payment/JetPay, invented provider retry semantics |
 | **S4 Issue** | ElectronicTicket, TicketCoupon, TicketPriceLink, ElectronicMiscDocument/EmdCoupon only for documentable current scope, DocumentStock, document-oriented FulfillmentTask target generalization | refund/exchange/group/DCS/payment |
 | **S5 Cancel / Void** | unissued commercial cancel, reservation cancellation/release, document void history/recovery | automated refund/exchange/payment rail |
-| **S6A Ancillary commercial acceptance — MATERIALIZED 2026-10-28** | `OrderAncillaryService`/`OrderBaggageService`, priced `OrderSeatService`, typed A01–A24 choices, accepted ancillary pricing, Add on Backoffice/Api/OtaPanel, Reserve/Confirm/Issue guard and ancillary-aware Cancel (§27.8). Live use waits for the Ancillary source contracts (handoff OR-005). | Hold/Confirm/EMD, Create with selections (6A.2, next), generic service catalog replication, payment rail |
+| **S6A Ancillary commercial acceptance — MATERIALIZED 2026-10-28** | abstract `OrderAncillaryService` with its sealed family entities (§6.7.1), priced `OrderSeatService`, accepted ancillary pricing, Add on Backoffice/Api/OtaPanel, Reserve/Confirm/Issue guard and ancillary-aware Cancel (§27.8). Live use waits for the Ancillary source contracts (handoff OR-005). | Hold/Confirm/EMD, Create with selections (6A.2, next), generic service catalog replication, payment rail |
 | **S6B Ancillary fulfillment / EMD servicing** | real Ancillary reservation provider, seat physical authority, EMD-A/S association | must be closed as domain and flows before coding (owner decision D4) |
 | **S7 Split** | OrderLineage, transferred service/item lineage, provider/document split servicing | group split unless group Stage arrived |
 | **S8 Refund** | RefundDecisionSnapshot, ETKT/EMD refund records, commercial/document refund history after AirPrice decision | actual money-return rail until JetPay Stage-P |
@@ -3042,7 +3061,6 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `Definition` | `AncillaryDefinition` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `Provision` | `AncillaryProvision` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `Pricing` | `AncillaryPricing` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
-| family choice | `*Choice?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A); A09/A17/A19 domain-only (D1) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `ServiceDefinitionRef` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `ServiceSubCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `ServiceTypeCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
@@ -3058,11 +3076,23 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `FormOfRefundCode` | `string?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `Commissionable` | `bool?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 | `InterlineSettlementAllowed` | `bool?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+## 6.7.1 Family entities
+
+| Entity | Own fields | Evidence class | Minimum scenario coverage |
+|---|---|---|---|
+| `OrderExtraSeatService` | `SeatPurpose`, `ExtraSeatPurpose?`, `ExtraOccupiedSeatCount?`, `SeatNumber` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A); domain-only (D1) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `OrderUpgradeService` | `FromCabinId`, `ToCabinId`, `UpgradeKind`, `RequiresTicketExchange` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `OrderMealService` | `MealKind`, `MealCode?`, `MenuItemRef?`, `DietaryCode?`, `ExclusiveMealFamilyCode?` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `OrderPetService` | `TransportMode`, `AnimalType`, `OtherAnimalCode?`, `AnimalAgeWeeks?`, `CombinedWeightKg`, `CarrierDimensions`, `DocumentAcknowledgements`, `SizeBracket?` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `OrderAssistedTravelService` | `AssistanceKind`, `AssistanceSsrCode?`, `InfantTravellerId?`, `GuardianTravellerId?`, `MedicalEquipment?`, `UnaccompaniedMinor?` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A); A17/A19 domain-only (D1) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `OrderAirportService` | `Kind`, `AirportId`, `TerminalRef?`, `FacilityId?`, `Direction`, `TimeWithOffset?`, `GuestCount?` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `OrderPriorityService` | `Kind`, `PriorityZoneCode?`, `PriorityGroupCode?`, `FareBenefitRef?`, `OptIn` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
+| `OrderConnectivityService` | `PlanKind`, `DurationMinutes?`, `IncludedDataMb?`, `MaxDevices?`, `DeliveryStage`, `DeviceCount?` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A) | S30-S31, S40, S45, S48, S55, S72, S78-S84, S95 |
 ## 6.8 `OrderBaggageService` — purchased baggage specialization
 
 | Field | Type | Evidence class | Minimum scenario coverage |
 |---|---|---|---|
-| `Baggage` | `BaggageChoice` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S08, S30, S40, S48, S72 |
+| `ChargeKind`, `AllowanceConcept?`, `PackageWeightKg?`, `WeightFromExclusiveKg?`, `WeightToInclusiveKg?`, `EquipmentKind?`, `BagRef?`, `MeasuredWeightKg?`, `Dimensions?`, `WeightKg?` | scalars, `ServiceDimensions?` | CURRENT-CODE-VERIFIED / OWNER-DECISION D12 (Stage 6A) | S08, S30, S40, S48, S72 |
 | `Pieces` | `int?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S08, S30, S40, S48, S72 |
 | `Weight` | `decimal?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S08, S30, S40, S48, S72 |
 | `WeightUnit` | `BaggageWeightUnit?` | BENCHMARKED-DOMAIN / OWNER-DECISION as stated | S08, S30, S40, S48, S72 |

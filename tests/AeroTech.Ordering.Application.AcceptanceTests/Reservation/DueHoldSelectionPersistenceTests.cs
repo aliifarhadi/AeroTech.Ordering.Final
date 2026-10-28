@@ -16,6 +16,7 @@ using Xunit;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Reservation;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class DueHoldSelectionPersistenceTests : IAsyncLifetime
 {
     private const string UnitKey = "unit";
@@ -24,15 +25,11 @@ public sealed class DueHoldSelectionPersistenceTests : IAsyncLifetime
     private readonly SequentialIdGenerator _ids = new();
     private readonly TestDatabase _database;
 
-    public DueHoldSelectionPersistenceTests() => _database = new TestDatabase(_clock);
+    public DueHoldSelectionPersistenceTests(MigratedDatabaseFixture database) => _database = database.For(_clock);
 
-    public async Task InitializeAsync()
-    {
-        await using var context = _database.NewContext();
-        await context.Database.MigrateAsync();
-    }
+    public Task InitializeAsync() => _database.ClearAsync();
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Only_holds_with_actionable_settlement_are_due()

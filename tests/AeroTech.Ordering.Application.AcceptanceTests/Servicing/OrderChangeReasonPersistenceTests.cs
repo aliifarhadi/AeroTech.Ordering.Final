@@ -24,6 +24,7 @@ using Xunit;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Servicing;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class OrderChangeReasonPersistenceTests : IAsyncLifetime
 {
     private const string ReasonDetail = "  customer changed plan  ";
@@ -33,18 +34,11 @@ public sealed class OrderChangeReasonPersistenceTests : IAsyncLifetime
     private readonly SequentialIdGenerator _ids = new();
     private readonly TestDatabase _database;
 
-    public OrderChangeReasonPersistenceTests() => _database = new TestDatabase(_clock);
+    public OrderChangeReasonPersistenceTests(MigratedDatabaseFixture database) => _database = database.For(_clock);
 
-    public async Task InitializeAsync()
-    {
-        await using var commands = _database.NewContext();
-        await commands.Database.MigrateAsync();
+    public Task InitializeAsync() => _database.ClearAsync();
 
-        await using var queries = _database.NewQueryContext();
-        await queries.Database.MigrateAsync();
-    }
-
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Backoffice_reason_detail_survives_a_new_command_context_as_reason_text()

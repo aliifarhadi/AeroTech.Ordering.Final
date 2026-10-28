@@ -20,6 +20,7 @@ using Xunit;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.AncillaryContext;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class OrderAncillaryContextTests : IAsyncLifetime
 {
     private const long TechnicalStopFlightId = 201;
@@ -33,22 +34,15 @@ public sealed class OrderAncillaryContextTests : IAsyncLifetime
     private readonly ReservationHarness _harness = new();
     private readonly TestDatabase _database;
 
-    public OrderAncillaryContextTests()
+    public OrderAncillaryContextTests(MigratedDatabaseFixture database)
     {
-        _database = new TestDatabase(_harness.Clock);
+        _database = database.For(_harness.Clock);
         _harness.OfficeTimeZones.TimeZones[ReservationHarness.IssuingOfficeId] = "Asia/Tehran";
     }
 
-    public async Task InitializeAsync()
-    {
-        await using var commands = _database.NewContext();
-        await commands.Database.MigrateAsync();
+    public Task InitializeAsync() => _database.ClearAsync();
 
-        await using var queries = _database.NewQueryContext();
-        await queries.Database.MigrateAsync();
-    }
-
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Unknown_order_is_rejected_as_order_not_found()

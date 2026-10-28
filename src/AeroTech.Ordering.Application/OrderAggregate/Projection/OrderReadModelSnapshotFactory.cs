@@ -212,7 +212,8 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
         };
 
         private static OrderAncillarySnapshot ToSnapshot(OrderAncillaryService ancillary)
-            => new(
+        {
+            var snapshot = new OrderAncillarySnapshot(
                 ancillary.VariantCode,
                 ancillary.Profile,
                 ancillary.Quantity,
@@ -223,17 +224,77 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Projection
                 ancillary.Source,
                 ancillary.Definition,
                 ancillary.Provision,
-                ancillary.Pricing)
+                ancillary.Pricing);
+
+            return ancillary switch
             {
-                Baggage = (ancillary as OrderBaggageService)?.Baggage,
-                Meal = ancillary.Meal,
-                Pet = ancillary.Pet,
-                Assistance = ancillary.Assistance,
-                AirportService = ancillary.AirportService,
-                Priority = ancillary.Priority,
-                Connectivity = ancillary.Connectivity,
-                Upgrade = ancillary.Upgrade
+                OrderBaggageService baggage => snapshot with
+                {
+                    Baggage = new AncillaryBaggageSnapshot(
+                        baggage.ChargeKind,
+                        baggage.AllowanceConcept,
+                        baggage.PackageWeightKg,
+                        baggage.WeightFromExclusiveKg,
+                        baggage.WeightToInclusiveKg,
+                        baggage.EquipmentKind,
+                        baggage.BagRef,
+                        baggage.MeasuredWeightKg,
+                        baggage.Dimensions,
+                        baggage.WeightKg)
+                },
+                OrderMealService meal => snapshot with
+                {
+                    Meal = new AncillaryMealSnapshot(meal.MealKind, meal.MealCode, meal.MenuItemRef, meal.DietaryCode, meal.ExclusiveMealFamilyCode)
+                },
+                OrderPetService pet => snapshot with
+                {
+                    Pet = new AncillaryPetSnapshot(
+                        pet.TransportMode,
+                        pet.AnimalType,
+                        pet.OtherAnimalCode,
+                        pet.AnimalAgeWeeks,
+                        pet.CombinedWeightKg,
+                        pet.CarrierDimensions,
+                        pet.DocumentAcknowledgements.ToList(),
+                        pet.SizeBracket)
+                },
+                OrderAssistedTravelService assistance => snapshot with
+                {
+                    Assistance = new AncillaryAssistanceSnapshot(assistance.AssistanceKind, assistance.AssistanceSsrCode, assistance.InfantTravellerId, assistance.GuardianTravellerId)
+                },
+                OrderAirportService airport => snapshot with
+                {
+                    AirportService = new AncillaryAirportServiceSnapshot(
+                        airport.Kind,
+                        airport.AirportId,
+                        airport.TerminalRef,
+                        airport.FacilityId,
+                        airport.Direction,
+                        airport.TimeWithOffset,
+                        airport.GuestCount)
+                },
+                OrderPriorityService priority => snapshot with
+                {
+                    Priority = new AncillaryPrioritySnapshot(priority.Kind, priority.PriorityZoneCode, priority.PriorityGroupCode, priority.FareBenefitRef, priority.OptIn)
+                },
+                OrderConnectivityService connectivity => snapshot with
+                {
+                    Connectivity = new AncillaryConnectivitySnapshot(
+                        connectivity.PlanKind,
+                        connectivity.DurationMinutes,
+                        connectivity.IncludedDataMb,
+                        connectivity.MaxDevices,
+                        connectivity.DeliveryStage,
+                        connectivity.DeviceCount)
+                },
+                OrderUpgradeService upgrade => snapshot with
+                {
+                    Upgrade = new AncillaryUpgradeSnapshot(upgrade.FromCabinId, upgrade.ToCabinId, upgrade.UpgradeKind, upgrade.RequiresTicketExchange)
+                },
+                OrderExtraSeatService => snapshot,
+                _ => throw new NotSupportedException($"{ancillary.GetType().Name} has no read model projection.")
             };
+        }
 
         private static OrderAncillarySnapshot ToSnapshot(OrderSeatService seat)
             => new(

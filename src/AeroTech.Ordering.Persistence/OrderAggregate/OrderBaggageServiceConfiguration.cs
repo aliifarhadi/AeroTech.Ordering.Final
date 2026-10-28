@@ -10,27 +10,15 @@ namespace AeroTech.Ordering.Persistence.OrderAggregate
         {
             builder.ToTable("OrderBaggageServices");
 
-            builder.OwnsOne(service => service.Baggage, baggage =>
+            builder.Property(service => service.EquipmentKind).HasMaxLength(64);
+            builder.Property(service => service.BagRef).HasMaxLength(128);
+
+            builder.OwnsOne(service => service.Dimensions, dimensions =>
             {
-                baggage.Property(value => value.ChargeKind).HasColumnName("ChargeKind");
-                baggage.Property(value => value.AllowanceConcept).HasColumnName("AllowanceConcept");
-                baggage.Property(value => value.PackageWeightKg).HasColumnName("PackageWeightKg");
-                baggage.Property(value => value.WeightFromExclusiveKg).HasColumnName("WeightFromExclusiveKg");
-                baggage.Property(value => value.WeightToInclusiveKg).HasColumnName("WeightToInclusiveKg");
-                baggage.Property(value => value.EquipmentKind).HasColumnName("EquipmentKind").HasMaxLength(64);
-                baggage.Property(value => value.BagRef).HasColumnName("BagRef").HasMaxLength(128);
-                baggage.Property(value => value.MeasuredWeightKg).HasColumnName("MeasuredWeightKg");
-                baggage.Property(value => value.WeightKg).HasColumnName("WeightKg");
-
-                baggage.OwnsOne(value => value.Dimensions, dimensions =>
-                {
-                    dimensions.Property(value => value.LengthCm).HasColumnName("LengthCm");
-                    dimensions.Property(value => value.WidthCm).HasColumnName("WidthCm");
-                    dimensions.Property(value => value.HeightCm).HasColumnName("HeightCm");
-                });
+                dimensions.Property(value => value.LengthCm).HasColumnName("LengthCm");
+                dimensions.Property(value => value.WidthCm).HasColumnName("WidthCm");
+                dimensions.Property(value => value.HeightCm).HasColumnName("HeightCm");
             });
-
-            builder.Navigation(service => service.Baggage).IsRequired();
         }
     }
 }

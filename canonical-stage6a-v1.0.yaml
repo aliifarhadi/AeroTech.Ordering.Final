@@ -42,9 +42,18 @@ stage6a:
     - DocumentStockAllocation
     - OrderAncillaryService
     - OrderBaggageService
+    - OrderMealService
+    - OrderPetService
+    - OrderAssistedTravelService
+    - OrderAirportService
+    - OrderPriorityService
+    - OrderConnectivityService
+    - OrderUpgradeService
+    - OrderExtraSeatService
 
   abstract_types:
     - OrderService
+    - OrderAncillaryService
 
   value_objects:
     - SalesContext
@@ -59,17 +68,8 @@ stage6a:
     - AncillaryProvision
     - AncillaryPricing
     - ServiceDimensions
-    - BaggageChoice
-    - MealChoice
-    - PetChoice
-    - AssistanceChoice
     - MedicalEquipmentChoice
     - UnaccompaniedMinorChoice
-    - AirportServiceChoice
-    - PriorityChoice
-    - ConnectivityChoice
-    - UpgradeChoice
-    - ExtraSeatChoice
     - TaxJurisdictionSnapshot
 
   enums:

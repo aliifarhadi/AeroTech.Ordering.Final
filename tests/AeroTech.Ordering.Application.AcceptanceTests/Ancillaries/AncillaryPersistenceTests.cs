@@ -1,8 +1,5 @@
-using System.Globalization;
 using AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
-using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
-using AeroTech.Ordering.Domain.Providers.Ancillary;
 using AeroTech.Ordering.Persistence.OrderAggregate;
 using AeroTech.Ordering.Query.OrderAggregate.Queries.GetOrderAncillaryContext;
 using AeroTech.Ordering.Synchronizer.OrderAggregate;
@@ -12,35 +9,22 @@ using static AeroTech.Ordering.Application.AcceptanceTests.Fixtures.AncillaryFix
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Ancillaries;
 
+[Collection(MigratedDatabaseCollection.Name)]
 public sealed class AncillaryPersistenceTests : IAsyncLifetime
 {
-    private static readonly IReadOnlyCollection<string> SourceGatedVariants =
-    [
-        AncillaryVariant.ExtraSeat,
-        AncillaryVariant.MedicalEquipment,
-        AncillaryVariant.UnaccompaniedMinor
-    ];
-
     private readonly ReservationHarness _harness = new();
     private readonly TestDatabase _database;
 
-    public AncillaryPersistenceTests() => _database = new TestDatabase(_harness.Clock);
+    public AncillaryPersistenceTests(MigratedDatabaseFixture database) => _database = database.For(_harness.Clock);
 
-    public async Task InitializeAsync()
-    {
-        await using var commands = _database.NewContext();
-        await commands.Database.MigrateAsync();
+    public Task InitializeAsync() => _database.ClearAsync();
 
-        await using var queries = _database.NewQueryContext();
-        await queries.Database.MigrateAsync();
-    }
-
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Every_persisted_variant_and_priced_seat_survives_a_command_round_trip_unchanged()
     {
-        var order = await OrderWithEveryPersistedVariantAsync();
+        var order = await OrderWithEveryPersistedVariantAsync(_harness);
 
         await using (var context = _database.NewContext())
         {
@@ -52,8 +36,8 @@ public sealed class AncillaryPersistenceTests : IAsyncLifetime
         {
             var reloaded = (await new OrderRepository(context).GetAsync(order.Id))!;
 
-            Assert.Equal(Purchases(order), Purchases(reloaded));
-            Assert.Equal(PricingOf(order), PricingOf(reloaded));
+            Assert.Equal(PersistedPurchases(order), PersistedPurchases(reloaded));
+            Assert.Equal(PersistedPricing(order), PersistedPricing(reloaded));
             Assert.Equal((order.CommercialVersion, order.CustomerTotal), (reloaded.CommercialVersion, reloaded.CustomerTotal));
             Assert.Contains(reloaded.Services.OfType<OrderAncillaryService>(), service => service.TravellerId is null);
         }
@@ -62,7 +46,7 @@ public sealed class AncillaryPersistenceTests : IAsyncLifetime
     [Fact]
     public async Task Every_persisted_variant_and_priced_seat_is_projected_to_the_read_model()
     {
-        var order = await OrderWithEveryPersistedVariantAsync();
+        var order = await OrderWithEveryPersistedVariantAsync(_harness);
         var snapshot = _harness.Synchronizer.OrderProjections.Last();
 
         await using (var writer = _database.NewQueryContext())
@@ -89,7 +73,7 @@ public sealed class AncillaryPersistenceTests : IAsyncLifetime
     [Fact]
     public async Task The_ancillary_context_lists_every_active_accepted_service_for_repeat_shopping()
     {
-        var order = await OrderWithEveryPersistedVariantAsync();
+        var order = await OrderWithEveryPersistedVariantAsync(_harness);
         var snapshot = _harness.Synchronizer.OrderProjections.Last();
 
         await using (var writer = _database.NewQueryContext())
@@ -107,70 +91,4 @@ public sealed class AncillaryPersistenceTests : IAsyncLifetime
         Assert.Contains(context.AncillaryServices, service => service.TravellerId is null && service.Profile == AeroTech.Messages.Ancillary.Enums.AncillaryProfile.Connectivity);
         Assert.False(context.AcceptsChanges);
     }
-
-    private async Task<Order> OrderWithEveryPersistedVariantAsync()
-    {
-        var order = await _harness.CreateFromOfferAsync(
-            [TravellerSpec.Adult(1), TravellerSpec.Adult(2)],
-            [new BoundSpec("OUT", 101, 102), new BoundSpec("RET", 201)]);
-        var adult = order.Travellers.Single(traveller => traveller.Index == 1);
-        var other = order.Travellers.Single(traveller => traveller.Index == 2);
-
-        var lines = GeneralVariants
-            .Where(code => !SourceGatedVariants.Contains(code))
-            .Select(code => code == AncillaryVariant.Bassinet
-                ? WithBassinetRefs(Sector(code, adult.Id, FlightRef("OUT", 1)), other, adult)
-                : Sector(code, adult.Id, FlightRef("OUT", 1)))
-            .Append(Portion(AncillaryVariant.ExtraCheckedBag, other.Id, "OUT"))
-            .Append(WholeOrder(AncillaryVariant.OnboardWifi))
-            .ToArray();
-
-        await _harness.AddAncillariesAsync(order, Selection(order, _harness.Clock.GetDateTime(), lines));
-
-        order.AddAncillaries(
-            null,
-            SeatQuote(order, _harness.Clock.GetDateTime(), Seat(adult.Id, 101, "12A"), Seat(adult.Id, 102, "18C", AncillaryVariant.PreferredSeat, 40m)),
-            order.CommercialVersion,
-            false,
-            ReservationHarness.CancellingActor,
-            _harness.Ids,
-            _harness.Clock.GetDateTime());
-
-        return order;
-    }
-
-    private static ResolvedAncillaryLine WithBassinetRefs(ResolvedAncillaryLine line, OrderTraveller infant, OrderTraveller guardian)
-        => line with
-        {
-            Details = new ResolvedAncillaryDetails
-            {
-                Assistance = line.Details.Assistance! with
-                {
-                    InfantRef = infant.Id.ToString(CultureInfo.InvariantCulture),
-                    GuardianRef = guardian.Id.ToString(CultureInfo.InvariantCulture)
-                }
-            }
-        };
-
-    private static IEnumerable<object> Purchases(Order order)
-        => order.Services
-            .Where(service => service is OrderAncillaryService or OrderSeatService { IsPricedSelection: true })
-            .OrderBy(service => service.Id)
-            .Select<OrderService, object>(service => service switch
-            {
-                OrderBaggageService baggage => (Common(baggage), baggage.Baggage),
-                OrderAncillaryService ancillary => (Common(ancillary), ancillary.Meal, ancillary.Pet, ancillary.Assistance, ancillary.AirportService, ancillary.Priority, ancillary.Connectivity, ancillary.Upgrade),
-                OrderSeatService seat => (seat.Id, seat.OrderItemId, seat.TravellerId, seat.SegmentId, seat.AssociatedAirServiceId, seat.SeatNumber, seat.VariantCode, seat.PointOfSaleId, seat.Source, seat.Definition, seat.Provision, seat.Pricing),
-                _ => throw new InvalidOperationException()
-            })
-            .ToList();
-
-    private static object Common(OrderAncillaryService service)
-        => (service.Id, service.OrderItemId, service.TravellerId, service.ServiceType, service.Profile, service.VariantCode, service.Quantity, service.SelectionScope, service.CoverageScope, string.Join(",", service.CoveredAirServiceIds), service.Source, service.Definition, service.Provision, service.Pricing, service.FulfillmentProviderKey);
-
-    private static IEnumerable<object> PricingOf(Order order)
-        => order.PricingLines
-            .OrderBy(line => line.Id)
-            .Select(line => (object)(line.Id, line.Reason, line.Category, line.SubCategory, line.Direction, line.Code, line.Amount, line.TaxJurisdiction, line.SourceTaxTreatment, line.SourceFeeApplicationUnit, string.Join(",", line.Allocations.Select(allocation => $"{allocation.OrderItemId}/{allocation.OrderServiceId}/{allocation.OrderSegmentId}/{allocation.TravellerId}/{allocation.Amount.ToString("0.####", CultureInfo.InvariantCulture)}"))))
-            .ToList();
 }

@@ -2,6 +2,7 @@ using System.Globalization;
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Messages.Ordering.Enums;
+using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.Providers.Ancillary;
@@ -432,31 +433,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             long changeId,
             DateTimeOffset createdAt)
         {
-            var definition = DefinitionOf(line.Definition, source.SelectionId);
-            var provision = ProvisionOf(line.Provision, source.SelectionId);
-            var pricing = new AncillaryPricing(line.Pricing.PricingId, line.Pricing.PricingRateId, line.Pricing.PricingVersion, line.Pricing.PricingUnit);
-            var details = line.Details;
-
-            if (variant.Profile == AncillaryProfile.Baggage)
-                return new OrderBaggageService(
-                    serviceId,
-                    Id,
-                    orderItemId,
-                    travellerId,
-                    variant,
-                    line.SelectedQuantity,
-                    line.SelectionScope,
-                    line.Provision.CoverageScope,
-                    coveredAirServiceIds,
-                    source,
-                    definition,
-                    provision,
-                    pricing,
-                    BaggageChoiceOf(line, variant),
-                    changeId,
-                    createdAt);
-
-            return new OrderAncillaryService(
+            var args = new OrderAncillaryServiceArgs(
                 serviceId,
                 Id,
                 orderItemId,
@@ -467,21 +444,27 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 line.Provision.CoverageScope,
                 coveredAirServiceIds,
                 source,
-                definition,
-                provision,
-                pricing,
-                details.Meal is null ? null : MealChoiceOf(line, variant, details.Meal),
-                details.Pet is null ? null : PetChoiceOf(line, variant, details.Pet),
-                details.Assistance is null ? null : AssistanceChoiceOf(line, variant, details.Assistance, sourceKind),
-                details.Assistance?.MedicalEquipment is null ? null : MedicalEquipmentChoiceOf(line, variant, details.Assistance.MedicalEquipment),
-                details.Assistance?.UnaccompaniedMinor is null ? null : UnaccompaniedMinorChoiceOf(line, variant, details.Assistance.UnaccompaniedMinor),
-                details.AirportService is null ? null : AirportServiceChoiceOf(line, variant, details.AirportService),
-                details.Priority is null ? null : PriorityChoiceOf(line, variant, details.Priority),
-                details.Connectivity is null ? null : ConnectivityChoiceOf(line, variant, details.Connectivity),
-                details.Upgrade is null ? null : UpgradeChoiceOf(line, details.Upgrade),
-                details.ExtraSeat is null ? null : ExtraSeatChoiceOf(line, variant, details.ExtraSeat),
+                DefinitionOf(line.Definition, source.SelectionId),
+                ProvisionOf(line.Provision, source.SelectionId),
+                new AncillaryPricing(line.Pricing.PricingId, line.Pricing.PricingRateId, line.Pricing.PricingVersion, line.Pricing.PricingUnit),
                 changeId,
                 createdAt);
+
+            var details = line.Details;
+
+            return variant.Profile switch
+            {
+                AncillaryProfile.Baggage => BaggageServiceOf(args, DetailsOf(line, details.Baggage)),
+                AncillaryProfile.Meal => MealServiceOf(args, DetailsOf(line, details.Meal)),
+                AncillaryProfile.Pet => PetServiceOf(args, DetailsOf(line, details.Pet)),
+                AncillaryProfile.AssistedTravel => AssistedTravelServiceOf(args, line, DetailsOf(line, details.Assistance), sourceKind),
+                AncillaryProfile.AirportService => AirportServiceOf(args, DetailsOf(line, details.AirportService)),
+                AncillaryProfile.Priority => PriorityServiceOf(args, DetailsOf(line, details.Priority)),
+                AncillaryProfile.Connectivity => ConnectivityServiceOf(args, DetailsOf(line, details.Connectivity)),
+                AncillaryProfile.Upgrade => UpgradeServiceOf(args, DetailsOf(line, details.Upgrade)),
+                AncillaryProfile.Seat => ExtraSeatServiceOf(args, DetailsOf(line, details.ExtraSeat)),
+                _ => throw ExceptionFactory.AncillaryVariantDoesNotMatchProfile(line.OfferItemId, variant.Code, variant.Profile)
+            };
         }
 
         private static AncillaryDefinition DefinitionOf(ResolvedAncillaryDefinition definition, string selectionReference)
@@ -517,28 +500,9 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 provision.RequiresCheckAtReserve);
         }
 
-        private static BaggageChoice BaggageChoiceOf(ResolvedAncillaryLine line, AncillaryVariant variant)
-        {
-            var baggage = line.Details.Baggage
-                          ?? throw ExceptionFactory.AncillaryChoiceIsMissing(line.OfferItemId, variant.Code, nameof(ResolvedAncillaryDetails.Baggage));
-
-            if (variant.Code == AncillaryVariant.Overweight)
-            {
-                Require(line, variant, !string.IsNullOrWhiteSpace(baggage.BagRef), nameof(baggage.BagRef));
-                Require(line, variant, baggage.MeasuredWeightKg is not null, nameof(baggage.MeasuredWeightKg));
-            }
-
-            if (variant.Code == AncillaryVariant.Oversize)
-                Require(line, variant, baggage.Dimensions is not null, nameof(baggage.Dimensions));
-
-            if (variant.Code == AncillaryVariant.SpecialEquipment)
-                Require(line, variant, !string.IsNullOrWhiteSpace(baggage.EquipmentKind), nameof(baggage.EquipmentKind));
-
-            Valid(line, variant, baggage.PackageWeightKg is null or > 0, nameof(baggage.PackageWeightKg));
-            Valid(line, variant, baggage.MeasuredWeightKg is null or > 0, nameof(baggage.MeasuredWeightKg));
-            Valid(line, variant, baggage.WeightKg is null or > 0, nameof(baggage.WeightKg));
-
-            return new BaggageChoice(
+        private static OrderBaggageService BaggageServiceOf(OrderAncillaryServiceArgs args, ResolvedBaggageDetails baggage)
+            => new(
+                args,
                 baggage.ChargeKind,
                 baggage.AllowanceConcept,
                 baggage.PackageWeightKg,
@@ -547,113 +511,52 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 baggage.EquipmentKind,
                 baggage.BagRef,
                 baggage.MeasuredWeightKg,
-                baggage.Dimensions is null ? null : DimensionsOf(line, variant, baggage.Dimensions, nameof(baggage.Dimensions)),
+                DimensionsOf(baggage.Dimensions),
                 baggage.WeightKg);
-        }
 
-        private static MealChoice MealChoiceOf(ResolvedAncillaryLine line, AncillaryVariant variant, ResolvedMealDetails meal)
-        {
-            if (variant.Code == AncillaryVariant.FreeSpecialMeal)
-                Require(line, variant, !string.IsNullOrWhiteSpace(meal.MealCode), nameof(meal.MealCode));
+        private static OrderMealService MealServiceOf(OrderAncillaryServiceArgs args, ResolvedMealDetails meal)
+            => new(args, meal.MealKind, meal.MealCode, meal.MenuItemRef, meal.DietaryCode, meal.ExclusiveMealFamilyCode);
 
-            if (variant.Code == AncillaryVariant.PaidPreorderMeal)
-                Require(line, variant, !string.IsNullOrWhiteSpace(meal.MenuItemRef), nameof(meal.MenuItemRef));
-
-            return new MealChoice(meal.MealKind, meal.MealCode, meal.MenuItemRef, meal.DietaryCode, meal.ExclusiveMealFamilyCode);
-        }
-
-        private static PetChoice PetChoiceOf(ResolvedAncillaryLine line, AncillaryVariant variant, ResolvedPetDetails pet)
-        {
-            var expectedMode = variant.Code == AncillaryVariant.PetInHold ? PetTransportMode.Hold : PetTransportMode.Cabin;
-
-            Valid(line, variant, pet.TransportMode == expectedMode, nameof(pet.TransportMode));
-            Require(line, variant, pet.AnimalType is not null, nameof(pet.AnimalType));
-            Require(line, variant, pet.CombinedWeightKg is not null, nameof(pet.CombinedWeightKg));
-            Require(line, variant, pet.CarrierDimensions is not null, nameof(pet.CarrierDimensions));
-            Valid(line, variant, pet.CombinedWeightKg > 0, nameof(pet.CombinedWeightKg));
-            Valid(line, variant, pet.AnimalAgeWeeks is null or >= 0, nameof(pet.AnimalAgeWeeks));
-
-            return new PetChoice(
+        private static OrderPetService PetServiceOf(OrderAncillaryServiceArgs args, ResolvedPetDetails pet)
+            => new(
+                args,
                 pet.TransportMode,
-                pet.AnimalType!.Value,
+                pet.AnimalType,
                 pet.OtherAnimalCode,
                 pet.AnimalAgeWeeks,
-                pet.CombinedWeightKg!.Value,
-                DimensionsOf(line, variant, pet.CarrierDimensions!, nameof(pet.CarrierDimensions)),
+                pet.CombinedWeightKg,
+                DimensionsOf(pet.CarrierDimensions),
                 pet.DocumentAcknowledgements,
                 pet.SizeBracket);
-        }
 
-        private AssistanceChoice AssistanceChoiceOf(
+        private OrderAssistedTravelService AssistedTravelServiceOf(
+            OrderAncillaryServiceArgs args,
             ResolvedAncillaryLine line,
-            AncillaryVariant variant,
             ResolvedAssistanceDetails assistance,
             ShoppingSourceKind sourceKind)
-        {
-            var expectedKind = variant.Code switch
-            {
-                AncillaryVariant.Wheelchair => AssistanceKind.Wheelchair,
-                AncillaryVariant.DisabilityAssistance => AssistanceKind.DisabilityAssistance,
-                AncillaryVariant.MedicalEquipment => AssistanceKind.MedicalEquipment,
-                AncillaryVariant.Bassinet => AssistanceKind.Bassinet,
-                _ => AssistanceKind.UnaccompaniedMinor
-            };
-
-            Valid(line, variant, assistance.AssistanceKind == expectedKind, nameof(assistance.AssistanceKind));
-
-            if (variant.Code is AncillaryVariant.Wheelchair or AncillaryVariant.DisabilityAssistance)
-                Require(line, variant, !string.IsNullOrWhiteSpace(assistance.AssistanceSsrCode), nameof(assistance.AssistanceSsrCode));
-
-            if (variant.Code == AncillaryVariant.Bassinet)
-            {
-                Require(line, variant, assistance.InfantRef is not null, nameof(assistance.InfantRef));
-                Require(line, variant, assistance.GuardianRef is not null, nameof(assistance.GuardianRef));
-            }
-
-            return new AssistanceChoice(
+            => new(
+                args,
                 assistance.AssistanceKind,
                 assistance.AssistanceSsrCode,
                 assistance.InfantRef is null ? null : TravellerOf(line.OfferItemId, assistance.InfantRef, sourceKind).Id,
-                assistance.GuardianRef is null ? null : TravellerOf(line.OfferItemId, assistance.GuardianRef, sourceKind).Id);
-        }
+                assistance.GuardianRef is null ? null : TravellerOf(line.OfferItemId, assistance.GuardianRef, sourceKind).Id,
+                assistance.MedicalEquipment is { } medical
+                    ? new MedicalEquipmentChoice(
+                        RequiredText(line, medical.EquipmentCode, nameof(medical.EquipmentCode)),
+                        medical.EvidenceDocumentRefs,
+                        medical.OxygenUnits,
+                        medical.OxygenFlowRateLitersPerMinute,
+                        medical.FrequentTravellerMedicalCardNumber)
+                    : null,
+                assistance.UnaccompaniedMinor is { } minor
+                    ? new UnaccompaniedMinorChoice(
+                        RequiredText(line, minor.GuardianHandoffContact, nameof(minor.GuardianHandoffContact)),
+                        RequiredText(line, minor.GuardianPickupContact, nameof(minor.GuardianPickupContact)))
+                    : null);
 
-        private static MedicalEquipmentChoice MedicalEquipmentChoiceOf(
-            ResolvedAncillaryLine line,
-            AncillaryVariant variant,
-            ResolvedMedicalEquipmentDetails medicalEquipment)
-        {
-            Require(line, variant, !string.IsNullOrWhiteSpace(medicalEquipment.EquipmentCode), nameof(medicalEquipment.EquipmentCode));
-            Valid(line, variant, medicalEquipment.OxygenUnits is null or > 0, nameof(medicalEquipment.OxygenUnits));
-            Valid(line, variant, medicalEquipment.OxygenFlowRateLitersPerMinute is null or > 0, nameof(medicalEquipment.OxygenFlowRateLitersPerMinute));
-
-            return new MedicalEquipmentChoice(
-                medicalEquipment.EquipmentCode!,
-                medicalEquipment.EvidenceDocumentRefs,
-                medicalEquipment.OxygenUnits,
-                medicalEquipment.OxygenFlowRateLitersPerMinute,
-                medicalEquipment.FrequentTravellerMedicalCardNumber);
-        }
-
-        private static UnaccompaniedMinorChoice UnaccompaniedMinorChoiceOf(
-            ResolvedAncillaryLine line,
-            AncillaryVariant variant,
-            ResolvedUnaccompaniedMinorDetails unaccompaniedMinor)
-        {
-            Require(line, variant, !string.IsNullOrWhiteSpace(unaccompaniedMinor.GuardianHandoffContact), nameof(unaccompaniedMinor.GuardianHandoffContact));
-            Require(line, variant, !string.IsNullOrWhiteSpace(unaccompaniedMinor.GuardianPickupContact), nameof(unaccompaniedMinor.GuardianPickupContact));
-
-            return new UnaccompaniedMinorChoice(unaccompaniedMinor.GuardianHandoffContact!, unaccompaniedMinor.GuardianPickupContact!);
-        }
-
-        private static AirportServiceChoice AirportServiceChoiceOf(
-            ResolvedAncillaryLine line,
-            AncillaryVariant variant,
-            ResolvedAirportServiceDetails airportService)
-        {
-            Valid(line, variant, airportService.AirportId > 0, nameof(airportService.AirportId));
-            Valid(line, variant, airportService.GuestCount is null or >= 0, nameof(airportService.GuestCount));
-
-            return new AirportServiceChoice(
+        private static OrderAirportService AirportServiceOf(OrderAncillaryServiceArgs args, ResolvedAirportServiceDetails airportService)
+            => new(
+                args,
                 airportService.Kind,
                 airportService.AirportId,
                 airportService.TerminalRef,
@@ -661,66 +564,37 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 airportService.Direction,
                 airportService.TimeWithOffset,
                 airportService.GuestCount);
-        }
 
-        private static PriorityChoice PriorityChoiceOf(ResolvedAncillaryLine line, AncillaryVariant variant, ResolvedPriorityDetails priority)
-        {
-            Require(line, variant, priority.OptIn is not null, nameof(priority.OptIn));
-            Valid(line, variant, priority.OptIn == true, nameof(priority.OptIn));
+        private static OrderPriorityService PriorityServiceOf(OrderAncillaryServiceArgs args, ResolvedPriorityDetails priority)
+            => new(args, priority.Kind, priority.PriorityZoneCode, priority.PriorityGroupCode, priority.FareBenefitRef, priority.OptIn);
 
-            return new PriorityChoice(priority.Kind, priority.PriorityZoneCode, priority.PriorityGroupCode, priority.FareBenefitRef, priority.OptIn);
-        }
-
-        private static ConnectivityChoice ConnectivityChoiceOf(
-            ResolvedAncillaryLine line,
-            AncillaryVariant variant,
-            ResolvedConnectivityDetails connectivity)
-        {
-            Valid(line, variant, connectivity.DeviceCount is null or > 0, nameof(connectivity.DeviceCount));
-
-            return new ConnectivityChoice(
+        private static OrderConnectivityService ConnectivityServiceOf(OrderAncillaryServiceArgs args, ResolvedConnectivityDetails connectivity)
+            => new(
+                args,
                 connectivity.PlanKind,
                 connectivity.DurationMinutes,
                 connectivity.IncludedDataMb,
                 connectivity.MaxDevices,
                 connectivity.DeliveryStage,
                 connectivity.DeviceCount);
-        }
 
-        private static UpgradeChoice UpgradeChoiceOf(ResolvedAncillaryLine line, ResolvedUpgradeDetails upgrade)
-        {
-            if (upgrade.AllowedUpgradeKind != UpgradeKind.FixedAncillary)
-                throw ExceptionFactory.AncillaryUpgradeIsNotFixedPriced(line.OfferItemId, upgrade.AllowedUpgradeKind);
+        private static OrderUpgradeService UpgradeServiceOf(OrderAncillaryServiceArgs args, ResolvedUpgradeDetails upgrade)
+            => new(args, upgrade.FromCabinId, upgrade.ToCabinId, upgrade.AllowedUpgradeKind, upgrade.RequiresTicketExchange);
 
-            return new UpgradeChoice(upgrade.FromCabinId, upgrade.ToCabinId, upgrade.AllowedUpgradeKind, upgrade.RequiresTicketExchange);
-        }
+        private static OrderExtraSeatService ExtraSeatServiceOf(OrderAncillaryServiceArgs args, ResolvedExtraSeatDetails extraSeat)
+            => new(args, extraSeat.SeatPurpose, extraSeat.ExtraSeatPurpose, extraSeat.ExtraOccupiedSeatCount, extraSeat.SeatNumber);
 
-        private static ExtraSeatChoice ExtraSeatChoiceOf(ResolvedAncillaryLine line, AncillaryVariant variant, ResolvedExtraSeatDetails extraSeat)
-        {
-            Require(line, variant, !string.IsNullOrWhiteSpace(extraSeat.SeatNumber), nameof(extraSeat.SeatNumber));
-            Valid(line, variant, extraSeat.ExtraOccupiedSeatCount is null or > 0, nameof(extraSeat.ExtraOccupiedSeatCount));
+        private static TDetails DetailsOf<TDetails>(ResolvedAncillaryLine line, TDetails? details)
+            where TDetails : class
+            => details ?? throw ExceptionFactory.AncillaryChoiceIsMissing(line.OfferItemId, line.VariantCode, line.Profile);
 
-            return new ExtraSeatChoice(extraSeat.SeatPurpose, extraSeat.ExtraSeatPurpose, extraSeat.ExtraOccupiedSeatCount, extraSeat.SeatNumber!);
-        }
+        private static ServiceDimensions? DimensionsOf(ResolvedDimensions? dimensions)
+            => dimensions is null ? null : new ServiceDimensions(dimensions.LengthCm, dimensions.WidthCm, dimensions.HeightCm);
 
-        private static ServiceDimensions DimensionsOf(ResolvedAncillaryLine line, AncillaryVariant variant, ResolvedDimensions dimensions, string choice)
-        {
-            Valid(line, variant, dimensions is { LengthCm: > 0, WidthCm: > 0, HeightCm: > 0 }, choice);
-
-            return new ServiceDimensions(dimensions.LengthCm, dimensions.WidthCm, dimensions.HeightCm);
-        }
-
-        private static void Require(ResolvedAncillaryLine line, AncillaryVariant variant, bool isPresent, string choice)
-        {
-            if (!isPresent)
-                throw ExceptionFactory.AncillaryChoiceIsMissing(line.OfferItemId, variant.Code, choice);
-        }
-
-        private static void Valid(ResolvedAncillaryLine line, AncillaryVariant variant, bool isValid, string choice)
-        {
-            if (!isValid)
-                throw ExceptionFactory.AncillaryChoiceIsInvalid(line.OfferItemId, variant.Code, choice);
-        }
+        private static string RequiredText(ResolvedAncillaryLine line, string? value, string choice)
+            => string.IsNullOrWhiteSpace(value)
+                ? throw ExceptionFactory.AncillaryChoiceIsMissing(line.OfferItemId, line.VariantCode, choice)
+                : value;
 
         private sealed record PlannedPurchase(OrderItem Item, OrderService Service, IReadOnlyList<PricingLine> PricingLines);
     }

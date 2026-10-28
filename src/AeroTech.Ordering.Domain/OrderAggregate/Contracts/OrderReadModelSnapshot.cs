@@ -155,22 +155,87 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Contracts
         AncillaryProvision Provision,
         AncillaryPricing Pricing)
     {
-        public BaggageChoice? Baggage { get; init; }
+        public AncillaryBaggageSnapshot? Baggage { get; init; }
 
-        public MealChoice? Meal { get; init; }
+        public AncillaryMealSnapshot? Meal { get; init; }
 
-        public PetChoice? Pet { get; init; }
+        public AncillaryPetSnapshot? Pet { get; init; }
 
-        public AssistanceChoice? Assistance { get; init; }
+        public AncillaryAssistanceSnapshot? Assistance { get; init; }
 
-        public AirportServiceChoice? AirportService { get; init; }
+        public AncillaryAirportServiceSnapshot? AirportService { get; init; }
 
-        public PriorityChoice? Priority { get; init; }
+        public AncillaryPrioritySnapshot? Priority { get; init; }
 
-        public ConnectivityChoice? Connectivity { get; init; }
+        public AncillaryConnectivitySnapshot? Connectivity { get; init; }
 
-        public UpgradeChoice? Upgrade { get; init; }
+        public AncillaryUpgradeSnapshot? Upgrade { get; init; }
     }
+
+    public sealed record AncillaryBaggageSnapshot(
+        BaggageChargeKind ChargeKind,
+        BaggageAllowanceConcept? AllowanceConcept,
+        decimal? PackageWeightKg,
+        decimal? WeightFromExclusiveKg,
+        decimal? WeightToInclusiveKg,
+        string? EquipmentKind,
+        string? BagRef,
+        decimal? MeasuredWeightKg,
+        ServiceDimensions? Dimensions,
+        decimal? WeightKg);
+
+    public sealed record AncillaryMealSnapshot(
+        MealKind MealKind,
+        string? MealCode,
+        string? MenuItemRef,
+        string? DietaryCode,
+        string? ExclusiveMealFamilyCode);
+
+    public sealed record AncillaryPetSnapshot(
+        PetTransportMode TransportMode,
+        PetAnimalType AnimalType,
+        string? OtherAnimalCode,
+        int? AnimalAgeWeeks,
+        decimal CombinedWeightKg,
+        ServiceDimensions CarrierDimensions,
+        IReadOnlyCollection<string> DocumentAcknowledgements,
+        string? SizeBracket);
+
+    public sealed record AncillaryAssistanceSnapshot(
+        AssistanceKind AssistanceKind,
+        string? AssistanceSsrCode,
+        long? InfantTravellerId,
+        long? GuardianTravellerId);
+
+    public sealed record AncillaryAirportServiceSnapshot(
+        AirportServiceKind Kind,
+        int AirportId,
+        string? TerminalRef,
+        long? FacilityId,
+        AirportServiceDirection Direction,
+        DateTimeOffset? TimeWithOffset,
+        int? GuestCount);
+
+    public sealed record AncillaryPrioritySnapshot(
+        PriorityKind Kind,
+        string? PriorityZoneCode,
+        string? PriorityGroupCode,
+        string? FareBenefitRef,
+        bool OptIn);
+
+    public sealed record AncillaryConnectivitySnapshot(
+        ConnectivityPlanKind PlanKind,
+        int? DurationMinutes,
+        int? IncludedDataMb,
+        int? MaxDevices,
+        PurchaseStage DeliveryStage,
+        int? DeviceCount);
+
+    public sealed record AncillaryUpgradeSnapshot(
+        int FromCabinId,
+        int ToCabinId,
+        UpgradeKind UpgradeKind,
+        bool RequiresTicketExchange);
 
     public sealed record OrderChangeSnapshot(
         long ChangeId,

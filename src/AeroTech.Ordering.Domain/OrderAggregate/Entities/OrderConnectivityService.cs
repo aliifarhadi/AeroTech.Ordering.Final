@@ -1,22 +1,26 @@
-using AeroTech.Framework.Core.Domain.ValueObjects;
 using AeroTech.Messages.Ancillary.Enums;
+using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 
-namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
+namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
 {
-    public sealed class ConnectivityChoice : ValueObject
+    public sealed class OrderConnectivityService : OrderAncillaryService
     {
-        private ConnectivityChoice()
+        private OrderConnectivityService()
         {
         }
 
-        public ConnectivityChoice(
+        public OrderConnectivityService(
+            OrderAncillaryServiceArgs args,
             ConnectivityPlanKind planKind,
             int? durationMinutes,
             int? includedDataMb,
             int? maxDevices,
             PurchaseStage deliveryStage,
             int? deviceCount)
+            : base(args, AncillaryProfile.Connectivity)
         {
+            EnsureValid(deviceCount is null or > 0, nameof(DeviceCount));
+
             PlanKind = planKind;
             DurationMinutes = durationMinutes;
             IncludedDataMb = includedDataMb;
@@ -36,15 +40,5 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.ValueObjects
         public PurchaseStage DeliveryStage { get; private set; }
 
         public int? DeviceCount { get; private set; }
-
-        protected override IEnumerable<object?> GetEqualityComponents()
-        {
-            yield return PlanKind;
-            yield return DurationMinutes;
-            yield return IncludedDataMb;
-            yield return MaxDevices;
-            yield return DeliveryStage;
-            yield return DeviceCount;
-        }
     }
 }

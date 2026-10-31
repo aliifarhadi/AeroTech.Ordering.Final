@@ -75,19 +75,6 @@ public sealed class CreateWithPricedSelectionsTests
     }
 
     [Fact]
-    public async Task Legacy_seat_selections_keep_their_bound_wide_behaviour()
-    {
-        var order = await CreateAsync(legacySeats: [new SeatSpec(1, "OUT", "12A")]);
-
-        var seats = order.Services.OfType<OrderSeatService>().ToList();
-
-        Assert.Equal(2, seats.Count);
-        Assert.All(seats, seat => Assert.Equal(("12A", false), (seat.SeatNumber, seat.IsPricedSelection)));
-        Assert.DoesNotContain(order.Items, item => item.Kind == ProductType.Seat);
-        Assert.Empty(_harness.Ancillaries.Requests);
-    }
-
-    [Fact]
     public async Task General_lines_of_different_families_join_the_initial_order_in_one_create_change()
     {
         var baggage = Sector(AncillaryVariant.ExtraCheckedBag, "T1", FlightRef("OUT", 1), Price(30m, quantity: 2));
@@ -194,7 +181,7 @@ public sealed class CreateWithPricedSelectionsTests
     {
         _harness.OfferProvider.Offers[OfferId] = OrderFixture.Offer(_harness.Clock, Travellers, Itinerary);
 
-        var args = OrderFixture.Args(Travellers, []) with { AncillaryPricedSelectionId = "s_unknown" };
+        var args = OrderFixture.Args(Travellers) with { AncillaryPricedSelectionId = "s_unknown" };
 
         var refused = await Assert.ThrowsAsync<BusinessException>(() => _harness.CreateAsync(args));
 
@@ -289,37 +276,44 @@ public sealed class CreateWithPricedSelectionsTests
     }
 
     [Fact]
-    public async Task Legacy_seats_and_a_priced_seat_selection_are_refused_before_any_source_is_called()
+    public async Task A_general_selection_keeps_reservation_blocked_until_its_fulfillment_exists()
     {
-        var args = OrderFixture.Args(Travellers, [new SeatSpec(1, "OUT", "12A")]) with { SeatPricedSelectionId = SeatSelectionId };
-
-        var refused = await Assert.ThrowsAsync<BusinessException>(() => _harness.CreateAsync(args));
-
-        Assert.Equal((2866, 422), (refused.Code, refused.HttpStatus));
-        Assert.Empty(_harness.OfferProvider.Requests);
-        Assert.Empty(_harness.Ancillaries.Requests);
-        AssertNothingPersisted();
-    }
-
-    [Fact]
-    public void The_domain_refuses_legacy_seats_with_a_priced_seat_selection_on_its_own()
-    {
-        var args = OrderFixture.Args(Travellers, [new SeatSpec(1, "OUT", "12A")]) with { SeatPricedSelectionId = SeatSelectionId };
-
-        var refused = Assert.Throws<BusinessException>(() => Order.Create(args, OrderFixture.Offer(_harness.Clock, Travellers, Itinerary), _harness.Ids, _harness.Clock));
-
-        Assert.Equal(2866, refused.Code);
-    }
-
-    [Fact]
-    public async Task Selections_accepted_at_create_keep_reservation_blocked_until_fulfillment_exists()
-    {
-        var order = await CreateAsync(seats: OfferSeatQuote(Now, Seat("T1", 101, "12A", price: 0m)));
+        var order = await CreateAsync(OfferSelection(Now, Sector(AncillaryVariant.ExtraCheckedBag, "T1", FlightRef("OUT", 1))));
 
         var refused = await Assert.ThrowsAsync<BusinessException>(() => _harness.ReserveOrderAsync(order));
 
         Assert.Equal((2854, 409), (refused.Code, refused.HttpStatus));
+        Assert.Empty(_harness.FlightFlow.HoldRequests);
         Assert.Equal(OrderStatus.Created, order.Status);
+    }
+
+    [Fact]
+    public async Task A_resolved_seat_number_reaches_the_flightflow_hold_of_its_own_flight_only()
+    {
+        var order = await CreateAsync(seats: OfferSeatQuote(Now, Seat("T1", 101, "12A"), Seat("T2", 201, "8C")));
+
+        await _harness.ReserveOrderAsync(order);
+
+        var requested = _harness.FlightFlow.HoldRequests.SelectMany(hold => hold.Flights).SelectMany(flight => flight.Seats).Select(seat => seat.Seat).ToList();
+
+        Assert.Equal(6, requested.Count);
+        Assert.Equal(["12A", "8C"], requested.OfType<string>().Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_priced_seat_order_reserves_and_confirms_but_is_refused_at_issue()
+    {
+        var order = await CreateAsync(seats: OfferSeatQuote(Now, Seat("T1", 101, "12A")));
+        var stock = await _harness.DefineStockAsync();
+
+        await _harness.ReserveOrderAsync(order);
+        await _harness.ConfirmReservedCapacityAsync(order);
+
+        var refused = await Assert.ThrowsAsync<BusinessException>(() => _harness.IssueAsync(order, stock.DocumentStockId));
+
+        Assert.Equal(OrderStatus.Confirmed, order.Status);
+        Assert.Equal((2854, 409), (refused.Code, refused.HttpStatus));
+        Assert.Empty(_harness.Tickets.Committed);
     }
 
     private static ResolvedAncillarySelection WithLine(ResolvedAncillarySelection selection, ResolvedAncillaryLine line)
@@ -368,9 +362,8 @@ public sealed class CreateWithPricedSelectionsTests
 
     private Task<Order> CreateAsync(
         ResolvedAncillarySelection? selection = null,
-        ResolvedSeatQuote? seats = null,
-        IReadOnlyList<SeatSpec>? legacySeats = null)
-        => _harness.CreateWithSelectionsAsync(OrderFixture.Offer(_harness.Clock, Travellers, Itinerary), Travellers, selection, seats, legacySeats);
+        ResolvedSeatQuote? seats = null)
+        => _harness.CreateWithSelectionsAsync(OrderFixture.Offer(_harness.Clock, Travellers, Itinerary), Travellers, selection, seats);
 
     private async Task AssertRefusedWithoutOrderAsync(string reason, int code, ResolvedAncillarySelection? selection, ResolvedSeatQuote? seats)
     {

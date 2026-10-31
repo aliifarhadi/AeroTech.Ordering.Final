@@ -9,6 +9,7 @@ namespace AeroTech.Ordering.Providers.Offer.Services
         private const string OneWayKind = "OneWay";
         private const string ThroughOneWayKind = "ThroughOneWay";
         private const string RoundTripFareKind = "RoundTripFare";
+        private const string UnsetBaggageUnit = "0";
 
         public static OfferDetail ToDomain(Wire.FlightOfferDetailResponse source)
             => new(
@@ -96,7 +97,12 @@ namespace AeroTech.Ordering.Providers.Offer.Services
                 coupon.Pricings.Select(MapPriceLine).ToList());
 
         private static OfferBaggage? MapBaggage(int pieces, decimal weight, string? unit)
-            => string.IsNullOrWhiteSpace(unit) ? null : new OfferBaggage(pieces, weight, unit);
+            => string.IsNullOrWhiteSpace(unit) || IsUnsetAllowance(pieces, weight, unit)
+                ? null
+                : new OfferBaggage(pieces, weight, unit);
+
+        private static bool IsUnsetAllowance(int pieces, decimal weight, string unit)
+            => pieces == 0 && weight == 0 && unit == UnsetBaggageUnit;
 
         private static OfferFlight MapFlight(Wire.OfferFlight flight)
             => new(

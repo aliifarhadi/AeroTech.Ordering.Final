@@ -15,7 +15,7 @@ Domain MUST NOT call Ancillary HTTP or know its REST DTOs. A small Application/P
 
 ## 2. Internal canonical selected basket — exact shape
 
-**Superseded for Create by decision D14 (2026-10-31):** Create takes two optional strings, `ancillaryPricedSelectionId` and `seatPricedSelectionId`, on all three surfaces. Add keeps its own contract.
+**Superseded for Create by decision D14 (2026-10-31):** Create takes two optional strings, `ancillaryPricedSelectionId` and `seatPricedSelectionId`, on all three surfaces. Add keeps its own contract. Legacy `seatSelections` is removed by D15.
 
 ```json
 {
@@ -28,7 +28,7 @@ At least one nonempty part required when basket supplied. `selectionId` is a **s
 
 ## 3. Backoffice: preserve current contract + additive property
 
-**Superseded for Create by decision D14 (2026-10-31):** Create takes two optional strings, `ancillaryPricedSelectionId` and `seatPricedSelectionId`, on all three surfaces. Add keeps its own contract.
+**Superseded for Create by decision D14 (2026-10-31):** Create takes two optional strings, `ancillaryPricedSelectionId` and `seatPricedSelectionId`, on all three surfaces. Add keeps its own contract. Legacy `seatSelections` is removed by D15.
 
 Create: existing `POST /Backoffice/v1/Orders/FlightOffers`, unchanged required `offerId/customerId/contact/travelers/seatSelections/remarks`, optional `selectedAncillaries` canonical property. **Do not add a new `idempotencyKey`.** Existing legacy `seatSelections` and new `seatSelectionIds` must not both be nonempty (typed 422).
 
@@ -64,7 +64,7 @@ Result uses the existing envelope convention, exact DTO (no duplicate save recei
 
 ## 4. OTA (`Api`) / OtaPanel: external `services[]` wire adapter (Q5 resolved)
 
-**Superseded for Create by decision D14 (2026-10-31):** Create takes two optional strings, `ancillaryPricedSelectionId` and `seatPricedSelectionId`, on all three surfaces. Add keeps its own contract.
+**Superseded for Create by decision D14 (2026-10-31):** Create takes two optional strings, `ancillaryPricedSelectionId` and `seatPricedSelectionId`, on all three surfaces. Add keeps its own contract. Legacy `seatSelections` is removed by D15.
 
 **Standing owner convention:** external surfaces should resemble the Amadeus/IATA OfferItem→Order paradigm; the internal `selectedAncillaries` is NOT imposed as an identical public contract. Keep the **existing Create fields and original response** so current clients are not broken. Add an optional external `services[]` collection whose items are only source selection references, with no embedded price or internal IDs:
 

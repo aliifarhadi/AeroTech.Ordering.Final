@@ -25,12 +25,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
                 phone.RuleFor(item => item.Number).NotEmpty();
             });
 
-            RuleForEach(command => command.SeatSelections).ChildRules(seat =>
-            {
-                seat.RuleFor(item => item.BoundId).NotEmpty();
-                seat.RuleFor(item => item.SeatNumber).NotEmpty();
-            });
-
             RuleForEach(command => command.Remarks).ChildRules(remark =>
                 remark.RuleFor(item => item.Text).NotEmpty());
         }

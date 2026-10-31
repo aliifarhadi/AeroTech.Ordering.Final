@@ -99,7 +99,7 @@ public sealed class CommercialCancellationDomainTests
     [Fact]
     public void Air_cancellation_includes_its_seat()
     {
-        var order = Create([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, "OUT", "12A")]);
+        var order = Create([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, 101, "12A")]);
         var air = ReservationHarness.AirService(order, 1, 101);
         var seat = order.Services.OfType<OrderSeatService>().Single();
 
@@ -128,7 +128,7 @@ public sealed class CommercialCancellationDomainTests
     [Fact]
     public void Seat_only_cancellation_is_deferred_to_the_ancillary_stage()
     {
-        var order = Create([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, "OUT", "12A")]);
+        var order = Create([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, 101, "12A")]);
         var seat = order.Services.OfType<OrderSeatService>().Single();
 
         var exception = Assert.Throws<BusinessException>(() => order.CancellationScopeOf([seat.Id]));

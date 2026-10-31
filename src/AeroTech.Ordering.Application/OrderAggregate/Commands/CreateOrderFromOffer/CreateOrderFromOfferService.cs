@@ -42,8 +42,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
             CreateOrderArgs args,
             CancellationToken cancellationToken = default)
         {
-            Order.EnsureSeatInputIsNotMixed(args);
-
             var offer = await _offerProvider.GetByOfferIdAsync(args.OfferId, cancellationToken);
             var selection = await ResolveSelectionAsync(args.AncillaryPricedSelectionId, cancellationToken);
             var seats = await ResolveSeatsAsync(args.SeatPricedSelectionId, cancellationToken);

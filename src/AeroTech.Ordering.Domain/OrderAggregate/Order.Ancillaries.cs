@@ -65,9 +65,15 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             return change;
         }
 
-        public void EnsureFulfillmentIsSupported()
+        public void EnsureReservationIsSupported()
+            => EnsureNoActiveService(service => service is OrderAncillaryService);
+
+        public void EnsureIssuanceIsSupported()
+            => EnsureNoActiveService(service => service is OrderAncillaryService or OrderSeatService { IsPricedSelection: true });
+
+        private void EnsureNoActiveService(Func<OrderService, bool> isUnsupported)
         {
-            var unsupported = _services.FirstOrDefault(service => service.IsActive && service is OrderAncillaryService or OrderSeatService { IsPricedSelection: true });
+            var unsupported = _services.FirstOrDefault(service => service.IsActive && isUnsupported(service));
 
             if (unsupported is not null)
                 throw ExceptionFactory.AncillaryServiceIsNotFulfillable(Id, unsupported.Id);

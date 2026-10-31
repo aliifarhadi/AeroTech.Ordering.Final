@@ -10,7 +10,7 @@ Current `Order.Create.BuildSeatServices` uses `(TravellerIndex, BoundId, SeatNum
 - Same `OrderSeatService` must be both the commercial purchase and the physical seat assignment reference. DO NOT create `OrderAncillaryService` shadow or treat A09 ExtraSeat as a normal seat.
 - New paid/free accepted seat has `OrderItem.Kind=Seat`, independent `AcceptedTotal`, correct Base/Tax/Fee, `SourceSeatSelectionId`, Variant A07/A08, Definition/Provision/Pricing, rate version, `PointOfSaleId` from **the selected authoritative source quote**.
 - `FulfillmentProviderKey=FlightFlow` remains for seat physical reserve. Ancillary definition/provision and commercial hold semantics stay independent; no unverified assumption that its Seat Hold reduced aircraft occupancy.
-- Legacy `SeatSelections` remains supported **only** in the legacy Create route, with historic semantics untouched for compatibility, while new source SeatMap uses the per-flight path. A mixed nonempty old/new seat input is a typed error.
+- Superseded by decision D15 (2026-10-31): legacy `SeatSelections` is removed from Create. Original text: Legacy `SeatSelections` remains supported **only** in the legacy Create route, with historic semantics untouched for compatibility, while new source SeatMap uses the per-flight path. A mixed nonempty old/new seat input is a typed error.
 
 ## 3. Required **AC-03** Ancillary read-only selected quote contract
 

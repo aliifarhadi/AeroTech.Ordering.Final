@@ -9,7 +9,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Arguments
         SalesContext SalesContext,
         CreateOrderContactArgs Contact,
         IReadOnlyList<CreateOrderTravellerArgs> Travellers,
-        IReadOnlyList<CreateOrderSeatSelectionArgs> SeatSelections,
         IReadOnlyList<CreateOrderRemarkArgs> Remarks,
         string? AncillaryPricedSelectionId,
         string? SeatPricedSelectionId);
@@ -44,11 +43,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Arguments
         DateOnly? ExpiryDate,
         int IssuanceCountryId,
         string Holder);
-
-    public sealed record CreateOrderSeatSelectionArgs(
-        int TravellerIndex,
-        string BoundId,
-        string SeatNumber);
 
     public sealed record CreateOrderRemarkArgs(
         OrderRemarkType Type,

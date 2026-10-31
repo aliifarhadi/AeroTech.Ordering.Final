@@ -79,7 +79,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
                         ?? throw ExceptionFactory.OrderNotFound(orderId);
 
             authorization.Ensure(order);
-            order.EnsureFulfillmentIsSupported();
+            order.EnsureReservationIsSupported();
 
             var reservations = await _reservations.ListByOrderAsync(orderId, cancellationToken);
             var targets = selectReservations(reservations);

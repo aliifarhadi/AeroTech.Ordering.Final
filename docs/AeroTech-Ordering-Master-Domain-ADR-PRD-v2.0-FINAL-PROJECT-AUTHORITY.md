@@ -380,7 +380,7 @@ The three boolean terms are accepted-sale snapshots only. Refund/exchange author
 | `SegmentId` | `long` | No | NOW |
 | `AssociatedAirServiceId` | `long` | No | NOW |
 | `SeatNumber` | `string` | No | NOW |
-| `VariantCode` | `string?` | Yes | NOW (Stage 6A) — A07 or A08 for a priced seat; null for a legacy seat |
+| `VariantCode` | `string?` | Yes | NOW (Stage 6A) — A07 or A08 for a priced seat; null for a seat stored before decision D15 |
 | `PointOfSaleId` | `long?` | Yes | NOW (Stage 6A) — point of sale of the accepted seat quote, kept for the later seat hold |
 | `Source` | `AncillarySaleSource?` | Yes | NOW (Stage 6A) |
 | `Definition` | `AncillaryDefinition?` | Yes | NOW (Stage 6A) |
@@ -393,9 +393,9 @@ The sold/selected seat remains commercial history. A later DCS operational seat 
 - A priced seat is one traveller on one flight, linked to that traveller's active air service on that flight. It has its own `ProductType.Seat` item and its own price lines.
 - A traveller holds at most one active seat per flight, and one physical seat on a flight goes to at most one traveller of the Order.
 - `PointOfSaleId` comes from the accepted seat quote; it is never re-derived from the sales office.
-- A legacy seat from Create `seatSelections` keeps every quote field null.
+- Create no longer accepts `seatSelections` (decision D15, 2026-10-31). A seat stored before that keeps every quote field null.
 - The seat quote comes from the Ancillary `SeatMaps/Price` selection snapshot, read through `SeatMaps/Resolve` (decision D14, 2026-10-31). `Source.SelectionId` holds the whole `s_` snapshot and `Source.OfferItemId` holds the individual seat id.
-- An accepted seat is a commercial selection, not a physical reservation. Physical uniqueness is handoff OR-006 and Stage 6B.
+- An accepted seat is a commercial selection, not a physical reservation. Reserve sends its number to FlightFlow with the air unit (D15). FlightFlow does not yet enforce seat uniqueness: handoff OR-006.
 
 ---
 
@@ -2596,7 +2596,8 @@ No authoritative channel or orchestrator product contract exists: **CHANNEL_ORCH
 
 Commercial acceptance is not reservation, confirmation or documentation. Until the ancillary fulfillment stage (S6B) is closed, these rules keep an Order with accepted ancillaries consistent.
 
-- **Reserve, Confirm and Issue.** They are refused with 2854 (409) before any provider call, task or stock effect when the Order holds an active `OrderAncillaryService` or an active priced `OrderSeatService`. No placeholder provider is registered to get past this.
+- **Reserve and Confirm.** They are refused with 2854 (409) before any provider call or task when the Order holds an active `OrderAncillaryService`. A priced seat does not block them, so its number reaches FlightFlow (decision D15, 2026-10-31).
+- **Issue.** It is refused with 2854 (409) before any stock effect when the Order holds an active `OrderAncillaryService` or an active priced `OrderSeatService`, because no EMD exists until Stage 6B.
 - **Cancel the whole Order.** It ends every active service, ancillaries included, so a cancelled Order keeps no orphan active service.
 - **Cancel an air service.** It also ends:
   - the seats on that service;

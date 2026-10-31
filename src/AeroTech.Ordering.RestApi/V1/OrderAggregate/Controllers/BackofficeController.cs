@@ -38,7 +38,6 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate
                 request.CustomerId,
                 request.Contact,
                 request.Travelers,
-                request.SeatSelections ?? Array.Empty<SeatSelection>(),
                 request.Remarks ?? Array.Empty<OrderRemarkInput>(),
                 request.AncillaryPricedSelectionId,
                 request.SeatPricedSelectionId);

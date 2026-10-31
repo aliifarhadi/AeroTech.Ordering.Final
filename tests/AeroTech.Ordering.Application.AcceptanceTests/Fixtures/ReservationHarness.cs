@@ -166,19 +166,12 @@ public sealed class ReservationHarness
     public Task<Order> CreateFromOfferAsync(
         IReadOnlyList<TravellerSpec> travellers,
         IReadOnlyList<BoundSpec> bounds,
-        IReadOnlyList<SeatSpec>? seats = null,
         DateTimeOffset? lastTicketingDate = null,
         IReadOnlyList<PricingUnitSpec>? pricingUnits = null)
-        => CreateFromOfferAsync(OrderFixture.Offer(Clock, travellers, bounds, pricingUnits, lastTicketingDate), travellers, seats);
+        => CreateFromOfferAsync(OrderFixture.Offer(Clock, travellers, bounds, pricingUnits, lastTicketingDate), travellers);
 
-    public async Task<Order> CreateFromOfferAsync(OfferDetail offer, IReadOnlyList<TravellerSpec> travellers, IReadOnlyList<SeatSpec>? seats = null)
-    {
-        OfferProvider.Offers[offer.OfferId] = offer;
-
-        var created = await _create.ExecuteAsync(OrderFixture.Args(travellers, seats ?? []));
-
-        return Orders.Find(created.OrderId)!;
-    }
+    public Task<Order> CreateFromOfferAsync(OfferDetail offer, IReadOnlyList<TravellerSpec> travellers)
+        => CreateWithSelectionsAsync(offer, travellers);
 
     public Task<CreateOrderFromOfferResult> CreateAsync(CreateOrderArgs args) => _create.ExecuteAsync(args);
 
@@ -186,8 +179,7 @@ public sealed class ReservationHarness
         OfferDetail offer,
         IReadOnlyList<TravellerSpec> travellers,
         ResolvedAncillarySelection? selection = null,
-        ResolvedSeatQuote? seats = null,
-        IReadOnlyList<SeatSpec>? legacySeats = null)
+        ResolvedSeatQuote? seats = null)
     {
         OfferProvider.Offers[offer.OfferId] = offer;
 
@@ -197,7 +189,7 @@ public sealed class ReservationHarness
         if (seats is not null)
             Ancillaries.SeatQuotes[seats.SelectionId] = seats;
 
-        var args = OrderFixture.Args(travellers, legacySeats ?? []) with
+        var args = OrderFixture.Args(travellers) with
         {
             AncillaryPricedSelectionId = selection?.SelectionId,
             SeatPricedSelectionId = seats?.SelectionId

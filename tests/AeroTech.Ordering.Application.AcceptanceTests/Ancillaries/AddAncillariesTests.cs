@@ -323,7 +323,7 @@ public sealed class AddAncillariesTests
         Assert.All(seats, seat => Assert.Equal(7, seat.PointOfSaleId));
         Assert.All(seats, seat => Assert.Equal(ProductType.Seat, order.Items.Single(item => item.Id == seat.OrderItemId).Kind));
         Assert.Equal(3, seats.Select(seat => seat.OrderItemId).Distinct().Count());
-        Assert.Throws<BusinessException>(order.EnsureFulfillmentIsSupported);
+        Assert.Throws<BusinessException>(order.EnsureIssuanceIsSupported);
     }
 
     [Fact]

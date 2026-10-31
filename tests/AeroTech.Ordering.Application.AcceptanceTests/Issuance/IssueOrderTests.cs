@@ -1,3 +1,4 @@
+using AeroTech.Framework.Core.Domain.Exceptions;
 using AeroTech.Messages.AirPrice.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Messages.Shared.Enums;
@@ -263,18 +264,17 @@ public sealed class IssueOrderTests
     }
 
     [Fact]
-    public async Task Seat_assignment_gets_no_coupon_and_no_miscellaneous_document()
+    public async Task A_confirmed_order_holding_a_seat_is_refused_at_issue_before_any_stock_is_used()
     {
-        var order = await ConfirmedOrderAsync([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], seats: [new SeatSpec(1, "OUT", "12A")]);
+        var order = await ConfirmedOrderAsync([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], seats: [new SeatSpec(1, 101, "12A")]);
         var stock = await _harness.DefineStockAsync();
 
-        await _harness.IssueAsync(order, stock.DocumentStockId);
+        var refused = await Assert.ThrowsAsync<BusinessException>(() => _harness.IssueAsync(order, stock.DocumentStockId));
 
-        var seatService = order.Services.OfType<OrderSeatService>().Single();
-        var coupon = _harness.Tickets.Committed.Single().Coupons.Single();
-        Assert.NotEqual(seatService.Id, coupon.OriginalOrderServiceId);
-        Assert.Equal(2L, _harness.Stocks.Committed.Single().NextNumber);
-        Assert.Equal(OrderStatus.Ticketed, order.Status);
+        Assert.Equal((2854, 409), (refused.Code, refused.HttpStatus));
+        Assert.Empty(_harness.Tickets.Committed);
+        Assert.Equal(1L, _harness.Stocks.Committed.Single().NextNumber);
+        Assert.Equal(OrderStatus.Confirmed, order.Status);
     }
 
     [Fact]

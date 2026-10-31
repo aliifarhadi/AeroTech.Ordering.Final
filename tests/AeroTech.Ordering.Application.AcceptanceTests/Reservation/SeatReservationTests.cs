@@ -15,7 +15,7 @@ public sealed class SeatReservationTests
     [Fact]
     public async Task Air_and_selected_seat_share_one_provider_unit()
     {
-        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, "OUT", "12A")]);
+        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, 101, "12A")]);
         var seat = order.Services.OfType<OrderSeatService>().Single();
 
         var result = await _harness.ReserveOrderAsync(order);
@@ -44,7 +44,7 @@ public sealed class SeatReservationTests
         var order = _harness.SeedOrder(
             [TravellerSpec.Adult(1), TravellerSpec.Adult(2)],
             [new BoundSpec("OUT", 101, 102)],
-            [new SeatSpec(1, "OUT", "12A"), new SeatSpec(2, "OUT", "12B")]);
+            [new SeatSpec(1, 101, "12A"), new SeatSpec(1, 102, "12A"), new SeatSpec(2, 101, "12B"), new SeatSpec(2, 102, "12B")]);
 
         var result = await _harness.ReserveOrderAsync(order);
 
@@ -57,7 +57,7 @@ public sealed class SeatReservationTests
     [Fact]
     public async Task Seat_that_would_join_an_existing_hold_is_rejected_before_any_provider_call()
     {
-        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, "OUT", "12A")]);
+        var order = _harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, 101, "12A")]);
         var seat = order.Services.OfType<OrderSeatService>().Single();
         var services = (List<OrderService>)typeof(Order).GetField("_services", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(order)!;
 

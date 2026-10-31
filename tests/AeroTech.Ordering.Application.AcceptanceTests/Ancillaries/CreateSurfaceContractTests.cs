@@ -98,13 +98,13 @@ public sealed class CreateSurfaceContractTests
             .ToList();
 
     private static BackofficeCreateOrderFromOfferCommand Backoffice(string? ancillary, string? seats)
-        => new("OFFER-1", 42, Contact, [], [], [], ancillary, seats);
+        => new("OFFER-1", 42, Contact, [], [], ancillary, seats);
 
     private static OtaCreateOrderFromOfferCommand Ota(string? ancillary, string? seats)
-        => new("OFFER-1", Contact, [], [], [], ancillary, seats);
+        => new("OFFER-1", Contact, [], [], ancillary, seats);
 
     private static OtaPanelCreateOrderFromOfferCommand OtaPanel(string? ancillary, string? seats)
-        => new("OFFER-1", Contact, [], [], [], ancillary, seats);
+        => new("OFFER-1", Contact, [], [], ancillary, seats);
 
     private AgencyCreateOrderArgsMapper AgencyMapper() => new(_salesContext, new FixedCaller(), _input);
 

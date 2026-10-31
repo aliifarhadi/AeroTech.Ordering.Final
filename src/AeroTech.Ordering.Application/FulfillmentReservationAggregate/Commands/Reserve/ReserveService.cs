@@ -79,7 +79,7 @@ namespace AeroTech.Ordering.Application.FulfillmentReservationAggregate.Commands
 
             authorization.Ensure(order);
             order.EnsureReservable();
-            order.EnsureFulfillmentIsSupported();
+            order.EnsureReservationIsSupported();
 
             var services = selectServices(order);
             var reservations = (await _reservations.ListByOrderAsync(orderId, cancellationToken)).ToList();

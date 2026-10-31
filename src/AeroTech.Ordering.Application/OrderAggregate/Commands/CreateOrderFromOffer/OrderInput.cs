@@ -35,11 +35,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
         string CountryCallingCode,
         string Number);
 
-    public sealed record SeatSelection(
-        int TravelerId,
-        string BoundId,
-        string SeatNumber);
-
     public sealed record OrderRemarkInput(
         OrderRemarkType Type,
         OrderRemarkVisibility Visibility,

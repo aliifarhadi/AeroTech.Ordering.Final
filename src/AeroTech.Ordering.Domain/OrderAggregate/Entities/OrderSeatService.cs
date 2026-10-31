@@ -19,24 +19,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             long segmentId,
             long associatedAirServiceId,
             string seatNumber,
-            string fulfillmentProviderKey,
-            long createdByChangeId,
-            DateTimeOffset createdAt)
-            : base(id, orderId, orderItemId, travellerId, OrderServiceType.SeatAssignment, fulfillmentProviderKey, createdByChangeId, createdAt)
-        {
-            SegmentId = segmentId;
-            AssociatedAirServiceId = associatedAirServiceId;
-            SeatNumber = seatNumber;
-        }
-
-        public OrderSeatService(
-            long id,
-            long orderId,
-            long orderItemId,
-            long travellerId,
-            long segmentId,
-            long associatedAirServiceId,
-            string seatNumber,
             AncillaryVariant variant,
             long pointOfSaleId,
             AncillarySaleSource source,
@@ -45,11 +27,14 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Entities
             AncillaryPricing pricing,
             long createdByChangeId,
             DateTimeOffset createdAt)
-            : this(id, orderId, orderItemId, travellerId, segmentId, associatedAirServiceId, seatNumber, FulfillmentProviderKeys.FlightFlow, createdByChangeId, createdAt)
+            : base(id, orderId, orderItemId, travellerId, OrderServiceType.SeatAssignment, FulfillmentProviderKeys.FlightFlow, createdByChangeId, createdAt)
         {
             if (!variant.IsSeatAssignment)
                 throw ExceptionFactory.AncillaryVariantDoesNotMatchProfile(source.SelectionId, variant.Code, variant.Profile);
 
+            SegmentId = segmentId;
+            AssociatedAirServiceId = associatedAirServiceId;
+            SeatNumber = seatNumber;
             VariantCode = variant.Code;
             PointOfSaleId = pointOfSaleId;
             Source = source;

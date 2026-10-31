@@ -5,6 +5,7 @@ using AeroTech.Messages.Shared.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
+using AeroTech.Ordering.Domain.Providers.Ancillary;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain._Shared.Contracts;
 
@@ -21,7 +22,7 @@ public sealed record TravellerSpec(int Index, PassengerTypeCode PassengerType, A
 
 public sealed record BoundSpec(string BoundId, params long[] FlightIds);
 
-public sealed record SeatSpec(int TravellerIndex, string BoundId, string SeatNumber);
+public sealed record SeatSpec(int TravellerIndex, long FlightId, string SeatNumber);
 
 public sealed record FareSpec(long AirFareId, params long[] FlightIds)
 {
@@ -63,25 +64,32 @@ public static class OrderFixture
         DateTimeOffset? lastTicketingDate = null,
         IReadOnlyList<PricingUnitSpec>? pricingUnits = null)
         => Order.Create(
-            Args(travellers, seats ?? []),
+            Args(travellers),
             Offer(clock, travellers, bounds, pricingUnits, lastTicketingDate),
             ids,
-            clock);
+            clock,
+            seats: FreeSeats(clock, seats));
 
     public static Order CreateFrom(OfferDetail offer, IIdGenerator ids, IClock clock, IReadOnlyList<TravellerSpec> travellers)
-        => Order.Create(Args(travellers, []), offer, ids, clock);
+        => Order.Create(Args(travellers), offer, ids, clock);
 
-    public static CreateOrderArgs Args(IReadOnlyList<TravellerSpec> travellers, IReadOnlyList<SeatSpec> seats)
+    public static CreateOrderArgs Args(IReadOnlyList<TravellerSpec> travellers)
         => new(
             "OFFER-1",
             42,
             new SalesContext(SalesChannel.BackOffice, CallerContextType.Airline, CallerPrincipalType.Human, 7, 7, null, null, null, null, null, null),
             new CreateOrderContactArgs("Contact", [new CreateOrderContactPointArgs(ContactPointType.Email, "contact@example.com", null, true)]),
             travellers.Select(ToArgs).ToList(),
-            seats.Select(seat => new CreateOrderSeatSelectionArgs(seat.TravellerIndex, seat.BoundId, seat.SeatNumber)).ToList(),
             [],
             null,
             null);
+
+    private static ResolvedSeatQuote? FreeSeats(IClock clock, IReadOnlyList<SeatSpec>? seats)
+        => seats is null
+            ? null
+            : AncillaryFixture.OfferSeatQuote(
+                clock.GetDateTime(),
+                seats.Select(seat => AncillaryFixture.Seat($"T{seat.TravellerIndex}", seat.FlightId, seat.SeatNumber, price: 0m)).ToArray());
 
     private static CreateOrderTravellerArgs ToArgs(TravellerSpec traveller)
         => new(

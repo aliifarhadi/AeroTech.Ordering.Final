@@ -31,7 +31,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
                 _salesContextFactory.Create(channel),
                 OrderInputMapper.ToContactArgs(command.Contact),
                 await _input.ToTravellerArgsAsync(command.Travelers, cancellationToken),
-                OrderInputMapper.ToSeatArgs(command.SeatSelections),
                 OrderInputMapper.ToRemarkArgs(command.Remarks),
                 command.AncillaryPricedSelectionId,
                 command.SeatPricedSelectionId);

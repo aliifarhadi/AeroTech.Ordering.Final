@@ -8,8 +8,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
 
         IReadOnlyList<OrderTraveller> Travelers { get; }
 
-        IReadOnlyList<SeatSelection> SeatSelections { get; }
-
         IReadOnlyList<OrderRemarkInput> Remarks { get; }
 
         string? AncillaryPricedSelectionId { get; }

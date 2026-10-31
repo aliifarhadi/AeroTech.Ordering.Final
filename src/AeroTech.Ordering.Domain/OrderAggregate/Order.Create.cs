@@ -16,12 +16,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 {
     public sealed partial class Order
     {
-        public static void EnsureSeatInputIsNotMixed(CreateOrderArgs args)
-        {
-            if (args.SeatPricedSelectionId is not null && args.SeatSelections.Count > 0)
-                throw ExceptionFactory.PricedSeatsCannotCombineWithLegacySeats(args.SeatPricedSelectionId);
-        }
-
         public static Order Create(
             CreateOrderArgs args,
             OfferDetail offer,
@@ -30,8 +24,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             ResolvedAncillarySelection? selection = null,
             ResolvedSeatQuote? seats = null)
         {
-            EnsureSeatInputIsNotMixed(args);
-
             var reader = new OfferReader(offer);
             ReconcileTravellers(args, reader);
 
@@ -51,7 +43,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             order.BuildContact(args, idGenerator);
             order.BuildTravellers(args, reader, idGenerator, change.Id, createdAt);
             order.BuildItinerary(reader, idGenerator);
-            order.BuildItemsAndServices(args, reader, idGenerator, change.Id, createdAt);
+            order.BuildItemsAndServices(reader, idGenerator, change.Id, createdAt);
             order.BuildFarePricingUnits(reader, idGenerator, change.Id);
             order.BuildPricing(reader, idGenerator, change.Id, createdAt);
             order.AcceptSelections(
@@ -260,7 +252,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
         }
 
         private void BuildItemsAndServices(
-            CreateOrderArgs args,
             OfferReader reader,
             IIdGenerator idGenerator,
             long changeId,
@@ -305,8 +296,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                     }
                 }
             }
-
-            BuildSeatServices(args, idGenerator, changeId, createdAt);
         }
 
         private void BuildFarePricingUnits(OfferReader reader, IIdGenerator idGenerator, long changeId)
@@ -393,46 +382,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                && service.FareBasis == component.FareBasis
                && service.FareFamily == component.FareFamily
                && service.FareType == ToFareType(component.FareType);
-
-        private void BuildSeatServices(
-            CreateOrderArgs args,
-            IIdGenerator idGenerator,
-            long changeId,
-            DateTimeOffset createdAt)
-        {
-            foreach (var selection in args.SeatSelections.Where(seat => !string.IsNullOrWhiteSpace(seat.SeatNumber)))
-            {
-                var traveller = TravellerByIndex(selection.TravellerIndex);
-                var journey = _journeys.FirstOrDefault(item => string.Equals(item.BoundId, selection.BoundId, StringComparison.OrdinalIgnoreCase))
-                              ?? throw ExceptionFactory.SeatSelectionBoundIsNotInOrder(selection.BoundId);
-
-                var boundSegmentIds = _segments
-                    .Where(segment => segment.OrderJourneyId == journey.Id)
-                    .Select(segment => segment.Id)
-                    .ToHashSet();
-
-                var airServices = _services
-                    .OfType<OrderAirTransportService>()
-                    .Where(service => service.TravellerId == traveller.Id && boundSegmentIds.Contains(service.SegmentId))
-                    .ToList();
-
-                if (airServices.Count == 0)
-                    throw ExceptionFactory.SeatSelectionHasNoMatchingAirService(selection.TravellerIndex, selection.BoundId);
-
-                foreach (var airService in airServices)
-                    _services.Add(new OrderSeatService(
-                        idGenerator.NewId(),
-                        Id,
-                        airService.OrderItemId,
-                        traveller.Id,
-                        airService.SegmentId,
-                        airService.Id,
-                        selection.SeatNumber,
-                        airService.FulfillmentProviderKey,
-                        changeId,
-                        createdAt));
-            }
-        }
 
         private void BuildRemarks(CreateOrderArgs args, IIdGenerator idGenerator, DateTimeOffset createdAt)
         {

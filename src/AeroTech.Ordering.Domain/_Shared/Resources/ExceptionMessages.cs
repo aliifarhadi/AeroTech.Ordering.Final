@@ -113,8 +113,6 @@
         public const string OrderHasNoTravellerWithIndex = "Order has no traveller with index {0}.";
         public const string OrderHasNoSegmentForFlight = "Order has no segment for flight {0}.";
         public const string OrderHasNoAirServiceForFlight = "Order has no air transport service for flight {0}.";
-        public const string SeatSelectionBoundIsNotInOrder = "Seat selection references bound {0} which is not in the order.";
-        public const string SeatSelectionHasNoMatchingAirService = "Seat selection for traveller {0} on bound {1} has no matching air transport service.";
         public const string OfferPriceCategoryIsNotRecognised = "Offer price category {0} is not recognised.";
         public const string PricingAllocationsDoNotReconcile = "Allocations of pricing line {0} do not reconcile with the line amount.";
         public const string CustomerPriceLineCurrencyDoesNotMatchOrder = "Every customer-price line must be expressed in the order currency.";
@@ -258,7 +256,6 @@
         public const string AncillarySelectionIsNotFound = "Ancillary selection '{0}' is not known to the ancillary source.";
         public const string AncillarySelectionExpiredAtSource = "Ancillary selection '{0}' has expired at the ancillary source; price the selection again.";
         public const string AncillaryBasketIsEmpty = "No ancillary selection or seat was supplied for order '{0}'.";
-        public const string PricedSeatsCannotCombineWithLegacySeats = "Priced seat selection '{0}' cannot be combined with seat selections entered by seat number; send only one of them.";
         public const string AncillarySourceContractIsIncomplete = "The ancillary source returned selection '{0}' without '{1}', so the selection cannot be accepted.";
     }
 }

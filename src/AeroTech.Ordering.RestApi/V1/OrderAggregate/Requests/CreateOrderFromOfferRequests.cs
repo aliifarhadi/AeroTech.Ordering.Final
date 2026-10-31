@@ -7,7 +7,6 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate.Requests
         long CustomerId,
         OrderContact Contact,
         IReadOnlyList<OrderTraveller> Travelers,
-        IReadOnlyList<SeatSelection>? SeatSelections,
         IReadOnlyList<OrderRemarkInput>? Remarks,
         string? AncillaryPricedSelectionId = null,
         string? SeatPricedSelectionId = null);
@@ -16,7 +15,6 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate.Requests
         string OfferId,
         OrderContact Contact,
         IReadOnlyList<OrderTraveller> Travelers,
-        IReadOnlyList<SeatSelection>? SeatSelections,
         IReadOnlyList<OrderRemarkInput>? Remarks,
         string? AncillaryPricedSelectionId = null,
         string? SeatPricedSelectionId = null);

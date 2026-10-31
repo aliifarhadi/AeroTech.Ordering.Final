@@ -11,7 +11,7 @@ public sealed class ProviderAssignmentTests
     public void Air_and_seat_services_are_assigned_to_FlightFlow_at_creation()
     {
         var harness = new ReservationHarness();
-        var order = harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, "OUT", "12A")]);
+        var order = harness.SeedOrder([TravellerSpec.Adult(1)], [new BoundSpec("OUT", 101)], [new SeatSpec(1, 101, "12A")]);
 
         var seat = order.Services.OfType<OrderSeatService>().Single();
         var air = order.Services.OfType<OrderAirTransportService>().Single(service => service.Id == seat.AssociatedAirServiceId);

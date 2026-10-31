@@ -63,11 +63,6 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
             return new CreateOrderContactArgs(contact.AddresseeName, points);
         }
 
-        public static IReadOnlyList<CreateOrderSeatSelectionArgs> ToSeatArgs(IReadOnlyList<SeatSelection> seats)
-            => seats
-                .Select(seat => new CreateOrderSeatSelectionArgs(seat.TravelerId, seat.BoundId, seat.SeatNumber))
-                .ToList();
-
         public static IReadOnlyList<CreateOrderRemarkArgs> ToRemarkArgs(IReadOnlyList<OrderRemarkInput> remarks)
             => remarks
                 .Select(remark => new CreateOrderRemarkArgs(

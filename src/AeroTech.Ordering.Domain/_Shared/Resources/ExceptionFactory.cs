@@ -280,12 +280,6 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException OrderHasNoAirServiceForFlight(params object?[] args) =>
             new(2715, ExceptionMessages.OrderHasNoAirServiceForFlight, args) { HttpStatus = 422 };
 
-        public static BusinessException SeatSelectionBoundIsNotInOrder(params object?[] args) =>
-            new(2716, ExceptionMessages.SeatSelectionBoundIsNotInOrder, args) { HttpStatus = 422 };
-
-        public static BusinessException SeatSelectionHasNoMatchingAirService(params object?[] args) =>
-            new(2717, ExceptionMessages.SeatSelectionHasNoMatchingAirService, args) { HttpStatus = 422 };
-
         public static BusinessException OfferPriceCategoryIsNotRecognised(params object?[] args) =>
             new(2718, ExceptionMessages.OfferPriceCategoryIsNotRecognised, args) { HttpStatus = 422 };
 
@@ -717,9 +711,6 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
 
         public static BusinessException AncillarySelectionExpiredAtSource(params object?[] args) =>
             new(2865, ExceptionMessages.AncillarySelectionExpiredAtSource, args) { HttpStatus = 409 };
-
-        public static BusinessException PricedSeatsCannotCombineWithLegacySeats(params object?[] args) =>
-            new(2866, ExceptionMessages.PricedSeatsCannotCombineWithLegacySeats, args) { HttpStatus = 422 };
 
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;

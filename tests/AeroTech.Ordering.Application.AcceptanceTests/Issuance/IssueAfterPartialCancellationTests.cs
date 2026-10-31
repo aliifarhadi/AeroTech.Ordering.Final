@@ -195,7 +195,7 @@ public sealed class IssueAfterPartialCancellationTests
         var order = _harness.SeedOrder(
             [TravellerSpec.Adult(1)],
             [new BoundSpec("OUT", 101), new BoundSpec("RET", 201)],
-            [new SeatSpec(1, "RET", "12A")]);
+            [new SeatSpec(1, 201, "12A")]);
         await _harness.ReserveOrderAsync(order);
         await _harness.ConfirmReservedCapacityAsync(order);
         var outbound = ReservationHarness.AirService(order, 1, 101);

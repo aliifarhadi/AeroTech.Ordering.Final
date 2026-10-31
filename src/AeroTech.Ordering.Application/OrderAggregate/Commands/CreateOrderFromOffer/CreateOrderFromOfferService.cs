@@ -5,6 +5,7 @@ using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 using AeroTech.Ordering.Domain.OrderAggregate.Contracts;
 using AeroTech.Ordering.Domain.OrderAggregate.DomainEvents;
+using AeroTech.Ordering.Domain.Providers.Ancillary;
 using AeroTech.Ordering.Domain.Providers.Offer;
 
 namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromOffer
@@ -12,6 +13,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
     public sealed class CreateOrderFromOfferService : ICreateOrderFromOfferService
     {
         private readonly IOfferProvider _offerProvider;
+        private readonly IAncillaryProvider _ancillaries;
         private readonly IOrderRepository _orders;
         private readonly IOrderQueryDbSynchronizer _synchronizer;
         private readonly IUnitOfWork _unitOfWork;
@@ -20,6 +22,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
 
         public CreateOrderFromOfferService(
             IOfferProvider offerProvider,
+            IAncillaryProvider ancillaries,
             IOrderRepository orders,
             IOrderQueryDbSynchronizer synchronizer,
             IUnitOfWork unitOfWork,
@@ -27,6 +30,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
             IClock clock)
         {
             _offerProvider = offerProvider;
+            _ancillaries = ancillaries;
             _orders = orders;
             _synchronizer = synchronizer;
             _unitOfWork = unitOfWork;
@@ -38,9 +42,13 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
             CreateOrderArgs args,
             CancellationToken cancellationToken = default)
         {
-            var offer = await _offerProvider.GetByOfferIdAsync(args.OfferId, cancellationToken);
+            Order.EnsureSeatInputIsNotMixed(args);
 
-            var order = Order.Create(args, offer, _idGenerator, _clock);
+            var offer = await _offerProvider.GetByOfferIdAsync(args.OfferId, cancellationToken);
+            var selection = await ResolveSelectionAsync(args.AncillaryPricedSelectionId, cancellationToken);
+            var seats = await ResolveSeatsAsync(args.SeatPricedSelectionId, cancellationToken);
+
+            var order = Order.Create(args, offer, _idGenerator, _clock, selection, seats);
 
             await _orders.AddAsync(order, cancellationToken);
 
@@ -56,5 +64,11 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
                 order.CustomerTotal,
                 order.CommercialVersion);
         }
+
+        private async Task<ResolvedAncillarySelection?> ResolveSelectionAsync(string? selectionId, CancellationToken cancellationToken)
+            => selectionId is null ? null : await _ancillaries.ResolveSelectionAsync(selectionId, cancellationToken);
+
+        private async Task<ResolvedSeatQuote?> ResolveSeatsAsync(string? selectionId, CancellationToken cancellationToken)
+            => selectionId is null ? null : await _ancillaries.ResolveSeatSelectionAsync(selectionId, cancellationToken);
     }
 }

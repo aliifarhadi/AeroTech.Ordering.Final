@@ -394,7 +394,8 @@ The sold/selected seat remains commercial history. A later DCS operational seat 
 - A traveller holds at most one active seat per flight, and one physical seat on a flight goes to at most one traveller of the Order.
 - `PointOfSaleId` comes from the accepted seat quote; it is never re-derived from the sales office.
 - A legacy seat from Create `seatSelections` keeps every quote field null.
-- The seat quote contract (Ancillary AC-03, handoff OR-005) does not exist yet, so live priced-seat acceptance is `BLOCKED_SOURCE`.
+- The seat quote comes from the Ancillary `SeatMaps/Price` selection snapshot, read through `SeatMaps/Resolve` (decision D14, 2026-10-31). `Source.SelectionId` holds the whole `s_` snapshot and `Source.OfferItemId` holds the individual seat id.
+- An accepted seat is a commercial selection, not a physical reservation. Physical uniqueness is handoff OR-006 and Stage 6B.
 
 ---
 
@@ -420,7 +421,7 @@ The sold/selected seat remains commercial history. A later DCS operational seat 
 | `CommercialName` | `string?` | Yes | Source commercial description. SOURCE-GATED: not materialized. |
 | `Quantity` | `int` | No | Purchased whole-unit count (owner decision, 2026-10-27); default source semantics, not guessed. |
 | `UnitCode` | `string?` | Yes | Unit if quantity is not count. SOURCE-GATED: not materialized; the source pricing unit is kept in `Pricing.PricingUnit`. |
-| `CoveredAirServiceIds` | `IReadOnlyCollection<long>` | No | 0..N active air services of the same Order, mapped from the source coverage: Sector = one flight of the traveller, Portion = every flight of the bound in sequence, Journey = exactly the flights the source names (refused while the source names none), Order = none. |
+| `CoveredAirServiceIds` | `IReadOnlyCollection<long>` | No | 0..N active air services of the same Order, mapped from the source coverage: Sector = one flight of the traveller, Portion = every flight of the bound in sequence, Journey from an Offer source = every active air service of the same traveller on the exact accepted Offer, because the source defines Journey as all flights of that Offer (`CoveragePlanner.Units`, decision D13, 2026-10-31); Journey from an Order source = exactly the flights the source names (refused while the source names none), Order = none. |
 | `Refundability` | `RefundabilityRule?` | Yes | Accepted optional-service term snapshot. SOURCE-GATED: not materialized. |
 | `Reusable` | `bool?` | Yes | ATPCO/source term when supplied. SOURCE-GATED: not materialized. |
 | `FormOfRefundCode` | `string?` | Yes | Source disposition rule, e.g. original payment/e-voucher. SOURCE-GATED: not materialized. |
@@ -2765,7 +2766,7 @@ The whole domain above is the design authority. Coding remains controlled by sta
 | **S3 Confirm Reserved Capacity** | First verify per-operation provider idempotency/read-back/result semantics; then `ConfirmReservedCapacity`, stale-validation refresh, `ConfirmInventory` FulfillmentTask/evidence and truthful Held→Confirmed/Unknown behavior using the verified recovery branch | ETKT/EMD, Payment/JetPay, invented provider retry semantics |
 | **S4 Issue** | ElectronicTicket, TicketCoupon, TicketPriceLink, ElectronicMiscDocument/EmdCoupon only for documentable current scope, DocumentStock, document-oriented FulfillmentTask target generalization | refund/exchange/group/DCS/payment |
 | **S5 Cancel / Void** | unissued commercial cancel, reservation cancellation/release, document void history/recovery | automated refund/exchange/payment rail |
-| **S6A Ancillary commercial acceptance — MATERIALIZED 2026-10-28** | abstract `OrderAncillaryService` with its sealed family entities (§6.7.1), priced `OrderSeatService`, accepted ancillary pricing, Add on Backoffice/Api/OtaPanel, Reserve/Confirm/Issue guard and ancillary-aware Cancel (§27.8). Live use waits for the Ancillary source contracts (handoff OR-005). | Hold/Confirm/EMD, Create with selections (6A.2, next), generic service catalog replication, payment rail |
+| **S6A Ancillary commercial acceptance — MATERIALIZED 2026-10-28** | abstract `OrderAncillaryService` with its sealed family entities (§6.7.1), priced `OrderSeatService`, accepted ancillary pricing, Add on Backoffice/Api/OtaPanel, Create with priced selections on the same three surfaces (6A.2, R4), Reserve/Confirm/Issue guard and ancillary-aware Cancel (§27.8). Live proof waits for the Ancillary Resolve contract release (handoff OR-005). | Hold/Confirm/EMD, generic service catalog replication, payment rail |
 | **S6B Ancillary fulfillment / EMD servicing** | real Ancillary reservation provider, seat physical authority, EMD-A/S association | must be closed as domain and flows before coding (owner decision D4) |
 | **S7 Split** | OrderLineage, transferred service/item lineage, provider/document split servicing | group split unless group Stage arrived |
 | **S8 Refund** | RefundDecisionSnapshot, ETKT/EMD refund records, commercial/document refund history after AirPrice decision | actual money-return rail until JetPay Stage-P |
@@ -3047,7 +3048,7 @@ A field may serve more scenarios than listed; the table records the minimum scen
 | `AssociatedAirServiceId` | `long` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S10, S30, S40, S45, S68, S72 |
 | `SeatNumber` | `string` | CURRENT-CODE-VERIFIED / CLOSED-STAGE | S10, S30, S40, S45, S68, S72 |
 | `VariantCode` | `string?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S10, S30, S40, S45, S68, S72 |
-| `PointOfSaleId` | `long?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A); source quote BLOCKED_SOURCE (AC-03) | S10, S30, S40, S45, S68, S72 |
+| `PointOfSaleId` | `long?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A); source quote is `SeatMaps/Resolve` (D14) | S10, S30, S40, S45, S68, S72 |
 | `Source` / `Definition` / `Provision` / `Pricing` | `Ancillary*?` | CURRENT-CODE-VERIFIED / OWNER-DECISION (Stage 6A) | S10, S30, S40, S45, S68, S72 |
 ## 6.7 `OrderAncillaryService` — airline optional service
 

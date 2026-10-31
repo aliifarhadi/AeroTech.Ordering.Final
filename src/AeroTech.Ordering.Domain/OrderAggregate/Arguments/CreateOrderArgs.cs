@@ -10,7 +10,9 @@ namespace AeroTech.Ordering.Domain.OrderAggregate.Arguments
         CreateOrderContactArgs Contact,
         IReadOnlyList<CreateOrderTravellerArgs> Travellers,
         IReadOnlyList<CreateOrderSeatSelectionArgs> SeatSelections,
-        IReadOnlyList<CreateOrderRemarkArgs> Remarks);
+        IReadOnlyList<CreateOrderRemarkArgs> Remarks,
+        string? AncillaryPricedSelectionId,
+        string? SeatPricedSelectionId);
 
     public sealed record CreateOrderContactArgs(
         string? ContactName,

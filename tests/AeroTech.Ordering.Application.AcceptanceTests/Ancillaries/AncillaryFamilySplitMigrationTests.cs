@@ -43,6 +43,7 @@ public sealed class AncillaryFamilySplitMigrationTests : IAsyncLifetime
 
             Assert.Equal(PersistedPurchases(expected), PersistedPurchases(reloaded));
             Assert.Equal(PersistedPricing(expected), PersistedPricing(reloaded));
+            Assert.All(PersistedSeatSources(reloaded), source => Assert.StartsWith("seat_", source.SelectionId));
         }
     }
 
@@ -94,6 +95,7 @@ public sealed class AncillaryFamilySplitMigrationTests : IAsyncLifetime
             var reloaded = (await new OrderRepository(context).GetAsync(order.Id))!;
 
             Assert.Equal(PersistedPurchases(order), PersistedPurchases(reloaded));
+            Assert.Equal(PersistedSeatSources(order), PersistedSeatSources(reloaded));
         }
     }
 

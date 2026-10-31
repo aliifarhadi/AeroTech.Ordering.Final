@@ -25,7 +25,7 @@ The source's `SourceBinding.OfferHash`/`SalesHash` is internal integrity evidenc
 |---|---|---|---|
 | Sector | PerTravellerPerFlight | one traveller | resolved `unit.flightRef` → 1 active segment/AirService for traveller; reject duplicate/mismatch |
 | Portion | PerTravellerPerPortion | one traveller | trusted portion/BoundRef → all AirServices inside that exact portion; require source context proof |
-| Journey | PerTraveller | one traveller | source-defined journey-wide flight set; resolve `AC-05` if otherwise ambiguous; do NOT guess every flight |
+| Journey | PerTraveller | one traveller | Offer source: every flight of the exact accepted Offer for that traveller (decision D13, 2026-10-31). Order source: only the flights the source names |
 | Order | PerOrder | no traveller | zero or source-authoritative order-wide covered AirServices; `TravellerId=null` |
 
 Request from client contains **IDs only**. For Create map source `travellerRef` to `OfferReader.GetTravellerRef(Index)` and then stable newly-created OrderTraveller.Id, and `flightId`/source flight refs to Order.Segment and matching AirServices. For Add map Ancillary's order context refs (current Ancillary uses stringified **OrderTravellerId**, not legacy offer `travellerRef`) to current Order Traveller/Segment. **Never use traveller index as OrderTravellerId.** `BoundId` must agree with the source covered portion; a two-flight portion is ONE purchased service with two covered AirServices. An `Order` scoped service is not assigned to first traveller.

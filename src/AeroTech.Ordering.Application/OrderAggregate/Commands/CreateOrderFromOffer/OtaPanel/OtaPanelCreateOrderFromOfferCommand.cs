@@ -7,5 +7,7 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
         OrderContact Contact,
         IReadOnlyList<OrderTraveller> Travelers,
         IReadOnlyList<SeatSelection> SeatSelections,
-        IReadOnlyList<OrderRemarkInput> Remarks) : IRequest<CreateOrderFromOfferResult>, IAgencyCreateOrderCommand;
+        IReadOnlyList<OrderRemarkInput> Remarks,
+        string? AncillaryPricedSelectionId,
+        string? SeatPricedSelectionId) : IRequest<CreateOrderFromOfferResult>, IAgencyCreateOrderCommand;
 }

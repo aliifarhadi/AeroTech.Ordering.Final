@@ -11,6 +11,8 @@ namespace AeroTech.Ordering.Providers.Ancillary.Services
     public sealed class AncillaryProvider : IAncillaryProvider
     {
         private const string ResolveRoute = "v1/AncillaryOffers/Resolve";
+        private const string ResolveSeatsRoute = "v1/Ancillaries/SeatMaps/Resolve";
+        private const int RetiredSeatRateCode = 16811;
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -24,32 +26,40 @@ namespace AeroTech.Ordering.Providers.Ancillary.Services
         public AncillaryProvider(HttpClient httpClient) => _httpClient = httpClient;
 
         public async Task<ResolvedAncillarySelection> ResolveSelectionAsync(string selectionId, CancellationToken cancellationToken = default)
+            => ResolvedSelectionsMapper.ToDomain(
+                selectionId,
+                await ResolveAsync<ResolvedSelectionsResponse>(ResolveRoute, selectionId, cancellationToken));
+
+        public async Task<ResolvedSeatQuote> ResolveSeatSelectionAsync(string selectionId, CancellationToken cancellationToken = default)
+            => ResolvedSeatsMapper.ToDomain(
+                selectionId,
+                await ResolveAsync<ResolvedSeatsResponse>(ResolveSeatsRoute, selectionId, cancellationToken));
+
+        private async Task<TResponse> ResolveAsync<TResponse>(string route, string selectionId, CancellationToken cancellationToken)
+            where TResponse : class
         {
             using var response = await _httpClient.PostAsJsonAsync(
-                ResolveRoute,
+                route,
                 new { SelectionId = selectionId },
                 JsonOptions,
                 cancellationToken);
 
             var envelope = await response.Content
-                .ReadFromJsonAsync<AncillaryEnvelope<ResolvedSelectionsResponse>>(JsonOptions, cancellationToken);
+                .ReadFromJsonAsync<AncillaryEnvelope<TResponse>>(JsonOptions, cancellationToken);
 
             if (response.IsSuccessStatusCode && envelope?.Data is { } data)
-                return ResolvedSelectionsMapper.ToDomain(selectionId, data);
+                return data;
+
+            var error = envelope?.Errors?.FirstOrDefault();
 
             throw response.StatusCode switch
             {
                 HttpStatusCode.Gone => ExceptionFactory.AncillarySelectionExpiredAtSource(selectionId),
                 HttpStatusCode.Conflict => ExceptionFactory.AncillarySelectionIsNoLongerSellable(selectionId),
+                HttpStatusCode.NotFound when error?.Code == RetiredSeatRateCode => ExceptionFactory.AncillarySelectionIsNoLongerSellable(selectionId),
                 HttpStatusCode.NotFound => ExceptionFactory.AncillarySelectionIsNotFound(selectionId),
-                _ => ExceptionFactory.AncillarySelectionCouldNotBeResolved(FirstError(envelope), selectionId)
+                _ => ExceptionFactory.AncillarySelectionCouldNotBeResolved(error?.Detail ?? error?.Title, selectionId)
             };
-        }
-
-        private static string? FirstError(AncillaryEnvelope<ResolvedSelectionsResponse>? envelope)
-        {
-            var error = envelope?.Errors?.FirstOrDefault();
-            return error is null ? null : error.Detail ?? error.Title;
         }
     }
 }

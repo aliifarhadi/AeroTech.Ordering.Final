@@ -1,11 +1,13 @@
 using AeroTech.Framework.Core.ServiceContracts;
 using AeroTech.Messages.AirPrice.Enums;
+using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Messages.Ordering.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 using AeroTech.Ordering.Domain.OrderAggregate.DomainEvents;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.Providers;
+using AeroTech.Ordering.Domain.Providers.Ancillary;
 using AeroTech.Ordering.Domain.Providers.Offer;
 using AeroTech.Ordering.Domain._Shared.Resources;
 using PassengerTypeCode = AeroTech.Messages.Ordering.Enums.PassengerTypeCode;
@@ -14,8 +16,22 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 {
     public sealed partial class Order
     {
-        public static Order Create(CreateOrderArgs args, OfferDetail offer, IIdGenerator idGenerator, IClock clock)
+        public static void EnsureSeatInputIsNotMixed(CreateOrderArgs args)
         {
+            if (args.SeatPricedSelectionId is not null && args.SeatSelections.Count > 0)
+                throw ExceptionFactory.PricedSeatsCannotCombineWithLegacySeats(args.SeatPricedSelectionId);
+        }
+
+        public static Order Create(
+            CreateOrderArgs args,
+            OfferDetail offer,
+            IIdGenerator idGenerator,
+            IClock clock,
+            ResolvedAncillarySelection? selection = null,
+            ResolvedSeatQuote? seats = null)
+        {
+            EnsureSeatInputIsNotMixed(args);
+
             var reader = new OfferReader(offer);
             ReconcileTravellers(args, reader);
 
@@ -38,6 +54,15 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             order.BuildItemsAndServices(args, reader, idGenerator, change.Id, createdAt);
             order.BuildFarePricingUnits(reader, idGenerator, change.Id);
             order.BuildPricing(reader, idGenerator, change.Id, createdAt);
+            order.AcceptSelections(
+                selection,
+                seats,
+                ShoppingSourceKind.Offer,
+                args.OfferId,
+                change.Id,
+                OrderPricingReason.InitialSale,
+                idGenerator,
+                createdAt);
             order.BuildRemarks(args, idGenerator, createdAt);
             order.ReconcileTotals();
             order.RaiseCreated(idGenerator, createdAt);

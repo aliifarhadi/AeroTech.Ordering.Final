@@ -1,0 +1,112 @@
+{
+  "data": {
+    "orderId": null,
+    "orderCommercialVersion": null,
+    "sourceKind": "Offer",
+    "sourceReference": "OFFER-1",
+    "expiresAtUtc": "2026-12-01T10:00:00+00:00",
+    "selectedLineCount": 1,
+    "seats": [
+      {
+        "id": "VDF8MTAxfDExfDEyQXw3",
+        "travellerRef": "T1",
+        "flightId": "101",
+        "seatNumber": "12A",
+        "pointOfSaleId": "7",
+        "expiresAtUtc": "2026-12-01T10:00:00+00:00",
+        "serviceDefinition": {
+          "id": "107",
+          "serviceDefinitionRef": "SEAT_ECO_STANDARD",
+          "version": 1,
+          "supplierId": "1",
+          "commercialName": "Standard seat",
+          "description": null,
+          "profile": { "value": 2, "name": "Seat", "title": "Seat" },
+          "variantCode": "A07",
+          "serviceTypeCode": "F",
+          "serviceSubCode": "0B5",
+          "subCodeSource": { "value": 1, "name": "Atpco", "title": "ATPCO" },
+          "groupCode": "SA",
+          "subGroupCode": null,
+          "description1Code": null,
+          "description2Code": null,
+          "pricingUnit": { "value": 1, "name": "PerItem", "title": "Per Item" },
+          "serviceDateBasis": null,
+          "booking": {
+            "method": { "value": 1, "name": "Ssr", "title": "SSR" },
+            "ssrCode": "SEAT",
+            "ssimCode": null,
+            "confirmationRequirement": { "value": 1, "name": "Immediate", "title": "Immediate" }
+          },
+          "document": {
+            "type": { "value": 2, "name": "EmdAssociated", "title": "EMD Associated" },
+            "routing": { "value": 2, "name": "Emd", "title": "EMD" },
+            "rfic": "A",
+            "rfisc": "0B5"
+          },
+          "seat": {
+            "purpose": { "value": 1, "name": "Standard", "title": "Standard" },
+            "requiresExitRowEligibility": false,
+            "requiresAdjacentSeat": false,
+            "extraSeatPurpose": null,
+            "extraOccupiedSeatCount": null,
+            "requiresExternalTicketAction": false
+          }
+        },
+        "provision": {
+          "id": "207",
+          "sequence": 1,
+          "coverageScope": { "value": 1, "name": "Sector", "title": "Sector" },
+          "purchaseStage": { "value": 1, "name": "PreOrder", "title": "Pre Order" },
+          "priceOrigin": { "value": 1, "name": "Filed", "title": "Filed" },
+          "applicationType": { "value": 1, "name": "PerPassenger", "title": "Per Passenger" },
+          "quantity": { "unit": { "value": 1, "name": "Seat", "title": "Seat" }, "minQuantity": 1, "maxQuantity": 1 },
+          "outcome": { "disposition": { "value": 1, "name": "Paid", "title": "Paid" }, "documentRequired": true, "bookingRequired": true },
+          "settlement": { "reissueRefund": { "value": 1, "name": "Refundable", "title": "Refundable" }, "formOfRefund": null, "commissionable": false, "interlineSettlement": false },
+          "availability": { "mustCheckAvailability": true },
+          "fulfillment": { "fulfillmentProviderKey": "FlightFlow" }
+        },
+        "pricing": {
+          "id": "11",
+          "version": 3,
+          "pricingUnit": { "value": 1, "name": "PerItem", "title": "Per Item" },
+          "rate": {
+            "id": "12",
+            "passengerTypeCode": null,
+            "ageFromInclusive": null,
+            "ageToExclusive": null,
+            "currencyId": 1,
+            "baseAmount": 100,
+            "unitTotal": 113,
+            "isUnitTotalComplete": true,
+            "components": [
+              {
+                "id": "31",
+                "category": { "value": 2, "name": "Tax", "title": "Tax" },
+                "code": "VAT",
+                "name": "Value added tax",
+                "countryId": 364,
+                "stationAirportId": null,
+                "amount": 10,
+                "feeApplicationUnit": null,
+                "taxTreatment": { "value": 2, "name": "AddedToBase", "title": "Added To Base" }
+              },
+              {
+                "id": "32",
+                "category": { "value": 3, "name": "Fee", "title": "Fee" },
+                "code": "SF",
+                "name": "Service fee",
+                "countryId": null,
+                "stationAirportId": null,
+                "amount": 3,
+                "feeApplicationUnit": { "value": 1, "name": "Item", "title": "Item" },
+                "taxTreatment": null
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "errors": null
+}

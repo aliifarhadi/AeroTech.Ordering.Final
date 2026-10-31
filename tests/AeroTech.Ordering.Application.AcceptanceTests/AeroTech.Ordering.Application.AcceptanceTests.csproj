@@ -11,12 +11,14 @@
     <ProjectReference Include="../../src/AeroTech.Ordering.Providers/AeroTech.Ordering.Providers.csproj" />
     <ProjectReference Include="../../src/AeroTech.Ordering.Persistence/AeroTech.Ordering.Persistence.csproj" />
     <ProjectReference Include="../../src/AeroTech.Ordering.Synchronizer/AeroTech.Ordering.Synchronizer.csproj" />
+    <ProjectReference Include="../../src/AeroTech.Ordering.RestApi/AeroTech.Ordering.RestApi.csproj" />
     <ProjectReference Include="../../Framework/AeroTech.Framework.Presentation/AeroTech.Framework.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Offer\Payloads\*.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Ancillaries\Payloads\*.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Ancillaries\Payloads\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

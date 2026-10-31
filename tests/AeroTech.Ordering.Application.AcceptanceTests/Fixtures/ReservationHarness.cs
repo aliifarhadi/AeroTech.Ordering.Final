@@ -22,6 +22,7 @@ using AeroTech.Ordering.Domain.ElectronicTicketAggregate;
 using AeroTech.Ordering.Domain.FulfillmentReservationAggregate;
 using AeroTech.Ordering.Domain.FulfillmentTaskAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate;
+using AeroTech.Ordering.Domain.OrderAggregate.Arguments;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
 using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.Providers.Ancillary;
@@ -72,7 +73,7 @@ public sealed class ReservationHarness
 
         var releaser = new ReservationReleaser(Tasks, providers, UnitOfWork, Ids, Clock);
 
-        _create = new CreateOrderFromOfferService(OfferProvider, Orders, Synchronizer, UnitOfWork, Ids, Clock);
+        _create = new CreateOrderFromOfferService(OfferProvider, Ancillaries, Orders, Synchronizer, UnitOfWork, Ids, Clock);
         _reserve = new ReserveService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
         _release = new ReleaseReservationService(Orders, Reservations, releaser, summarizer, reservationLock, Synchronizer, UnitOfWork, Clock);
         _confirm = new ConfirmService(Orders, Reservations, Tasks, providers, summarizer, reservationLock, Synchronizer, UnitOfWork, Ids, Clock);
@@ -175,6 +176,34 @@ public sealed class ReservationHarness
         OfferProvider.Offers[offer.OfferId] = offer;
 
         var created = await _create.ExecuteAsync(OrderFixture.Args(travellers, seats ?? []));
+
+        return Orders.Find(created.OrderId)!;
+    }
+
+    public Task<CreateOrderFromOfferResult> CreateAsync(CreateOrderArgs args) => _create.ExecuteAsync(args);
+
+    public async Task<Order> CreateWithSelectionsAsync(
+        OfferDetail offer,
+        IReadOnlyList<TravellerSpec> travellers,
+        ResolvedAncillarySelection? selection = null,
+        ResolvedSeatQuote? seats = null,
+        IReadOnlyList<SeatSpec>? legacySeats = null)
+    {
+        OfferProvider.Offers[offer.OfferId] = offer;
+
+        if (selection is not null)
+            Ancillaries.Selections[selection.SelectionId] = selection;
+
+        if (seats is not null)
+            Ancillaries.SeatQuotes[seats.SelectionId] = seats;
+
+        var args = OrderFixture.Args(travellers, legacySeats ?? []) with
+        {
+            AncillaryPricedSelectionId = selection?.SelectionId,
+            SeatPricedSelectionId = seats?.SelectionId
+        };
+
+        var created = await CreateAsync(args);
 
         return Orders.Find(created.OrderId)!;
     }

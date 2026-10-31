@@ -21,7 +21,7 @@
 |---|---|---|
 | D01 | Retain all six Master Aggregate Roots, **no new generic Order/Saga/Pricing aggregate** | Master authority, correct bounded contexts |
 | D02 | **One canonical commercial acceptance pipeline**, used by Create and Add; surface mapping only at controllers | IATA Offer→Order and OrderChange, avoid duplicate business logic |
-| D03 | `selectedAncillaries` canonical internal basket = `{selectionId?, seatSelectionIds?}`. Public API/OTA Panel use separate `services[]` **wire adapter**, preserving existing contracts | Amadeus/IATA-style separation of public API and internal model, no domain coupling to a channel |
+| D03 | Create inputs superseded by decision D14 (2026-10-31). `selectedAncillaries` canonical internal basket = `{selectionId?, seatSelectionIds?}`. Public API/OTA Panel use separate `services[]` **wire adapter**, preserving existing contracts | Amadeus/IATA-style separation of public API and internal model, no domain coupling to a channel |
 | D04 | `OrderService.TravellerId` **nullable** only for true `PerOrder`; explicit Master §6.1/§6.4 amendment | Source Ancillary supports Order coverage with no traveller |
 | D05 | `OrderAncillaryService.Quantity` **int**; `CoveredAirServiceIds` **0..N**; `SelectionScope` and `CoverageScope` retained independently | Actual Ancillary DTO + local Master amendment |
 | D06 | `OrderServiceType`: reuse meaningful existing members; append **one** generic `Ancillary` for missing categories. Never mislabel purchased baggage as `BaggageAllowance` | Minimum additions, no 24 enum values |

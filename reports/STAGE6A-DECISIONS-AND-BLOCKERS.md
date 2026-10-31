@@ -23,6 +23,8 @@
 | D10 | The A07/A08 seat domain is built now, with fixtures. | Only the adapter and the live test wait for AC-03. Seats extend `OrderSeatService`: one per traveller × flight, with a quote snapshot that includes `PointOfSaleId` and its own `ProductType.Seat` item. |
 | D11 | Tax jurisdiction on an ancillary price line uses Master §8.1 `TaxJurisdictionSnapshot` (CountryId, StationId). The source treatment and fee unit are two scalar fields on `PricingLine`. | The invented `PriceComponentSource` was removed and the command migration was regenerated. |
 | D12 | Each family is a sealed entity under an abstract `OrderAncillaryService` (owner diagram). | The base holds source, definition, provision, pricing, coverage and quantity. Nine family entities hold their variant's own facts and rules: Baggage, ExtraSeat, Upgrade, Meal, Pet, AssistedTravel, Airport, Priority and Connectivity (Master §6.7.1). The nine choice value objects were removed; `MedicalEquipmentChoice` and `UnaccompaniedMinorChoice` stay inside `OrderAssistedTravelService`. Command migration `SplitAncillaryFamilies` creates one TPT table per persisted family, copies existing rows, then drops the 41 old columns; `Down` copies back before dropping the tables. The read model stays one ancillary table. |
+| D13 | Offer-sourced Journey coverage is derived from the accepted Offer. | The source defines Journey as every flight of every portion of the exact Offer (`CoveragePlanner.Units`), and `SelectionScopes.Of(Journey)` is `PerTraveller`. `CoverageRef` is internal and not on the wire, so Ordering proves the case from `SelectionScope=PerTraveller`, `Provision.CoverageScope=Journey` and a unit with no portion or flight, after the source reference equals the Offer id. The service covers every active air service of that traveller, once. Order-sourced Journey still needs named flights. Master §6.7 is amended in place (R4, 2026-10-31). |
+| D14 | Create takes `AncillaryPricedSelectionId` and `SeatPricedSelectionId` on Backoffice, Api and OtaPanel. | Each is one optional `s_` snapshot id, an AeroTech adapter name and not an IATA field. They replace `selectedAncillaries`, `seatSelectionIds[]` and the external `services[]` for Create only. Seats resolve through `SeatMaps/Price` and `SeatMaps/Resolve`, so AC-03 and `ValidateForAcceptance` are not built. A seat source keeps `s_` as `SelectionId` and the seat id as `OfferItemId`. Legacy `SeatSelections` with a priced seat selection is refused with 2866 (R4, 2026-10-31). |
 
 ## 2. Repository conventions that override the pack (CLAUDE.md governs layering, placement and EF mapping)
 
@@ -38,11 +40,11 @@
 
 | AC | Status at `190aa74` | Ordering behavior until it lands |
 |---|---|---|
-| AC-01: `sourceKind`, `sourceReference`, `expiresAtUtc`, `selectedLineCount` in the Resolve header | Missing | The ACL rejects the basket as source-incomplete. Live Add and Create are `BLOCKED_SOURCE`. |
-| AC-02: `isUnitTotalComplete` in Resolve pricing | Missing | Pricing is rejected as incomplete. |
-| AC-03: read-only seat acceptance quote | Missing | The seat domain is built with fixtures (D10). The adapter and the live seat test are `BLOCKED_SOURCE`. |
+| AC-01: `sourceKind`, `sourceReference`, `expiresAtUtc`, `selectedLineCount` in the Resolve header | Missing at `190aa74`. Delivered uncommitted on `c6e783b` (R4-A) | The ACL rejects the basket as source-incomplete until that release is running. |
+| AC-02: `isUnitTotalComplete` in Resolve pricing | Missing at `190aa74`. Delivered uncommitted on `c6e783b` (R4-A) | Pricing is rejected as incomplete until that release is running. |
+| AC-03: read-only seat acceptance quote | Replaced by `SeatMaps/Price` and `SeatMaps/Resolve` (D14). The seat header and count are delivered uncommitted on `c6e783b` (R4-A) | The adapter exists and fails closed until that release is running. |
 | AC-04: non-empty `ancillaryServices` in the shopping context | Rejected (`OrderingAncillaryContextMapper.cs:17`) | Ordering will project accepted services. Second shopping fails until Ancillary changes. |
-| AC-05: truthful coverage | Partial | The ACL maps only Sector, Portion and Order. Journey coverage is rejected until the source states its flights. |
+| AC-05: truthful coverage | Closed for Offer source by D13, with no wire change | Order-sourced Journey coverage is rejected until the source states its flights. |
 | AC-06: A09, A17 and A19 typed source | Missing | D1. |
 
 ## 4. Increment plan and status (2026-10-28)
@@ -55,8 +57,8 @@
 | 6A.1 application, providers and API | `IAncillaryProvider` Resolve adapter (fails closed while AC-01 and AC-02 are missing), `AddAncillariesService`, three surface commands, `POST .../{orderId}/Ancillaries` on Backoffice, Api and OtaPanel | Done. Live use is `BLOCKED_SOURCE` (AC-01, AC-02). |
 | G0 family-split verification | `SplitAncillaryFamilies` refuses to drop anything unless every row lands in exactly one family table matching its `VariantCode`; real old→new upgrade from data written by the `372a1e4` model; TPT load profile (`reports/Stage6A-G0-G1-Evidence-2026-10-28.md`) | Done, tested |
 | G1 typed order detail | `GetOrderById` and the Backoffice order detail carry each accepted ancillary's variant, quantity, coverage, definition and typed customer choices. OTA/OtaPanel (Amadeus shape) are unchanged. | Done, tested. Priced seats cannot reach the read side yet (no seat flow before AC-03). |
-| 6A.2 Create with selections | | Not started |
-| 6A.3 Seats | Domain done (D10): per traveller × flight, quote snapshot with `PointOfSaleId`, its own Seat item, duplicate guards. The port and adapter wait for AC-03. | Domain done, tested |
+| 6A.2 Create with selections | One Create change at version 1 with `InitialSale` pricing through the same `AcceptSelections` kernel as Add, on all three surfaces (R4, D13, D14) | Done with fixture and SQL proof. Live proof is blocked: see `reports/Stage6A2-R4-Create-Evidence-2026-10-31.md`. |
+| 6A.3 Seats | Per traveller × flight, quote snapshot with `PointOfSaleId`, its own Seat item, duplicate guards (D10). Port and adapter read `SeatMaps/Resolve` (D14). | Done with fixture proof. Live proof blocked as 6A.2. |
 | Guardrails | `canonical-stage6a-v1.0.yaml`, `Stage6ATypeSetConformanceTests`, `.canonical-stage = 6`, CLAUDE.md authority switch, Master v2.0 amended in place (§6.4, §6.6–§6.8 with §6.7.1, §8.1, §9.1, §27.8, §30, §34.1, §35) | Done |
 | Handoff | AC-01…AC-06 filed as `E:\Projects\DotAir\handoffs\OR-005-ancillary-source-contracts-for-commercial-acceptance.md`, listed in the ledger index | Requested |
 
@@ -72,3 +74,5 @@
 | Family split upgrade | Rows written by the `372a1e4` model upgrade to exactly what the current model persists; a row without its family data stops the migration and leaves the schema and rows unchanged |
 | Dev database | `DotAirOrdering` at `20261028125838_SplitAncillaryFamilies`; 15 orders, 58 services, 189 price lines unchanged |
 | A09, A17, A19 | Domain tests only (D1). SQL round trip is `BLOCKED_SOURCE`. |
+
+Stage 6A.2 evidence, including the 2026-10-31 run, is in `reports/Stage6A2-R4-Create-Evidence-2026-10-31.md`.

@@ -8,12 +8,16 @@ namespace AeroTech.Ordering.RestApi.V1.OrderAggregate.Requests
         OrderContact Contact,
         IReadOnlyList<OrderTraveller> Travelers,
         IReadOnlyList<SeatSelection>? SeatSelections,
-        IReadOnlyList<OrderRemarkInput>? Remarks);
+        IReadOnlyList<OrderRemarkInput>? Remarks,
+        string? AncillaryPricedSelectionId = null,
+        string? SeatPricedSelectionId = null);
 
     public sealed record AgencyCreateOrderFromOfferRequest(
         string OfferId,
         OrderContact Contact,
         IReadOnlyList<OrderTraveller> Travelers,
         IReadOnlyList<SeatSelection>? SeatSelections,
-        IReadOnlyList<OrderRemarkInput>? Remarks);
+        IReadOnlyList<OrderRemarkInput>? Remarks,
+        string? AncillaryPricedSelectionId = null,
+        string? SeatPricedSelectionId = null);
 }

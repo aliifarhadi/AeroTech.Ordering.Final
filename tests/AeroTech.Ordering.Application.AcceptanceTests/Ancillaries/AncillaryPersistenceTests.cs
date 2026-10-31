@@ -43,6 +43,7 @@ public sealed class AncillaryPersistenceTests : IAsyncLifetime
             var reloaded = (await new OrderRepository(context).GetAsync(order.Id))!;
 
             Assert.Equal(PersistedPurchases(order), PersistedPurchases(reloaded));
+            Assert.Equal(PersistedSeatSources(order), PersistedSeatSources(reloaded));
             Assert.Equal(PersistedPricing(order), PersistedPricing(reloaded));
             Assert.Equal((order.CommercialVersion, order.CustomerTotal), (reloaded.CommercialVersion, reloaded.CustomerTotal));
             Assert.Contains(reloaded.Services.OfType<OrderAncillaryService>(), service => service.TravellerId is null);

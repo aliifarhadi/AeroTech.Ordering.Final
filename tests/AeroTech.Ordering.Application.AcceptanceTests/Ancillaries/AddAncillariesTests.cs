@@ -388,20 +388,6 @@ public sealed class AddAncillariesTests
             : line;
     }
 
-    private static Type FamilyEntityOf(AncillaryProfile profile)
-        => profile switch
-        {
-            AncillaryProfile.Baggage => typeof(OrderBaggageService),
-            AncillaryProfile.Meal => typeof(OrderMealService),
-            AncillaryProfile.Pet => typeof(OrderPetService),
-            AncillaryProfile.AssistedTravel => typeof(OrderAssistedTravelService),
-            AncillaryProfile.AirportService => typeof(OrderAirportService),
-            AncillaryProfile.Priority => typeof(OrderPriorityService),
-            AncillaryProfile.Connectivity => typeof(OrderConnectivityService),
-            AncillaryProfile.Upgrade => typeof(OrderUpgradeService),
-            _ => typeof(OrderExtraSeatService)
-        };
-
     private static OrderTraveller Traveller(Order order, int index) => order.Travellers.Single(traveller => traveller.Index == index);
 
     private static string Ref(OrderTraveller traveller) => traveller.Id.ToString(CultureInfo.InvariantCulture);

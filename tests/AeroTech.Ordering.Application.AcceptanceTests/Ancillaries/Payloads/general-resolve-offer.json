@@ -1,0 +1,117 @@
+{
+  "data": {
+    "orderId": null,
+    "orderCommercialVersion": null,
+    "sourceKind": "Offer",
+    "sourceReference": "OFFER-1",
+    "expiresAtUtc": "2026-12-01T10:00:00+00:00",
+    "selectedLineCount": 2,
+    "baggages": [
+      {
+        "offerItemId": "d_bag",
+        "variantCode": "A01",
+        "selectionScope": "PerTravellerPerFlight",
+        "unit": { "travellerRef": "T1", "flightRef": "OUT:F1" },
+        "coverage": { "travellerRefs": ["T1"], "portionRefs": [], "flightRefs": ["OUT:F1"] },
+        "sourceBinding": { "offerHash": "offer-hash", "salesHash": "sales-hash" },
+        "definition": {
+          "definitionVersionId": "101",
+          "serviceDefinitionRef": "BAG_EXTRA_23",
+          "variantCode": "A01",
+          "serviceTypeCode": "C",
+          "serviceSubCode": "0CC",
+          "rfic": "C",
+          "rfisc": "0CC",
+          "ssrCode": null
+        },
+        "provision": {
+          "provisionId": "201",
+          "coverageScope": "Sector",
+          "purchaseStage": "PreOrder",
+          "bookingMethod": "Ssr",
+          "bookingRequired": true,
+          "confirmationRequirement": "Immediate",
+          "fulfillmentProviderKey": "Ancillary",
+          "documentRouting": "Emd",
+          "documentType": "EmdAssociated",
+          "documentRequired": true,
+          "requiresCheckAtReserve": false
+        },
+        "pricing": {
+          "pricingId": "11",
+          "pricingRateId": "12",
+          "pricingVersion": 1,
+          "currencyId": 1,
+          "quantity": 2,
+          "unitAmount": 30,
+          "totalAmount": 60,
+          "isUnitTotalComplete": true,
+          "pricingUnit": "PerItem",
+          "baseAmount": 30,
+          "taxLines": [],
+          "feeLines": []
+        },
+        "details": { "chargeKind": "ExtraPiece", "allowanceConcept": "Piece" },
+        "selected": { "quantity": 2 }
+      }
+    ],
+    "meals": [],
+    "pets": [],
+    "assistedTravel": [],
+    "airportServices": [],
+    "priorityServices": [
+      {
+        "offerItemId": "d_priority",
+        "variantCode": "A23",
+        "selectionScope": "PerTraveller",
+        "unit": { "travellerRef": "T1" },
+        "coverage": { "travellerRefs": ["T1"], "portionRefs": [], "flightRefs": [] },
+        "sourceBinding": { "offerHash": "offer-hash", "salesHash": "sales-hash" },
+        "definition": {
+          "definitionVersionId": "123",
+          "serviceDefinitionRef": "PRIORITY_BOARDING",
+          "variantCode": "A23",
+          "serviceTypeCode": "F",
+          "serviceSubCode": "0G6",
+          "rfic": "E",
+          "rfisc": "0G6",
+          "ssrCode": null
+        },
+        "provision": {
+          "provisionId": "223",
+          "coverageScope": "Journey",
+          "purchaseStage": "Both",
+          "bookingMethod": "Ssr",
+          "bookingRequired": true,
+          "confirmationRequirement": "Immediate",
+          "fulfillmentProviderKey": "Ancillary",
+          "documentRouting": "NoAncillaryDocument",
+          "documentType": "None",
+          "documentRequired": false,
+          "requiresCheckAtReserve": false
+        },
+        "pricing": {
+          "pricingId": "13",
+          "pricingRateId": "14",
+          "pricingVersion": 2,
+          "currencyId": 1,
+          "quantity": 1,
+          "unitAmount": 15,
+          "totalAmount": 15,
+          "isUnitTotalComplete": true,
+          "pricingUnit": "PerItem",
+          "baseAmount": 15,
+          "taxLines": [],
+          "feeLines": []
+        },
+        "details": { "kind": "Boarding", "priorityZoneCode": "Z1", "airportIds": [] },
+        "selected": { "quantity": 1, "options": { "priority": { "optIn": true } } }
+      }
+    ],
+    "connectivity": [],
+    "upgrades": [],
+    "extraSeats": [],
+    "travelInsurance": []
+  },
+  "errors": null
+}

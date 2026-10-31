@@ -1,5 +1,7 @@
 # AeroTech Ordering — Stage 6A/6B Operational Integration — ALL-IN-ONE v2.0
 
+**Superseded in part, 2026-10-31:** decision D13 changes Offer-sourced Journey coverage, and D14 replaces the Create inputs and the seat quote route. See `reports/STAGE6A-DECISIONS-AND-BLOCKERS.md`.
+
 **Compiled from the 15 numbered source documents in this same pack.** Read their source-level evidence and the owner review. This is an implementation authority proposal to be reconciled with the **live local Master**, not proof of tested upstream integration.
 
 ---

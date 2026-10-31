@@ -258,6 +258,7 @@
         public const string AncillarySelectionIsNotFound = "Ancillary selection '{0}' is not known to the ancillary source.";
         public const string AncillarySelectionExpiredAtSource = "Ancillary selection '{0}' has expired at the ancillary source; price the selection again.";
         public const string AncillaryBasketIsEmpty = "No ancillary selection or seat was supplied for order '{0}'.";
+        public const string PricedSeatsCannotCombineWithLegacySeats = "Priced seat selection '{0}' cannot be combined with seat selections entered by seat number; send only one of them.";
         public const string AncillarySourceContractIsIncomplete = "The ancillary source returned selection '{0}' without '{1}', so the selection cannot be accepted.";
     }
 }

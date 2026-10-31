@@ -718,6 +718,9 @@ namespace AeroTech.Ordering.Domain._Shared.Resources
         public static BusinessException AncillarySelectionExpiredAtSource(params object?[] args) =>
             new(2865, ExceptionMessages.AncillarySelectionExpiredAtSource, args) { HttpStatus = 409 };
 
+        public static BusinessException PricedSeatsCannotCombineWithLegacySeats(params object?[] args) =>
+            new(2866, ExceptionMessages.PricedSeatsCannotCombineWithLegacySeats, args) { HttpStatus = 422 };
+
         private static string Detail(string? detail, string fallback) =>
             string.IsNullOrWhiteSpace(detail) ? fallback : detail;
     }

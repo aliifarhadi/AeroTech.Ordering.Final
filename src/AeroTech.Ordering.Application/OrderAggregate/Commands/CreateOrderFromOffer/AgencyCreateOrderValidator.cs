@@ -10,6 +10,8 @@ namespace AeroTech.Ordering.Application.OrderAggregate.Commands.CreateOrderFromO
             RuleFor(command => command.OfferId).NotEmpty();
             RuleFor(command => command.Contact).NotNull();
             RuleFor(command => command.Travelers).NotEmpty();
+            RuleFor(command => command.AncillaryPricedSelectionId).NotEmpty().When(command => command.AncillaryPricedSelectionId is not null);
+            RuleFor(command => command.SeatPricedSelectionId).NotEmpty().When(command => command.SeatPricedSelectionId is not null);
 
             RuleFor(command => command.Contact)
                 .Must(contact => !string.IsNullOrWhiteSpace(contact.EmailAddress) || contact.Phones.Count > 0)

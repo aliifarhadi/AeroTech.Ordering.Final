@@ -31,22 +31,17 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             if (selection is null && seats is null)
                 throw ExceptionFactory.AncillaryBasketIsEmpty(Id);
 
-            var sourceReference = Id.ToString(CultureInfo.InvariantCulture);
-
-            if (selection is not null)
-                EnsureSelectionIsCurrent(selection, ShoppingSourceKind.Order, sourceReference, now);
-
-            if (seats is not null)
-                EnsureSeatQuoteIsCurrent(seats, ShoppingSourceKind.Order, sourceReference, now);
-
             var changeId = idGenerator.NewId();
-            var purchases = new List<PlannedPurchase>();
 
-            if (selection is not null)
-                PlanAncillaries(selection, changeId, OrderPricingReason.AdditionalSale, idGenerator, now, purchases);
-
-            if (seats is not null)
-                PlanSeats(seats, changeId, OrderPricingReason.AdditionalSale, idGenerator, now, purchases);
+            AcceptSelections(
+                selection,
+                seats,
+                ShoppingSourceKind.Order,
+                Id.ToString(CultureInfo.InvariantCulture),
+                changeId,
+                OrderPricingReason.AdditionalSale,
+                idGenerator,
+                now);
 
             var change = new OrderChange(
                 changeId,
@@ -65,7 +60,6 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             CommercialVersion = change.CommercialVersion;
             _changes.Add(change);
 
-            Commit(purchases);
             ReconcileTotals();
 
             return change;
@@ -92,6 +86,33 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
 
             if (HasPassedLastTicketingDateAt(now))
                 throw ExceptionFactory.OrderDoesNotAcceptAncillariesAfterLastTicketingDate(Id, LastTicketingDate);
+        }
+
+        private void AcceptSelections(
+            ResolvedAncillarySelection? selection,
+            ResolvedSeatQuote? seats,
+            ShoppingSourceKind sourceKind,
+            string sourceReference,
+            long changeId,
+            OrderPricingReason reason,
+            IIdGenerator idGenerator,
+            DateTimeOffset acceptedAt)
+        {
+            if (selection is not null)
+                EnsureSelectionIsCurrent(selection, sourceKind, sourceReference, acceptedAt);
+
+            if (seats is not null)
+                EnsureSeatQuoteIsCurrent(seats, sourceKind, sourceReference, acceptedAt);
+
+            var purchases = new List<PlannedPurchase>();
+
+            if (selection is not null)
+                PlanAncillaries(selection, changeId, reason, idGenerator, acceptedAt, purchases);
+
+            if (seats is not null)
+                PlanSeats(seats, changeId, reason, idGenerator, acceptedAt, purchases);
+
+            Commit(purchases);
         }
 
         private void EnsureSelectionIsCurrent(
@@ -126,10 +147,8 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             string sourceReference,
             DateTimeOffset now)
         {
-            var quoteReference = string.Join(",", quote.Seats.Select(seat => seat.SeatSelectionId));
-
             EnsureSourceIsCurrent(
-                quoteReference,
+                quote.SelectionId,
                 quote.SourceKind,
                 quote.SourceReference,
                 quote.OrderCommercialVersion,
@@ -139,10 +158,13 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 now);
 
             if (quote.Seats.Count == 0)
-                throw ExceptionFactory.AncillaryBasketIsEmpty(Id);
+                throw ExceptionFactory.AncillarySelectionIsEmpty(quote.SelectionId);
+
+            if (quote.SelectedLineCount != quote.Seats.Count)
+                throw ExceptionFactory.AncillarySelectionLineCountMismatch(quote.SelectionId, quote.SelectedLineCount, quote.Seats.Count);
 
             if (quote.Seats.GroupBy(seat => seat.SeatSelectionId, StringComparer.Ordinal).FirstOrDefault(group => group.Count() > 1) is { } duplicate)
-                throw ExceptionFactory.AncillaryOfferItemIsDuplicated(quoteReference, duplicate.Key);
+                throw ExceptionFactory.AncillaryOfferItemIsDuplicated(quote.SelectionId, duplicate.Key);
         }
 
         private void EnsureSourceIsCurrent(
@@ -155,7 +177,9 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             string sourceReference,
             DateTimeOffset now)
         {
-            if (actualKind != sourceKind || !string.Equals(actualReference, sourceReference, StringComparison.Ordinal))
+            if (actualKind != sourceKind
+                || !string.Equals(actualReference, sourceReference, StringComparison.Ordinal)
+                || (sourceKind == ShoppingSourceKind.Offer && actualCommercialVersion is not null))
                 throw ExceptionFactory.AncillarySelectionBelongsToAnotherSource(selectionReference, actualKind, actualReference);
 
             if (sourceKind == ShoppingSourceKind.Order && actualCommercialVersion != CommercialVersion)
@@ -224,7 +248,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                     seatNumber,
                     variant,
                     seat.PointOfSaleId,
-                    new AncillarySaleSource(quote.SourceKind, quote.SourceReference, quote.OrderCommercialVersion, seat.SeatSelectionId, null),
+                    new AncillarySaleSource(quote.SourceKind, quote.SourceReference, quote.OrderCommercialVersion, quote.SelectionId, seat.SeatSelectionId),
                     DefinitionOf(seat.Definition, seat.SeatSelectionId),
                     ProvisionOf(seat.Provision, seat.SeatSelectionId),
                     new AncillaryPricing(seat.Pricing.PricingId, seat.Pricing.PricingRateId, seat.Pricing.PricingVersion, seat.Pricing.PricingUnit),
@@ -331,7 +355,7 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
             {
                 SelectionScope.PerTravellerPerFlight => (traveller, [SectorAirServiceOf(line, traveller)]),
                 SelectionScope.PerTravellerPerPortion => (traveller, PortionAirServicesOf(line, traveller)),
-                SelectionScope.PerTraveller => (traveller, JourneyAirServicesOf(line, traveller)),
+                SelectionScope.PerTraveller => (traveller, JourneyAirServicesOf(line, traveller, sourceKind)),
                 _ => throw ExceptionFactory.AncillaryScopeIsInconsistent(line.OfferItemId, line.SelectionScope, line.Provision.CoverageScope)
             };
         }
@@ -370,11 +394,38 @@ namespace AeroTech.Ordering.Domain.OrderAggregate
                 : throw ExceptionFactory.AncillaryPortionIsNotInOrder(line.OfferItemId, portionRef);
         }
 
-        private IReadOnlyList<OrderAirTransportService> JourneyAirServicesOf(ResolvedAncillaryLine line, OrderTraveller traveller)
+        private IReadOnlyList<OrderAirTransportService> JourneyAirServicesOf(
+            ResolvedAncillaryLine line,
+            OrderTraveller traveller,
+            ShoppingSourceKind sourceKind)
         {
             if (line.Unit.PortionRef is not null || line.Unit.FlightRef is not null || line.Coverage.PortionRefs.Count > 0)
                 throw ExceptionFactory.AncillaryCoverageDoesNotMatchUnit(line.OfferItemId);
 
+            return sourceKind == ShoppingSourceKind.Offer
+                ? OfferItineraryAirServicesOf(line, traveller)
+                : NamedFlightAirServicesOf(line, traveller);
+        }
+
+        private IReadOnlyList<OrderAirTransportService> OfferItineraryAirServicesOf(ResolvedAncillaryLine line, OrderTraveller traveller)
+        {
+            if (line.Coverage.FlightRefs.Count > 0)
+                throw ExceptionFactory.AncillaryCoverageDoesNotMatchUnit(line.OfferItemId);
+
+            var airServices = _journeys
+                .OrderBy(journey => journey.Sequence)
+                .SelectMany(journey => _segments.Where(segment => segment.OrderJourneyId == journey.Id).OrderBy(segment => segment.Sequence))
+                .Select(segment => ActiveAirServiceOf(traveller.Id, segment.Id)
+                                   ?? throw ExceptionFactory.AncillaryCoverageDoesNotMatchUnit(line.OfferItemId))
+                .ToList();
+
+            return airServices.Count > 0
+                ? airServices
+                : throw ExceptionFactory.AncillaryCoverageDoesNotMatchUnit(line.OfferItemId);
+        }
+
+        private IReadOnlyList<OrderAirTransportService> NamedFlightAirServicesOf(ResolvedAncillaryLine line, OrderTraveller traveller)
+        {
             if (line.Coverage.FlightRefs.Count == 0)
                 throw ExceptionFactory.AncillaryCoverageIsNotSupported(line.OfferItemId, line.Provision.CoverageScope);
 

@@ -25,10 +25,12 @@ namespace AeroTech.Ordering.Domain.Providers.Ancillary
         ResolvedAncillaryDetails Details);
 
     public sealed record ResolvedSeatQuote(
+        string SelectionId,
         ShoppingSourceKind SourceKind,
         string SourceReference,
         int? OrderCommercialVersion,
         DateTimeOffset ExpiresAt,
+        int SelectedLineCount,
         IReadOnlyList<ResolvedSeat> Seats);
 
     public sealed record ResolvedSeat(

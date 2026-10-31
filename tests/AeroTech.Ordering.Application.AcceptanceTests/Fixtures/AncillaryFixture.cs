@@ -2,6 +2,7 @@ using System.Globalization;
 using AeroTech.Messages.Ancillary.Enums;
 using AeroTech.Ordering.Domain.OrderAggregate;
 using AeroTech.Ordering.Domain.OrderAggregate.Entities;
+using AeroTech.Ordering.Domain.OrderAggregate.ValueObjects;
 using AeroTech.Ordering.Domain.Providers.Ancillary;
 
 namespace AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
@@ -9,6 +10,9 @@ namespace AeroTech.Ordering.Application.AcceptanceTests.Fixtures;
 public static class AncillaryFixture
 {
     public const int CurrencyId = 1;
+    public const string OfferId = "OFFER-1";
+    public const string GeneralSelectionId = "s_general";
+    public const string SeatSelectionId = "s_seats";
 
     public static readonly IReadOnlyList<string> GeneralVariants = AncillaryVariant.All
         .Where(variant => !variant.IsSeatAssignment)
@@ -34,13 +38,22 @@ public static class AncillaryFixture
             lines);
 
     public static ResolvedSeatQuote SeatQuote(Order order, DateTimeOffset now, params ResolvedSeat[] seats)
-        => new(ShoppingSourceKind.Order, order.Id.ToString(CultureInfo.InvariantCulture), order.CommercialVersion, now.AddMinutes(30), seats);
+        => new($"s_seats_{order.Id}", ShoppingSourceKind.Order, order.Id.ToString(CultureInfo.InvariantCulture), order.CommercialVersion, now.AddMinutes(30), seats.Length, seats);
+
+    public static ResolvedAncillarySelection OfferSelection(DateTimeOffset now, params ResolvedAncillaryLine[] lines)
+        => new(GeneralSelectionId, ShoppingSourceKind.Offer, OfferId, null, now.AddMinutes(30), lines.Length, lines);
+
+    public static ResolvedSeatQuote OfferSeatQuote(DateTimeOffset now, params ResolvedSeat[] seats)
+        => new(SeatSelectionId, ShoppingSourceKind.Offer, OfferId, null, now.AddMinutes(30), seats.Length, seats);
 
     public static ResolvedSeat Seat(long travellerId, long flightId, string seatNumber, string variantCode = AncillaryVariant.StandardSeat, decimal price = 25m)
+        => Seat(Ref(travellerId), flightId, seatNumber, variantCode, price);
+
+    public static ResolvedSeat Seat(string travellerRef, long flightId, string seatNumber, string variantCode = AncillaryVariant.StandardSeat, decimal price = 25m)
         => new(
-            $"seat_{travellerId}_{flightId}_{seatNumber}",
+            $"seat_{travellerRef}_{flightId}_{seatNumber}",
             variantCode,
-            travellerId.ToString(CultureInfo.InvariantCulture),
+            travellerRef,
             flightId,
             seatNumber,
             PointOfSaleId: 7,
@@ -49,27 +62,36 @@ public static class AncillaryFixture
             Price(price));
 
     public static ResolvedAncillaryLine Sector(string variantCode, long travellerId, string flightRef, ResolvedAncillaryPricing? pricing = null)
+        => Sector(variantCode, Ref(travellerId), flightRef, pricing);
+
+    public static ResolvedAncillaryLine Sector(string variantCode, string travellerRef, string flightRef, ResolvedAncillaryPricing? pricing = null)
         => Line(
             variantCode,
             SelectionScope.PerTravellerPerFlight,
-            new ResolvedAncillaryUnit(Ref(travellerId), null, flightRef),
-            new ResolvedAncillaryCoverage([Ref(travellerId)], [], [flightRef]),
+            new ResolvedAncillaryUnit(travellerRef, null, flightRef),
+            new ResolvedAncillaryCoverage([travellerRef], [], [flightRef]),
             pricing);
 
     public static ResolvedAncillaryLine Portion(string variantCode, long travellerId, string portionRef, ResolvedAncillaryPricing? pricing = null)
+        => Portion(variantCode, Ref(travellerId), portionRef, pricing);
+
+    public static ResolvedAncillaryLine Portion(string variantCode, string travellerRef, string portionRef, ResolvedAncillaryPricing? pricing = null)
         => Line(
             variantCode,
             SelectionScope.PerTravellerPerPortion,
-            new ResolvedAncillaryUnit(Ref(travellerId), portionRef, null),
-            new ResolvedAncillaryCoverage([Ref(travellerId)], [portionRef], []),
+            new ResolvedAncillaryUnit(travellerRef, portionRef, null),
+            new ResolvedAncillaryCoverage([travellerRef], [portionRef], []),
             pricing);
 
     public static ResolvedAncillaryLine Journey(string variantCode, long travellerId, IReadOnlyList<string> flightRefs, ResolvedAncillaryPricing? pricing = null)
+        => Journey(variantCode, Ref(travellerId), flightRefs, pricing);
+
+    public static ResolvedAncillaryLine Journey(string variantCode, string travellerRef, IReadOnlyList<string> flightRefs, ResolvedAncillaryPricing? pricing = null)
         => Line(
             variantCode,
             SelectionScope.PerTraveller,
-            new ResolvedAncillaryUnit(Ref(travellerId), null, null),
-            new ResolvedAncillaryCoverage([Ref(travellerId)], [], flightRefs),
+            new ResolvedAncillaryUnit(travellerRef, null, null),
+            new ResolvedAncillaryCoverage([travellerRef], [], flightRefs),
             pricing);
 
     public static ResolvedAncillaryLine WholeOrder(string variantCode, ResolvedAncillaryPricing? pricing = null)
@@ -213,6 +235,40 @@ public static class AncillaryFixture
         return order;
     }
 
+    public static ResolvedAncillaryLine[] EveryPersistedVariantAtCreate()
+        => GeneralVariants
+            .Where(code => !SourceGatedVariants.Contains(code))
+            .Select(code => code == AncillaryVariant.Bassinet
+                ? WithBassinetRefs(Sector(code, "T1", FlightRef("OUT", 1)), "T2", "T1")
+                : Sector(code, "T1", FlightRef("OUT", 1)))
+            .Append(Portion(AncillaryVariant.ExtraCheckedBag, "T2", "OUT"))
+            .Append(Journey(AncillaryVariant.PriorityBoardingCheckin, "T2", []))
+            .Append(WholeOrder(AncillaryVariant.OnboardWifi))
+            .ToArray();
+
+    public static ResolvedAncillaryLine WithBassinetRefs(ResolvedAncillaryLine line, string infantRef, string guardianRef)
+        => line with
+        {
+            Details = new ResolvedAncillaryDetails
+            {
+                Assistance = line.Details.Assistance! with { InfantRef = infantRef, GuardianRef = guardianRef }
+            }
+        };
+
+    public static Type FamilyEntityOf(AncillaryProfile profile)
+        => profile switch
+        {
+            AncillaryProfile.Baggage => typeof(OrderBaggageService),
+            AncillaryProfile.Meal => typeof(OrderMealService),
+            AncillaryProfile.Pet => typeof(OrderPetService),
+            AncillaryProfile.AssistedTravel => typeof(OrderAssistedTravelService),
+            AncillaryProfile.AirportService => typeof(OrderAirportService),
+            AncillaryProfile.Priority => typeof(OrderPriorityService),
+            AncillaryProfile.Connectivity => typeof(OrderConnectivityService),
+            AncillaryProfile.Upgrade => typeof(OrderUpgradeService),
+            _ => typeof(OrderExtraSeatService)
+        };
+
     public static IReadOnlyList<object> PersistedPurchases(Order order)
         => order.Services
             .Where(service => service is OrderAncillaryService or OrderSeatService { IsPricedSelection: true })
@@ -220,9 +276,17 @@ public static class AncillaryFixture
             .Select<OrderService, object>(service => service switch
             {
                 OrderAncillaryService ancillary => (CommonFacts(ancillary), ancillary.GetType().Name, FamilyFacts(ancillary)),
-                OrderSeatService seat => (seat.Id, seat.OrderItemId, seat.TravellerId, seat.SegmentId, seat.AssociatedAirServiceId, seat.SeatNumber, seat.VariantCode, seat.PointOfSaleId, seat.Source, seat.Definition, seat.Provision, seat.Pricing),
+                OrderSeatService seat => (seat.Id, seat.OrderItemId, seat.TravellerId, seat.SegmentId, seat.AssociatedAirServiceId, seat.SeatNumber, seat.VariantCode, seat.PointOfSaleId, seat.Definition, seat.Provision, seat.Pricing),
                 _ => throw new InvalidOperationException()
             })
+            .ToList();
+
+    public static IReadOnlyList<AncillarySaleSource> PersistedSeatSources(Order order)
+        => order.Services
+            .OfType<OrderSeatService>()
+            .Where(seat => seat.IsPricedSelection)
+            .OrderBy(seat => seat.Id)
+            .Select(seat => seat.Source!)
             .ToList();
 
     public static IReadOnlyList<object> PersistedPricing(Order order)
@@ -234,17 +298,7 @@ public static class AncillaryFixture
     private static string Ref(long travellerId) => travellerId.ToString(CultureInfo.InvariantCulture);
 
     private static ResolvedAncillaryLine WithBassinetRefs(ResolvedAncillaryLine line, OrderTraveller infant, OrderTraveller guardian)
-        => line with
-        {
-            Details = new ResolvedAncillaryDetails
-            {
-                Assistance = line.Details.Assistance! with
-                {
-                    InfantRef = Ref(infant.Id),
-                    GuardianRef = Ref(guardian.Id)
-                }
-            }
-        };
+        => WithBassinetRefs(line, Ref(infant.Id), Ref(guardian.Id));
 
     private static object CommonFacts(OrderAncillaryService service)
         => (service.Id, service.OrderItemId, service.TravellerId, service.ServiceType, service.Profile, service.VariantCode, service.Quantity, service.SelectionScope, service.CoverageScope, string.Join(",", service.CoveredAirServiceIds), service.Source, service.Definition, service.Provision, service.Pricing, service.FulfillmentProviderKey);

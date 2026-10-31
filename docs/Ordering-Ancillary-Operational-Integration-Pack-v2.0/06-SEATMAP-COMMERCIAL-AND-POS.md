@@ -14,6 +14,8 @@ Current `Order.Create.BuildSeatServices` uses `(TravellerIndex, BoundId, SeatNum
 
 ## 3. Required **AC-03** Ancillary read-only selected quote contract
 
+**Superseded by decision D14 (2026-10-31):** the seat quote is `SeatMaps/Price` plus `SeatMaps/Resolve {selectionId}`. `ValidateForAcceptance` is not built.
+
 **Proposed route** (not present at verified `190aa74`):
 
 `POST /Service/v1/Ancillaries/SeatMaps/ValidateForAcceptance`

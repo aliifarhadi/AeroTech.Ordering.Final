@@ -79,7 +79,9 @@ public static class OrderFixture
             new CreateOrderContactArgs("Contact", [new CreateOrderContactPointArgs(ContactPointType.Email, "contact@example.com", null, true)]),
             travellers.Select(ToArgs).ToList(),
             seats.Select(seat => new CreateOrderSeatSelectionArgs(seat.TravellerIndex, seat.BoundId, seat.SeatNumber)).ToList(),
-            []);
+            [],
+            null,
+            null);
 
     private static CreateOrderTravellerArgs ToArgs(TravellerSpec traveller)
         => new(

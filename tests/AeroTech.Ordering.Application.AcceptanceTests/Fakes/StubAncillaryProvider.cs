@@ -7,6 +7,8 @@ public sealed class StubAncillaryProvider : IAncillaryProvider
 {
     public Dictionary<string, ResolvedAncillarySelection> Selections { get; } = [];
 
+    public Dictionary<string, ResolvedSeatQuote> SeatQuotes { get; } = [];
+
     public List<string> Requests { get; } = [];
 
     public Task<ResolvedAncillarySelection> ResolveSelectionAsync(string selectionId, CancellationToken cancellationToken = default)
@@ -15,6 +17,15 @@ public sealed class StubAncillaryProvider : IAncillaryProvider
 
         return Selections.TryGetValue(selectionId, out var selection)
             ? Task.FromResult(selection)
+            : throw ExceptionFactory.AncillarySelectionIsNotFound(selectionId);
+    }
+
+    public Task<ResolvedSeatQuote> ResolveSeatSelectionAsync(string selectionId, CancellationToken cancellationToken = default)
+    {
+        Requests.Add(selectionId);
+
+        return SeatQuotes.TryGetValue(selectionId, out var quote)
+            ? Task.FromResult(quote)
             : throw ExceptionFactory.AncillarySelectionIsNotFound(selectionId);
     }
 }
